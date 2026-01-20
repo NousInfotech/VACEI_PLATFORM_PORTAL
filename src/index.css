@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-color: #0f1729;
+  --light-color: #ffffff;
+  --dark-color: #000000;
+
+  /* Core backgrounds */
+  --background: 228 100% 98%;
+  --foreground: 222 47% 11%;
+
+  /* Sidebar colors */
+  --sidebar-background: 222 47% 11%;
+  --sidebar-foreground: 220 14% 96%;
+  --sidebar-primary: 43 96% 56%;
+  --sidebar-primary-foreground: 222 47% 11%;
+  --sidebar-accent: 215 25% 27%;
+  --sidebar-accent-foreground: 220 14% 96%;
+  --sidebar-border: 215 25% 27%;
+  --sidebar-ring: 43 96% 56%;
+  --sidebar-hover: 215 25% 27%;
+  --sidebar-active: 222 47% 19%;
+  --sidebar-logo-bg: 222 47% 11%;
+
+  /* Accent colors */
+  --accent: 0 0% 45%;
+  --accent-foreground: 0 0% 100%;
+
+  --muted: 220 14% 96%;
+  --radius: 0.75rem;
+}
+
+@theme {
+  --color-primary: var(--primary-color);
+  --color-light: var(--light-color);
+  --color-dark: var(--dark-color);
+  --font-poppins: "Poppins", sans-serif;
+  --font-sans: var(--font-poppins);
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+  
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+}
+
+html, body, * {
+  font-family: var(--font-poppins) !important;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;   /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari */
+}
+
+/* Premium Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--sidebar-background));
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--sidebar-accent));
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sidebar-background)) hsl(var(--muted));
+}
