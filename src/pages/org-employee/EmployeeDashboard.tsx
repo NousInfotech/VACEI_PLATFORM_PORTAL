@@ -36,7 +36,7 @@ export default function EmployeeDashboard({ activeSection = "Dashboard" }: Emplo
     <div className="mx-auto space-y-8">
       {/* Header Section */}
       <PageHeader
-        title={`${selectedService?.replace(/_/g, " ")} ${activeSection}`}
+        title={`${activeSection}`}
         subtitle={`Manage your ${selectedService?.toLowerCase().replace(/_/g, " ")} ${activeSection.toLowerCase()} and clients`}
         actions={
           <div className="flex items-center gap-3">
