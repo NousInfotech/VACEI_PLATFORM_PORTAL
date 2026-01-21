@@ -72,7 +72,7 @@ export default function MainLayout() {
                     onSidebarToggle={handleSidebarToggle}
                     isSidebarCollapsed={isSidebarCollapsed}
                     username={user ? `${user.firstName} ${user.lastName}` : "User"}
-                    role={user?.role === "ORG_ADMIN" ? "Admin" : "Employee"}
+                    role={user?.role === "PLATFORM_ADMIN" ? "Admin" : "Employee"}
                 />
 
                 {/* Main Content */}

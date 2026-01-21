@@ -23,11 +23,11 @@ export default function Dashboard({ activeSection = "Dashboard" }: DashboardProp
 
   if (!role) return null;
 
-  if (role === RoleEnum.ORG_ADMIN) {
+  if (role === RoleEnum.PLATFORM_ADMIN) {
     return <AdminDashboard />;
   }
 
-  if (role === RoleEnum.ORG_EMPLOYEE) {
+  if (role === RoleEnum.PLATFORM_EMPLOYEE) {
     return <EmployeeDashboard activeSection={activeSection} />;
   }
 
