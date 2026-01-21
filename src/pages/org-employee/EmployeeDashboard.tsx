@@ -15,6 +15,7 @@ import { Select } from "../../ui/Select";
 import { PageHeader } from "../common/PageHeader";
 import { useAuth } from "../../context/AuthContext";
 import { cn } from "../../lib/utils";
+import EmployeeCompliance from "./EmployeeCompliance";
  
 
 const MOCK_CLIENTS = [
@@ -248,6 +249,8 @@ export default function EmployeeDashboard({ activeSection = "Dashboard" }: Emplo
             
           </div>
         </div>
+      ) : activeSection === "Compliance" ? (
+        <EmployeeCompliance />
       ) : (
         <ShadowCard className="p-20 flex flex-col items-center justify-center text-center">
           <div className="p-6 bg-gray-50 rounded-full mb-6 text-gray-400">
