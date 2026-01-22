@@ -7,4 +7,13 @@ export const endPoints = {
     CHANGE_PASSWORD: '/auth/change-password',
     ME: '/auth/me',
   },
+  ORGANIZATION: {
+    BASE: '/organizations',
+    GET_ALL: '/organizations',
+    GET_BY_ID: (id: string) => `/organizations/${id}`,
+    CREATE: '/organizations',
+    UPDATE: (id: string) => `/organizations/${id}`,
+    DELETE: (id: string) => `/organizations/${id}`,
+    HARD_DELETE: (id: string) => `/organizations/${id}/hard`,
+  },
 };

@@ -1,13 +1,33 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { apiPost, apiGet } from "../config/base";
 import { endPoints } from "../config/endPoint";
-import { type User, type OrganizationMember, type AuthMeResponse, type LoginResponse } from "../types/auth";
+import { type User, type OrganizationMember, type LoginResponse, type AuthMeResponse } from "../types/auth";
 import { AuthContext } from "./auth-context-core";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [organizationMember, setOrganizationMember] = useState<OrganizationMember | null>(null);
-    const [selectedService, setSelectedServiceState] = useState<string | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        try {
+            const saved = localStorage.getItem("user");
+            if (!saved || saved === "undefined" || saved === "null") return null;
+            return JSON.parse(saved);
+        } catch (e) {
+            console.error("Failed to parse user from localStorage:", e);
+            return null;
+        }
+    });
+    const [organizationMember, setOrganizationMember] = useState<OrganizationMember | null>(() => {
+        try {
+            const saved = localStorage.getItem("organizationMember");
+            if (!saved || saved === "undefined" || saved === "null") return null;
+            return JSON.parse(saved);
+        } catch (e) {
+            console.error("Failed to parse organizationMember from localStorage:", e);
+            return null;
+        }
+    });
+    const [selectedService, setSelectedServiceState] = useState<string | null>(() => {
+        return localStorage.getItem("selectedService");
+    });
     const [isLoading, setIsLoading] = useState(true);
 
     const setSelectedService = useCallback((service: string) => {
@@ -36,22 +56,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
             const response = await apiGet<AuthMeResponse>(endPoints.AUTH.ME);
             if (response.data) {
-                const userData = response.data.user;
-                const memberData = response.data.organizationMember;
+                // Backend returns flat user object for /auth/me, but nested for login
+                const responseData = response.data;
+                const userData = (responseData.user || (responseData.id ? responseData : null)) as User | null;
+                let memberData = responseData.organizationMember || null;
                 
-                setUser(userData);
-                setOrganizationMember(memberData);
-                
-                const savedService = localStorage.getItem("selectedService");
-                if (savedService && memberData?.allowedServices.includes(savedService)) {
-                    setSelectedServiceState(savedService);
-                } else if (memberData?.allowedServices?.length > 0) {
-                    setSelectedService(memberData.allowedServices[0]);
-                }
+                if (userData) {
+                    setUser(userData);
+                    
+                    // Fallback to localStorage for organizationMember if not provided by /auth/me
+                    if (!memberData) {
+                        const savedMember = localStorage.getItem("organizationMember");
+                        if (savedMember) {
+                            try {
+                                memberData = JSON.parse(savedMember);
+                            } catch (e) {
+                                console.error("Failed to parse cached organizationMember:", e);
+                            }
+                        }
+                    }
+                    
+                    setOrganizationMember(memberData);
+                    
+                    const savedService = localStorage.getItem("selectedService");
+                    if (memberData && savedService && memberData.allowedServices?.includes(savedService)) {
+                        setSelectedServiceState(savedService);
+                    } else if (memberData && memberData.allowedServices && memberData.allowedServices.length > 0) {
+                        setSelectedService(memberData.allowedServices[0]);
+                    }
 
-                localStorage.setItem("user", JSON.stringify(userData));
-                localStorage.setItem("organizationMember", JSON.stringify(memberData));
-                localStorage.setItem("userRole", userData.role);
+                    localStorage.setItem("user", JSON.stringify(userData));
+                    if (memberData) {
+                        localStorage.setItem("organizationMember", JSON.stringify(memberData));
+                    }
+                    localStorage.setItem("userRole", userData.role);
+                } else {
+                    handleLogoutState();
+                }
             }
         } catch (error) {
             console.error("Failed to fetch user profile:", error);

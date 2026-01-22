@@ -5,6 +5,9 @@ import Dashboard from './pages/common/Dashboard'
 import MainLayout from './layout/MainLayout'
 import NotFound from './pages/common/NotFound'
 import { AuthProvider } from './context/AuthContext'
+import Organizations from './pages/platform-admin/Organizations'
+import CreateOrganization from './pages/platform-admin/CreateOrganization'
+import EditOrganization from './pages/platform-admin/EditOrganization'
 
 const App = () => {
   return (
@@ -22,6 +25,9 @@ const App = () => {
           <Route path="/dashboard/compliance" element={<Dashboard activeSection="Compliance" />} />
           <Route path="/dashboard/templates" element={<Dashboard activeSection="Document Request Templates" />} />
           <Route path="/dashboard/settings" element={<Dashboard activeSection="Settings" />} />
+          <Route path="/dashboard/organizations" element={<Organizations />} />
+          <Route path="/dashboard/organizations/create" element={<CreateOrganization />} />
+          <Route path="/dashboard/organizations/:id/edit" element={<EditOrganization />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />

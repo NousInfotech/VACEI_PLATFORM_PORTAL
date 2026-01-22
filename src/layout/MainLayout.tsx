@@ -11,7 +11,7 @@ export default function MainLayout() {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
     const { user, isAuthenticated, isLoading } = useAuth();
 
-    if (isLoading) {
+    if (isLoading && !user) {
         return (
             <div className="flex h-screen items-center justify-center bg-[#f5f7ff]">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -27,12 +27,19 @@ export default function MainLayout() {
         setIsSidebarCollapsed(!isSidebarCollapsed);
     };
 
+    const filteredMenu = menuData.filter(item => {
+        if (item.slug === 'organizations') {
+            return user?.role === "PLATFORM_ADMIN";
+        }
+        return true;
+    });
+
     return (
         <div className="flex h-screen bg-[#f5f7ff] relative overflow-hidden">
             {/* Sidebar for desktop */}
             <div className="hidden lg:block h-full">
                 <SideBar 
-                    menu={menuData} 
+                    menu={filteredMenu} 
                     isCollapsed={isSidebarCollapsed} 
                     isOpen={true}
                     onExpand={() => setIsSidebarCollapsed(false)}
@@ -53,7 +60,7 @@ export default function MainLayout() {
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <SideBar 
-                    menu={menuData} 
+                    menu={filteredMenu} 
                     isCollapsed={false} 
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}

@@ -36,8 +36,10 @@ export interface LoginResponse {
 
 export interface AuthMeResponse {
     data: {
-        user: User;
-        organizationMember: OrganizationMember;
-    };
+        id?: string;
+        user?: User;
+        organizationMember?: OrganizationMember;
+        role?: string;
+    } & Partial<User>;
     message?: string;
 }
