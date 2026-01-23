@@ -178,7 +178,7 @@ const Organizations: React.FC = () => {
                     <Building2 className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary transition-colors leading-tight">
+                    <h3 className="text-md font-semibold text-gray-900 group-hover:text-primary transition-colors leading-tight">
                       {org.name}
                     </h3>
                     <div className="flex items-center gap-2 mt-1.5">
@@ -236,7 +236,7 @@ const Organizations: React.FC = () => {
                         <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
                           <Trash2 className="h-4 w-4" />
                         </div>
-                        Soft Delete
+                         Delete
                       </button>
 
                       <button
@@ -271,7 +271,7 @@ const Organizations: React.FC = () => {
                       {org.availableServices.map((service: string) => (
                         <span 
                           key={service} 
-                          className="px-2.5 py-1 bg-gray-50/50 border border-gray-100 text-gray-500 text-[10px] font-medium rounded-lg uppercase tracking-tight hover:bg-primary/5 hover:text-primary hover:border-primary/10 transition-colors"
+                          className="px-2.5 py-1 bg-primary/90 text-light text-[8px] font-medium rounded-full uppercase tracking-tight"
                         >
                           {formatServiceLabel(service)}
                         </span>

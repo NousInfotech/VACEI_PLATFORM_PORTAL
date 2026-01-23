@@ -28,9 +28,9 @@ const AdminDashboard: React.FC = () => {
 
   const stats = [
     { label: "Total Organizations", value: "24", icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Active Admins", value: "156", icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Platform Health", value: "99.9%", icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Monthly Growth", value: "+12%", icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Active Clients", value: "156", icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Active Engagements", value: "40", icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50" },
+    { label: "Service requests", value: "12", icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
   ];
 
   const quickActions = [
