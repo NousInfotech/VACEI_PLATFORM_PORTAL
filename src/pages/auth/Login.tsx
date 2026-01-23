@@ -80,12 +80,12 @@ export default function Login() {
                             </div>
                             <div className="text-left">
                                 <span className="text-3xl font-bold block">Vacei</span>
-                                <span className="text-xs font-medium uppercase tracking-wider opacity-70 block">ORGANIZATION PORTAL</span>
+                                <span className="text-xs font-medium uppercase tracking-wider opacity-70 block">PLATFORM PORTAL</span>
                             </div>
                         </div>
 
                         <h1 className="text-4xl font-bold leading-tight">
-                            Manage your organization{" "}
+                            Manage your platform{" "}
                             <span className="block opacity-90">
                                 with full transparency
                             </span>
@@ -142,14 +142,14 @@ export default function Login() {
                             </div>
                             <div>
                                 <span className="text-2xl font-bold block text-dark">Vacei</span>
-                                <span className="text-xs font-medium uppercase tracking-wider opacity-70 text-gray-500">ORGANIZATION PORTAL</span>
+                                <span className="text-xs font-medium uppercase tracking-wider opacity-70 text-gray-500">PLATFORM PORTAL</span>
                             </div>
                         </div>
 
                         <div className="space-y-3">
                             <h1 className="text-4xl font-bold leading-tight text-dark">Welcome back</h1>
                             <p className="text-lg text-gray-500">
-                                Sign in to your portal to manage your organizational data and compliance.
+                                Sign in to your portal to manage your platform data and compliance.
                             </p>
                         </div>
                     </div>

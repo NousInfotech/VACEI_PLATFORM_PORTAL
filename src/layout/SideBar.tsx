@@ -41,7 +41,7 @@ export default function SideBar({
     };
 
     const orgName = organizationMember?.organization?.name || "Vacei";
-    const orgSubname = "ORGANIZATION PORTAL";
+    const orgSubname = "PLATFORM PORTAL";
 
     const toggleItem = (slug: string) => {
         setOpenItems((prev) => ({
