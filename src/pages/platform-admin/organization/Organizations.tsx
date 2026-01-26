@@ -1,16 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Building2, Trash2, MoreVertical, Edit2, Users } from 'lucide-react';
-import { Button } from '../../ui/Button';
-import { ShadowCard } from '../../ui/ShadowCard';
-import { Skeleton } from '../../ui/Skeleton';
-import { apiGet, apiDelete } from '../../config/base';
-import { endPoints } from '../../config/endPoint';
-import type { Organization } from '../../types/organization';
-import AlertMessage from '../common/AlertMessage';
-import PageHeader from '../common/PageHeader';
-import { DeleteConfirmModal } from './components/DeleteConfirmModal';
-
+import { Button } from '../../../ui/Button';
+import { ShadowCard } from '../../../ui/ShadowCard';
+import { Skeleton } from '../../../ui/Skeleton';
+import { apiGet, apiDelete } from '../../../config/base';
+import { endPoints } from '../../../config/endPoint';
+import type { Organization } from '../../../types/organization';
+import AlertMessage from '../../common/AlertMessage';
+import PageHeader from '../../common/PageHeader';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 const formatServiceLabel = (service: string) => {
   return service
     .split('_')
@@ -170,7 +169,7 @@ const Organizations: React.FC = () => {
           ))
         ) : filteredOrganizations.length > 0 ? (
           filteredOrganizations.map((org: Organization) => (
-            <ShadowCard key={org.id} className="p-6 group relative border hover:border-gray-300 border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white flex flex-col h-full rounded-2xl">
+            <ShadowCard key={org.id} className="p-6 group relative border hover:border-gray-300 border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-white flex flex-col h-full rounded-2xl">
               {/* Header: Icon, Name, Status & Actions */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">

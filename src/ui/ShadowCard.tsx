@@ -15,7 +15,7 @@ export const ShadowCard = ({
 }: ShadowCardProps) => {
   const hasBg = className.includes("bg-");
 
-  const baseStyles = `${!hasBg ? "bg-white/80" : ""} border border-white/50 rounded-2xl backdrop-blur-md shadow-lg shadow-gray-300/30 transition-all duration-300`;
+  const baseStyles = `${!hasBg ? "bg-white" : ""} rounded-2xl shadow-lg shadow-gray-300/30 transition-all duration-300`;
   const animationStyles = animate ? "animate-slide-in-right" : "";
  
   return (

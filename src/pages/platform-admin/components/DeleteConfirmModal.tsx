@@ -11,6 +11,8 @@ interface DeleteConfirmModalProps {
   itemName: string;
   loading?: boolean;
   isHardDelete?: boolean;
+  mode?: 'simple' | 'advanced';
+  description?: string | React.ReactNode;
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -21,16 +23,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   itemName,
   loading = false,
   isHardDelete = false,
+  mode = 'advanced',
+  description
 }) => {
   const [verificationText, setVerificationText] = useState('');
-  const [isVerified, setIsVerified] = useState(false);
-
-  useEffect(() => {
-    setIsVerified(verificationText === itemName);
-  }, [verificationText, itemName]);
+  
+  const isVerified = mode === 'simple' ? true : verificationText === itemName;
 
   useEffect(() => {
     if (!isOpen) {
+      // Reset verification text when modal closes
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setVerificationText('');
     }
   }, [isOpen]);
@@ -63,24 +66,28 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         <div className="p-8 space-y-6">
           <div className="space-y-3">
             <p className="text-gray-600 text-sm leading-relaxed">
-              {isHardDelete 
-                ? <>You are about to <span className="font-bold text-red-600 underline">permanently delete</span> <span className="font-bold text-gray-900">"{itemName}"</span>. This will remove all database records, members, and history forever. This is a development-only feature.</>
-                : <>You are about to <span className="font-bold text-amber-600">soft delete</span> <span className="font-bold text-gray-900">"{itemName}"</span>. This will deactivate the entity and hide it from the platform, but the data will remain in the database.</>
-              }
+              {description ? description : (
+                  isHardDelete 
+                    ? <>You are about to <span className="font-bold text-red-600 underline">permanently delete</span> <span className="font-bold text-gray-900">"{itemName}"</span>. This will remove all database records, members, and history forever. This is a development-only feature.</>
+                    : <>You are about to <span className="font-bold text-amber-600">soft delete</span> <span className="font-bold text-gray-900">"{itemName}"</span>. This will deactivate the entity and hide it from the platform, but the data will remain in the database.</>
+              )}
             </p>
-            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-3">Verification Step</p>
-              <p className="text-xs text-gray-500 mb-4">Please type <span className="font-bold text-gray-900 select-all">{itemName}</span> to confirm.</p>
-              
-              <input
-                type="text"
-                value={verificationText}
-                onChange={(e) => setVerificationText(e.target.value)}
-                placeholder="Type organization name here..."
-                className="w-full px-4 py-3 bg-white border-2 border-gray-100 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-300"
-                autoFocus
-              />
-            </div>
+            
+            {mode === 'advanced' && (
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-3">Verification Step</p>
+                  <p className="text-xs text-gray-500 mb-4">Please type <span className="font-bold text-gray-900 select-all">{itemName}</span> to confirm.</p>
+                  
+                  <input
+                    type="text"
+                    value={verificationText}
+                    onChange={(e) => setVerificationText(e.target.value)}
+                    placeholder="Type confirmation here..."
+                    className="w-full px-4 py-3 bg-white border-2 border-gray-100 focus:border-red-500 focus:ring-4 focus:ring-red-500/5 rounded-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-300"
+                    autoFocus
+                  />
+                </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -106,7 +113,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               ) : (
                 <>
                   <Trash2 className="h-4 w-4" />
-                  {isHardDelete ? 'Confirm Permanent Delete' : 'Confirm Soft Delete'}
+                  {isHardDelete ? 'Confirm Permanent Delete' : 'Confirm Delete'}
                 </>
               )}
             </Button>

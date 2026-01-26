@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
-import { Button } from '../../ui/Button';
-import { ShadowCard } from '../../ui/ShadowCard';
-import { OrganizationForm } from './components/OrganizationForm';
-import { apiPost } from '../../config/base';
-import { endPoints } from '../../config/endPoint';
-import type { CreateOrganizationDto } from '../../types/organization';
-import AlertMessage from '../common/AlertMessage';
-import { PageHeader } from '../common/PageHeader';
+import { Button } from '../../../ui/Button';
+import { ShadowCard } from '../../../ui/ShadowCard';
+import { OrganizationForm } from '../components/OrganizationForm';
+import { apiPost } from '../../../config/base';
+import { endPoints } from '../../../config/endPoint';
+import type { CreateOrganizationDto } from '../../../types/organization';
+import AlertMessage from '../../common/AlertMessage';
+import { PageHeader } from '../../common/PageHeader';
 
 const CreateOrganization: React.FC = () => {
   const navigate = useNavigate();

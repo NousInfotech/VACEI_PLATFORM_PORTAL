@@ -50,7 +50,7 @@ export const PageHeader = ({
               </h1>
               {subtitle && <p className="text-white/60 font-medium">{subtitle}</p>}
               {description && (
-                <p className="text-white/50 text-sm max-w-2xl pt-2 leading-relaxed">
+                <p className="text-white/50 text-sm max-w-2xl leading-relaxed">
                   {description}
                 </p>
               )}

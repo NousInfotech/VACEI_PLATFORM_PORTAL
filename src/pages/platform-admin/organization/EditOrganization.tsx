@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { ArrowLeft, Edit2 } from 'lucide-react';
-import { Button } from '../../ui/Button';
-import { ShadowCard } from '../../ui/ShadowCard';
-import { OrganizationForm } from './components/OrganizationForm';
-import { apiGet, apiPut } from '../../config/base';
-import { endPoints } from '../../config/endPoint';
-import type { Organization, CreateOrganizationDto } from '../../types/organization';
-import AlertMessage from '../common/AlertMessage';
-import { PageHeader } from '../common/PageHeader';
+import { Button } from '../../../ui/Button';
+import { ShadowCard } from '../../../ui/ShadowCard';
+import { OrganizationForm } from '../components/OrganizationForm';
+import { apiGet, apiPut } from '../../../config/base';
+import { endPoints } from '../../../config/endPoint';
+import type { Organization, CreateOrganizationDto } from '../../../types/organization';
+import AlertMessage from '../../common/AlertMessage';
+import { PageHeader } from '../../common/PageHeader';
 
 const EditOrganization: React.FC = () => {
   const { id } = useParams<{ id: string }>();
