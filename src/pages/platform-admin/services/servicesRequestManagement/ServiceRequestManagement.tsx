@@ -1,27 +1,68 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Plus, 
   Search, 
   Inbox, 
-  Filter
+  Filter,
+  Eye,
+  User,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../../../../ui/Button';
 import PageHeader from '../../../common/PageHeader';
 import Dropdown from '../../../common/Dropdown';
-import { RequestCard } from './RequestCard';
-import { mockRequests } from './serviceMockData';
+import { useQuery } from '@tanstack/react-query';
+import { apiGet } from '../../../../config/base';
+import { endPoints } from '../../../../config/endPoint';
+import { Skeleton } from '../../../../ui/Skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/Table';
+import { ShadowCard } from '../../../../ui/ShadowCard';
+import type { Client, ClientResponse } from '../../../../types/client';
 import type { ServiceRequest } from '../../../../types/service-request-template';
 
 const ServiceRequestManagement: React.FC = () => {
   const navigate = useNavigate();
-  const [requests] = useState(mockRequests);
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
+  type ServiceRequestApiResponse = { success?: boolean; data?: ServiceRequest[] } | ServiceRequest[];
+
+  const { data: requestsData, isLoading: isLoadingRequests } = useQuery<ServiceRequestApiResponse>({
+    queryKey: ['service-requests'],
+    queryFn: () => apiGet<ServiceRequestApiResponse>(endPoints.SERVICE_REQUEST.GET_ALL),
+  });
+
+  const { data: clientsData, isLoading: isLoadingClients } = useQuery<ClientResponse>({
+    queryKey: ['clients-lookup'],
+    queryFn: () => apiGet<ClientResponse>(endPoints.CLIENT.GET_ALL, { limit: 1000 }),
+  });
+
+  const isLoading = isLoadingRequests || isLoadingClients;
+
+  const clientMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const clients: Client[] = clientsData?.data ?? [];
+    clients.forEach((c: Client) => {
+      if (c.id && c.user) {
+        map[c.id] = `${c.user.firstName} ${c.user.lastName}`;
+      }
+    });
+    return map;
+  }, [clientsData]);
+
+  const requests: ServiceRequest[] = useMemo(() => {
+    if (!requestsData) return [];
+    if (Array.isArray(requestsData)) return requestsData;
+    if (Array.isArray(requestsData.data)) return requestsData.data;
+    return [];
+  }, [requestsData]);
+
   const statuses = useMemo(() => {
-    const uniqueStatuses = Array.from(new Set(requests.map(r => r.status)));
+    const uniqueStatuses = Array.from(new Set(requests.map((r: ServiceRequest) => r.status)));
     return ['All Statuses', ...uniqueStatuses.sort()];
   }, [requests]);
 
@@ -35,13 +76,14 @@ const ServiceRequestManagement: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeDropdownId]);
 
-  const handleView = (request: ServiceRequest) => {
-    navigate(`/dashboard/service-request-management/${request.id}`);
+  const handleView = (id: string) => {
+    navigate(`/dashboard/service-request-management/${id}`);
   };
 
   const filteredRequests = useMemo(() => {
-    return requests.filter(req => {
-      const matchesSearch = req.clientName.toLowerCase().includes(search.toLowerCase()) ||
+    return requests.filter((req: ServiceRequest) => {
+      const companyName = req.company?.name || '';
+      const matchesSearch = companyName.toLowerCase().includes(search.toLowerCase()) ||
                            req.service.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = selectedStatus === 'All Statuses' || req.status === selectedStatus;
       
@@ -49,18 +91,29 @@ const ServiceRequestManagement: React.FC = () => {
     });
   }, [requests, search, selectedStatus]);
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader 
+          title="Service Request Management" 
+          icon={Inbox}
+          description="Monitor and manage incoming service requests from clients."
+        />
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Skeleton key={i} className="h-24 w-full rounded-[28px]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader 
         title="Service Request Management" 
         icon={Inbox}
         description="Monitor and manage incoming service requests from clients."
-        actions={
-          <Button variant='header'>
-            <Plus className="h-5 w-5" />
-            New Manual Request
-          </Button>
-        } 
       />
 
       <div className="flex flex-col md:flex-row gap-4">
@@ -93,27 +146,108 @@ const ServiceRequestManagement: React.FC = () => {
         />
       </div>
 
-      <div className="space-y-4">
-        {filteredRequests.map((req) => (
-          <RequestCard 
-            key={req.id}
-            request={req}
-            activeDropdownId={activeDropdownId}
-            setActiveDropdownId={setActiveDropdownId}
-            onView={handleView}
-          />
-        ))}
-
-        {filteredRequests.length === 0 && (
-          <div className="py-32 text-center">
-            <div className="inline-flex p-10 bg-gray-50 rounded-[40px] text-gray-200">
-              <Inbox className="h-20 w-20" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mt-8">No Requests Found</h2>
-            <p className="text-gray-400 font-medium mt-4">Try adjusting your filters or search terms</p>
-          </div>
-        )}
-      </div>
+      <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-3xl bg-white">
+        <Table>
+          <TableHeader className="bg-gray-50/50">
+            <TableRow>
+              <TableHead className="py-5 px-6 text-nowrap">S.No</TableHead>
+              <TableHead>Company / Ref</TableHead>
+              <TableHead>Service Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Submitted By</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead className="text-right px-6">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell className="px-6"><Skeleton className="h-5 w-4 rounded-lg" /></TableCell>
+                  <TableCell><Skeleton className="h-10 w-48 rounded-lg" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-32 rounded-lg" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24 rounded-lg" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24 rounded-lg" /></TableCell>
+                  <TableCell className="px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
+                </TableRow>
+              ))
+            ) : filteredRequests.length > 0 ? (
+              filteredRequests.map((req: ServiceRequest, index: number) => (
+                <TableRow key={req.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
+                    {(index + 1).toString().padStart(2, '0')}
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-gray-900 group-hover:text-primary transition-colors leading-tight">
+                        {req.company?.name || 'Unknown Company'}
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                        Ref: {req.id.split('-')[0]}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg uppercase tracking-wide">
+                      {req.service.replace(/_/g, ' ')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      req.status === 'COMPLETED' || req.status === 'APPROVED' ? 'bg-green-50 text-green-600 border-green-100' : 
+                      req.status === 'REJECTED' ? 'bg-red-50 text-red-600 border-red-100' :
+                      req.status === 'IN_PROGRESS' || req.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-600 border-gray-100'
+                    }`}>
+                      {req.status === 'COMPLETED' || req.status === 'APPROVED' ? <CheckCircle2 className="h-3 w-3" /> :
+                       req.status === 'REJECTED' ? <AlertCircle className="h-3 w-3" /> :
+                       req.status === 'IN_PROGRESS' || req.status === 'SUBMITTED' ? <Clock className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                      {req.status.replace(/_/g, ' ')}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-900">
+                      <User className="h-3.5 w-3.5 text-gray-400" />
+                      {req.client?.user ? `${req.client.user.firstName} ${req.client.user.lastName}` : 
+                       (clientMap[req.clientId] || req.clientName || req.clientId.split('-')[0])}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {new Date(req.createdAt).toLocaleDateString()}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right px-6">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleView(req.id)}
+                      className="rounded-xl hover:bg-primary/5 hover:text-primary transition-all border-gray-200"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} className="py-32 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-4">
+                    <div className="p-10 bg-gray-50 rounded-[40px] text-gray-200">
+                      <Inbox className="h-16 w-16" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">No Requests Found</h2>
+                      <p className="text-gray-400 font-medium mt-1">Try adjusting your filters or search terms</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </ShadowCard>
     </div>
   );
 };

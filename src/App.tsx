@@ -14,6 +14,13 @@ import ViewTemplate from './pages/platform-admin/services/servicesRequestTemplat
 import ServiceRequestManagement from './pages/platform-admin/services/servicesRequestManagement/ServiceRequestManagement'
 import ViewServiceRequest from './pages/platform-admin/services/servicesRequestManagement/ViewServiceRequest'
 import TemplatePreview from './pages/platform-admin/services/servicesRequestTemplates/TemplatePreview'
+import Clients from './pages/platform-admin/clients/Clients'
+import ViewClient from './pages/platform-admin/clients/ViewClient'
+import ViewCompany from './pages/platform-admin/clients/view-company/ViewCompany'
+import IncorpCycle from './pages/platform-admin/clients/IncorpCycle'
+import KycPage from './pages/platform-admin/clients/KycPage'
+import GlobalLibrary from './pages/platform-admin/global-library/GlobalLibrary'
+import Settings from './pages/platform-admin/settings/Settings'
 
 const App = () => {
   return (
@@ -38,6 +45,13 @@ const App = () => {
           <Route path="/dashboard/organizations" element={<Organizations />} />
           <Route path="/dashboard/organizations/create" element={<CreateOrganization />} />
           <Route path="/dashboard/organizations/:id/edit" element={<EditOrganization />} />
+          <Route path="/dashboard/clients" element={<Clients />} />
+          <Route path="/dashboard/clients/:clientId" element={<ViewClient />} />
+          <Route path="/dashboard/clients/:clientId/company/:companyId" element={<ViewCompany />} />
+          <Route path="/dashboard/clients/:clientId/company/:companyId/incoporation-cycle" element={<IncorpCycle />} />
+          <Route path="/dashboard/clients/:clientId/company/:companyId/kyc" element={<KycPage />} />
+          <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
+          <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/dashboard/service-request-templates/:id/preview" element={<TemplatePreview />} />

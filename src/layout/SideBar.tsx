@@ -75,7 +75,6 @@ export default function SideBar({
 
     const sections: { id: MenuSection; label: string }[] = [
         { id: "primary", label: "Client portal" },
-        { id: "operations", label: "Operations & tools" },
         { id: "settings", label: "Settings" },
     ];
 

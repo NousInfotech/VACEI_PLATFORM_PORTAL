@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -19,23 +19,12 @@ const ServiceRequestTemplatesContent: React.FC = () => {
   const { templates, isLoading, toggleActiveMutation } = useTemplates();
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState('All Services');
-  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
 
   const services = useMemo(() => {
     const uniqueServices = Array.from(new Set(templates.map(t => t.service || 'General')));
     return ['All Services', ...uniqueServices.sort()];
   }, [templates]);
-  
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (activeDropdownId && !(event.target as Element).closest('.dropdown-trigger')) {
-        setActiveDropdownId(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [activeDropdownId]);
 
   const filteredTemplates = useMemo(() => {
     return templates
@@ -59,16 +48,9 @@ const ServiceRequestTemplatesContent: React.FC = () => {
     navigate('/dashboard/service-request-templates/create');
   };
 
-  const handleEditClick = (template: ServiceRequestTemplate) => {
-    navigate(`/dashboard/service-request-templates/${template.id}/view`, { 
-      state: { template, initialEditState: true } 
-    });
-    setActiveDropdownId(null);
-  };
 
   const handleViewClick = (template: ServiceRequestTemplate) => {
     navigate(`/dashboard/service-request-templates/${template.id}/view`, { state: { template } });
-    setActiveDropdownId(null);
   };
 
   const handleToggle = async (template: ServiceRequestTemplate) => {
@@ -78,7 +60,6 @@ const ServiceRequestTemplatesContent: React.FC = () => {
         message: `Template ${!template.isActive ? 'activated' : 'deactivated'} successfully`, 
         variant: 'success' 
       });
-      setActiveDropdownId(null);
     } catch {
       setAlert({ message: 'Failed to update template status', variant: 'danger' });
     }
@@ -144,9 +125,6 @@ const ServiceRequestTemplatesContent: React.FC = () => {
       <TemplateList
         loading={isLoading}
         templates={filteredTemplates}
-        activeDropdownId={activeDropdownId}
-        setActiveDropdownId={setActiveDropdownId}
-        onEdit={handleEditClick}
         onView={handleViewClick}
         onToggleActive={handleToggle}
       />

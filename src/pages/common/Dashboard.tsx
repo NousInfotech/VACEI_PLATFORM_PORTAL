@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RoleEnum } from "../../data/mockUserData";
 import AdminDashboard from "../platform-admin/dashboard/AdminDashboard";
-import EmployeeDashboard from "../org-employee/EmployeeDashboard";
+import EmployeeDashboard from "../platform-employee/EmployeeDashboard";
 
 interface DashboardProps {
   activeSection?: string;

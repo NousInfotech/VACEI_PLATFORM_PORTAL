@@ -48,11 +48,11 @@ export const RequestCard: React.FC<RequestCardProps> = ({
         </div>
         <div>
           <h3 className="text-md font-bold text-gray-900 group-hover:text-primary transition-colors leading-tight uppercase tracking-tight">
-            {request.clientName}
+            {request.company?.name || 'Unknown Company'}
           </h3>
           <div className="flex items-center gap-1.5 mt-1 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
             <User className="h-3 w-3" />
-            <span>{request.submittedBy}</span>
+            <span>{request.clientId.split('-')[0]}</span>
           </div>
         </div>
       </div>
@@ -69,9 +69,9 @@ export const RequestCard: React.FC<RequestCardProps> = ({
       <div className="col-span-2 flex flex-col items-start gap-1">
         <Badge variant="label">Status</Badge>
         <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-          request.status === 'COMPLETED' ? 'bg-green-50 text-green-600' : 
+          request.status === 'COMPLETED' || request.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 
           request.status === 'REJECTED' ? 'bg-red-50 text-red-600' :
-          request.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
+          request.status === 'IN_PROGRESS' || request.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
         }`}>
           <StatusIcon className="h-3 w-3" />
           {request.status.replace(/_/g, ' ')}
@@ -83,7 +83,7 @@ export const RequestCard: React.FC<RequestCardProps> = ({
           <Badge variant="label">Submitted</Badge>
           <div className="flex items-center gap-1.5 text-gray-400">
             <Calendar className="h-3 w-3" />
-            <span className="text-[10px] font-bold">{new Date(request.submittedAt).toLocaleDateString()}</span>
+            <span className="text-[10px] font-bold">{new Date(request.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
 

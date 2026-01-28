@@ -58,13 +58,39 @@ export interface UpdateTemplateDto {
   isActive?: boolean;
 }
 
-export type ServiceRequestStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+export type ServiceRequestStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'APPROVED';
+
+export interface DetailEntry {
+  question: string;
+  answer: unknown;
+  attachedFiles?: string[];
+}
 
 export interface ServiceRequest {
   id: string;
-  clientName: string;
+  companyId: string;
+  clientId: string;
   service: string;
   status: ServiceRequestStatus;
-  submittedAt: string;
-  submittedBy: string;
+  templateId: string;
+  generalDetails?: DetailEntry[];
+  serviceDetails?: DetailEntry[];
+  statusHistory: unknown;
+  createdAt: string;
+  updatedAt: string;
+  clientName?: string;
+  submittedBy?: string;
+  company?: {
+    id: string;
+    name: string;
+  };
+  client?: {
+    id: string;
+    user?: { firstName?: string; lastName?: string };
+  };
+  template?: {
+    id: string;
+    type: string;
+    formFields: FormField[];
+  };
 }

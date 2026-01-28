@@ -42,10 +42,10 @@ const AdminDashboard: React.FC = () => {
       color: "bg-primary"
     },
     { 
-      title: "Manage Users", 
+      title: "Manage Clients", 
       description: "View and edit platform administrators", 
       icon: Users, 
-      path: "/dashboard/users",
+      path: "/dashboard/clients",
       color: "bg-indigo-600"
     },
     { 

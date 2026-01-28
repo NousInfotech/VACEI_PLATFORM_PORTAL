@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { 
   FileText, 
-  ArrowLeft, 
   Edit2, 
   Settings2, 
   CheckCircle2, 
@@ -267,17 +266,12 @@ const ViewTemplateContent: React.FC = () => {
         title={isGlobalEdit ? "Edit Template" : "View Template"} 
         icon={FileText}
         description={isGlobalEdit ? `Modifying configuration for ${formatServiceLabel(template.service)}` : `View configuration for ${formatServiceLabel(template.service)}`}
+        showBack={!isGlobalEdit}
+        backUrl="/dashboard/service-request-templates"
         actions={
           <div className="flex items-center gap-3">
             {!isGlobalEdit ? (
               <>
-                <Button 
-                  onClick={() => navigate('/dashboard/service-request-templates')}
-                  variant='header'
-                >
-                  <ArrowLeft className="h-5 w-5 mr-2" />
-                  Back
-                </Button>
                 <Button 
                   onClick={startGlobalEdit}
                   variant='header'

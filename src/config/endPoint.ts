@@ -25,4 +25,28 @@ export const endPoints = {
     CREATE: '/service-request-templates',
     UPDATE: (id: string) => `/service-request-templates/${id}`,
   },
+  CLIENT: {
+    BASE: '/clients',
+    GET_ALL: '/clients',
+    GET_BY_ID: (id: string) => `/clients/${id}`,
+    CREATE: '/clients',
+    UPDATE: (id: string) => `/clients/${id}`,
+    DELETE: (id: string) => `/clients/${id}`,
+  },
+  COMPANY: {
+    BASE: '/companies',
+    GET_ALL: '/companies',
+    GET_BY_ID: (id: string) => `/companies/${id}`,
+    CREATE: '/companies',
+    UPDATE: (id: string) => `/companies/${id}`,
+    DELETE: (id: string) => `/companies/${id}`,
+    GET_BY_CLIENT: (clientId: string) => `/companies?clientId=${clientId}`,
+    INCORPORATION: (companyId: string) => `/companies/${companyId}/incorporation`,
+    KYC: (companyId: string) => `/companies/${companyId}/kyc`,
+  },
+  SERVICE_REQUEST: {
+    BASE: '/service-requests',
+    GET_ALL: '/service-requests',
+    GET_BY_ID: (id: string) => `/service-requests/${id}`,
+  },
 };

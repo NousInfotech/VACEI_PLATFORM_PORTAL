@@ -2,7 +2,10 @@ import {
   DashboardSquare02Icon, 
   Building01Icon, 
   FileEditIcon,
-  InboxIcon
+  InboxIcon,
+  ArchiveIcon,
+  Settings02Icon,
+  UserGroupIcon as UsersIcon
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -24,6 +27,22 @@ export const menuData: MenuItem[] = [
         description: "Manage all entities",
     },
     {
+        slug: "clients",
+        icon: UsersIcon,
+        label: "Clients",
+        href: "/dashboard/clients",
+        section: "primary",
+        description: "Manage client accounts",
+    },
+    {
+        slug: "global-library",
+        icon: ArchiveIcon,
+        label: "Global Library",
+        href: "/dashboard/global-library",
+        section: "primary",
+        description: "Shared document assets",
+    },
+    {
         slug: "service-request-management",
         icon: InboxIcon,
         label: "Service Request Management",
@@ -38,5 +57,13 @@ export const menuData: MenuItem[] = [
         href: "/dashboard/service-request-templates",
         section: "primary",
         description: "Configure form fields",
+    },
+    {
+        slug: "settings",
+        icon: Settings02Icon,
+        label: "Settings",
+        href: "/dashboard/settings",
+        section: "settings",
+        description: "System configuration",
     },
 ];
