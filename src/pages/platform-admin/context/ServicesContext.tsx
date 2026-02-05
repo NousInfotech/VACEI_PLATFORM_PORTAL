@@ -8,6 +8,7 @@ import {
   AlignLeft,
   ChevronDown,
   Calendar,
+  CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
 import { apiGet, apiPut, apiPost } from '../../../config/base';
@@ -109,10 +110,11 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     text_area: AlignLeft,
     checklist: CheckSquare,
     date: Calendar,
+    month: CalendarDays,
   }), []);
 
   const inputTypeItems = useCallback((onClick: (type: InputType) => void) => 
-    (['text', 'number', 'text_area', 'radio', 'select', 'checklist', 'date'] as InputType[]).map((type) => {
+    (['text', 'number', 'text_area', 'radio', 'select', 'checklist', 'date', 'month'] as InputType[]).map((type) => {
       const Icon = inputTypeIcons[type];
       return {
         id: type,

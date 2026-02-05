@@ -161,6 +161,27 @@ const PreviewField: React.FC<{
             </div>
           )}
 
+          {field.input_type === 'month' && (
+            <div className="w-64">
+              <Dropdown
+                fullWidth
+                label={
+                  value && typeof value === 'string'
+                    ? value
+                    : 'Select Month'
+                }
+                items={[
+                  'January', 'February', 'March', 'April', 'May', 'June',
+                  'July', 'August', 'September', 'October', 'November', 'December'
+                ].map(month => ({
+                  id: month,
+                  label: month,
+                  onClick: () => onValueChange(month)
+                }))}
+              />
+            </div>
+          )}
+
           {field.input_type === 'number' && (
             <input
               type="number"
