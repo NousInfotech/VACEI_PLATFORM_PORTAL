@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CornerDownRight, CheckCircle2, MessageSquare, Send, X } from 'lucide-react';
+import { ArrowLeft, CornerDownRight, CheckCircle2, MessageSquare, Send, X, Calendar } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../../../ui/Button';
 import { ShadowCard } from '../../../../ui/ShadowCard';
@@ -140,8 +140,25 @@ const PreviewField: React.FC<{
               }
               onChange={(e) => onValueChange(e.target.value)}
               placeholder={field.placeholder || "Enter your answer..."}
-              className="w-full border-b-2 border-gray-100 py-3 outline-none focus:border-primary transition-all bg-transparent text-gray-900 font-bold placeholder:text-gray-300"
             />
+          )}
+
+          {field.input_type === 'date' && (
+            <div className="relative w-64">
+              <input
+                type="date"
+                value={
+                  value && typeof value === 'object' && !Array.isArray(value)
+                    ? value.selection || ''
+                    : typeof value === 'string'
+                      ? value
+                      : ''
+                }
+                onChange={(e) => onValueChange(e.target.value)}
+                className="w-full border-b-2 border-gray-100 py-3 pl-10 outline-none focus:border-primary transition-all bg-transparent text-gray-900 font-bold placeholder:text-gray-300 appearance-none"
+              />
+              <Calendar className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/40" />
+            </div>
           )}
 
           {field.input_type === 'number' && (

@@ -1,4 +1,4 @@
-export type InputType = 'text' | 'number' | 'select' | 'radio' | 'text_area' | 'checklist';
+export type InputType = 'text' | 'number' | 'select' | 'radio' | 'text_area' | 'checklist' | 'date';
 
 export interface OptionWithQuestions {
   value: string;
