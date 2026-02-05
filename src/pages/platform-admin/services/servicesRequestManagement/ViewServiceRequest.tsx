@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Building2,
   Calendar,
-  User,
   Inbox,
   Clock,
   CheckCircle2,
@@ -15,23 +14,106 @@ import { Button } from '../../../../ui/Button';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import PageHeader from '../../../common/PageHeader';
 import { useQuery } from '@tanstack/react-query';
-import { apiGet } from '../../../../config/base';
+import { apiPatch, apiGet } from '../../../../config/base';
 import { endPoints } from '../../../../config/endPoint';
 import { Skeleton } from '../../../../ui/Skeleton';
-import type { ServiceRequest, DetailEntry } from '../../../../types/service-request-template';
+import type { 
+  ServiceRequest, 
+  DetailEntry, 
+  ServiceRequestStatus 
+} from '../../../../types/service-request-template';
+import { StatusConfirmModal, StatusSuccessModal } from './components/StatusUpdateModals';
+import CreateEngagementModal from './components/CreateEngagementModal';
+import { mockRequests as mockServiceRequests } from './serviceMockData';
+
+const USE_MOCK_DATA = false;
 
 const ViewServiceRequest: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showInfoPopup, setShowInfoPopup] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ 
+    isOpen: boolean; 
+    status: ServiceRequestStatus | null; 
+    title: string;
+    message: string;
+    showReasonInput?: boolean;
+    reason?: string;
+  }>({
+    isOpen: false,
+    status: null,
+    title: '',
+    message: '',
+  });
+  const [successModal, setSuccessModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+  });
+  const [isEngagementModalOpen, setIsEngagementModalOpen] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data: request, isLoading } = useQuery<ServiceRequest>({
+  const { data: request, isLoading, refetch } = useQuery<ServiceRequest>({
     queryKey: ['service-request', id],
-    queryFn: () => apiGet<{ success: boolean; data: ServiceRequest }>(endPoints.SERVICE_REQUEST.GET_BY_ID(id!)).then(res => res.data),
+    queryFn: () => {
+        if (USE_MOCK_DATA) {
+            const mock = mockServiceRequests.find(sr => sr.id === id);
+            return Promise.resolve(mock ?? mockServiceRequests[0]);
+        }
+        return apiGet<{ success: boolean; data: ServiceRequest }>(endPoints.SERVICE_REQUEST.GET_BY_ID(id!)).then(res => res.data);
+    },
     enabled: !!id,
   });
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleStatusUpdate = async () => {
+    const { status: newStatus, reason } = confirmModal;
+    if (!id || !newStatus) return;
+    
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+    setIsUpdating(true);
+    try {
+      if (!USE_MOCK_DATA) {
+        const payload: { status: ServiceRequestStatus; reason?: string } = { status: newStatus };
+        if (reason && reason.trim()) {
+          payload.reason = reason;
+        }
+        await apiPatch(endPoints.SERVICE_REQUEST.UPDATE_STATUS(id), payload);
+      }
+      
+      setSuccessModal({
+        isOpen: true,
+        title: 'Success!',
+        message: `The request has been ${newStatus.toLowerCase().replace(/_/g, ' ')} successfully.`
+      });
+      
+      if (!USE_MOCK_DATA) {
+        refetch();
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const openConfirmation = (status: ServiceRequestStatus, title: string, message: string, showReasonInput: boolean = false) => {
+    setConfirmModal({
+      isOpen: true,
+      status,
+      title,
+      message,
+      showReasonInput,
+      reason: ''
+    });
+  };
 
   // Scroll to top on mount
   useEffect(() => {
@@ -85,10 +167,9 @@ const ViewServiceRequest: React.FC = () => {
 
   const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'PENDING': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'DRAFT': return 'bg-gray-50 text-gray-600 border-gray-100';
       case 'SUBMITTED':
-      case 'IN_PROGRESS': return 'bg-blue-50 text-blue-600 border-blue-100';
-      case 'COMPLETED':
+      case 'IN_REVIEW': return 'bg-blue-50 text-blue-600 border-blue-100';
       case 'APPROVED': return 'bg-green-50 text-green-600 border-green-100';
       case 'REJECTED': return 'bg-red-50 text-red-600 border-red-100';
       default: return 'bg-gray-50 text-gray-600 border-gray-100';
@@ -97,13 +178,11 @@ const ViewServiceRequest: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'PENDING': return <Clock className="h-4 w-4" />;
       case 'SUBMITTED':
-      case 'IN_PROGRESS': return <AlertCircle className="h-4 w-4" />;
-      case 'COMPLETED':
+      case 'IN_REVIEW': return <Clock className="h-4 w-4" />;
       case 'APPROVED': return <CheckCircle2 className="h-4 w-4" />;
       case 'REJECTED': return <AlertCircle className="h-4 w-4" />;
-      default: return null;
+      default: return <Clock className="h-4 w-4" />;
     }
   };
 
@@ -112,12 +191,106 @@ const ViewServiceRequest: React.FC = () => {
     ...(request.serviceDetails || [])
   ];
 
+  const renderActions = (position: 'top' | 'bottom') => {
+    if (!request) return null;
+    
+    const isTop = position === 'top';
+    const commonBtnClass = "font-bold transition-all";
+    const topBtnClass = "px-6 py-2.5 text-xs rounded-xl shadow-md";
+    const bottomBtnClass = "px-10 py-3 rounded-2xl shadow-xl";
+
+    if (request.status === 'SUBMITTED') {
+      return (
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline"
+            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} border-gray-200 text-gray-600 hover:bg-gray-50`}
+            onClick={() => openConfirmation('IN_REVIEW', 'Move to Review', 'Are you sure you want to move this request to the review stage?')}
+            disabled={isUpdating}
+          >
+            In Review
+          </Button>
+          <Button 
+            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-red-500/20 bg-red-600 hover:bg-red-700 text-white border-none`}
+            onClick={() => openConfirmation('REJECTED', 'Reject Request', 'Please provide a reason for rejecting this request.', true)}
+            disabled={isUpdating}
+          >
+            Reject
+          </Button>
+          <Button 
+            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-primary/20 bg-primary hover:bg-primary-dark`}
+            onClick={() => openConfirmation('APPROVED', 'Approve Request', 'Are you sure you want to approve this request?')}
+            disabled={isUpdating}
+          >
+            Approve
+          </Button>
+        </div>
+      );
+    }
+
+    if (request.status === 'IN_REVIEW') {
+      return (
+        <div className="flex items-center gap-3">
+          <Button 
+            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-red-500/20 bg-red-600 hover:bg-red-700 text-white border-none`}
+            onClick={() => openConfirmation('REJECTED', 'Reject Request', 'Please provide a reason for rejecting this request.', true)}
+            disabled={isUpdating}
+          >
+            Reject
+          </Button>
+          <Button 
+            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-primary/20 bg-primary hover:bg-primary-dark`}
+            onClick={() => openConfirmation('APPROVED', 'Approve Request', 'Are you sure you want to approve this request?')}
+            disabled={isUpdating}
+          >
+            Approve
+          </Button>
+        </div>
+      );
+    }
+
+    if (request.status === 'APPROVED') {
+      return (
+        <div className="flex items-center gap-3">
+          {isTop && (
+            <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded-lg border border-green-100 uppercase">
+              Approved
+            </span>
+          )}
+          <Button 
+            onClick={() => setIsEngagementModalOpen(true)}
+            size={isTop ? 'default' : 'lg'}
+            className={`${commonBtnClass} ${isTop ? 'rounded-xl' : 'rounded-2xl px-10'}`}
+          >
+            Create Engagement
+          </Button>
+        </div>
+      );
+    }
+
+    if (request.status === 'REJECTED') {
+      return (
+        <div className={`${commonBtnClass} ${isTop ? 'px-6 py-2 text-xs rounded-xl' : 'px-10 py-3 rounded-2xl'} bg-gray-100 text-gray-400 border border-gray-200`}>
+          Request Rejected
+        </div>
+      );
+    }
+
+    // Default status badge fallback
+    return (
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${getStatusStyle(request.status)}`}>
+        {getStatusIcon(request.status)}
+        {request.status.replace(/_/g, ' ')} Submission
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-6" ref={containerRef}>
       <PageHeader 
         title="View Service Submission" 
         icon={Inbox}
-        description={`Reviewing submission for ${request.company?.name || 'Unknown'}`}
+        description={`Reviewing submission for ${request.company?.name || request.clientName || 'Unknown Entity'}`}
         showBack={true}
         backUrl="/dashboard/service-request-management"
       />
@@ -164,13 +337,13 @@ const ViewServiceRequest: React.FC = () => {
                             </span>
                           </div>
 
-                          <div className="flex justify-between items-center">
+                          {/* <div className="flex justify-between items-center">
                             <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Client ID</span>
                             <div className="flex items-center gap-1.5 text-xs font-bold text-gray-900">
                               <User className="h-3 w-3 text-gray-400" />
                               {request.clientId.split('-')[0]}
                             </div>
-                          </div>
+                          </div> */}
 
                           <div className="flex justify-between items-center">
                             <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Service</span>
@@ -187,37 +360,41 @@ const ViewServiceRequest: React.FC = () => {
                             </div>
                           </div>
                         </div>
-
+{/* 
                         <div className="pt-2">
                           <Button className="w-full justify-center text-xs py-3 rounded-xl shadow-md">
                             Generate Report
                           </Button>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   )}
                 </div>
               </div>
 
-              <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded-lg border border-green-100 uppercase">
-                {request.status} Submission
-              </span>
+              {renderActions('top')}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-12 py-4">
               {allDetails.length > 0 ? allDetails.map((detail: DetailEntry, idx) => (
-                <div key={idx} className="group p-6 rounded-3xl bg-gray-50/50 border border-gray-100 hover:border-primary/20 hover:bg-white transition-all duration-300">
-                  <div className="flex flex-col gap-3">
-                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
-                       Question {idx + 1}
+                <div key={idx} className="flex items-start gap-5 pb-3 group border-b  border-gray-300 last:border-0 last:pb-0">
+                  {/* Numbering */}
+                  <div className="shrink-0 pt-1">
+                    <span className="text-xl font-bold tabular-nums">
+                      {(idx + 1).toString().padStart(2, '0')}.
                     </span>
-                    <h5 className="text-sm font-bold text-gray-900 leading-tight">{detail.question}</h5>
-                    <div className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
-                       <p className="text-sm text-gray-700 font-medium italic leading-relaxed">
-                         {(detail.answer !== undefined && detail.answer !== null && detail.answer !== '')
-  ? String(detail.answer)
-  : <span className="text-gray-300">Not provided by client</span>}
-                       </p>
+                  </div>
+
+                  <div className="space-y-4 flex-1">
+                    <h5 className="text-xl font-bold text-gray-900 leading-tight">
+                      {detail.question}
+                    </h5>
+                    <div className="relative">
+                      <p className="text-[17px] text-gray-500 font-medium leading-relaxed max-w-4xl">
+                        {(detail.answer !== undefined && detail.answer !== null && detail.answer !== '')
+                          ? (Array.isArray(detail.answer) ? detail.answer.join(', ') : String(detail.answer))
+                          : <span className="text-gray-300 italic font-normal">No response provided</span>}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -230,7 +407,74 @@ const ViewServiceRequest: React.FC = () => {
             </div>
           </div>
         </ShadowCard>
+
+        {/* Supporting Documents Section - Hide for DRAFT or if no documents */}
+        {request.status !== 'DRAFT' && request.submittedDocuments && request.submittedDocuments.length > 0 && (
+          <ShadowCard className="p-8 border border-gray-100 bg-white rounded-[40px] w-full mt-8">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1 bg-primary rounded-full" />
+                <h4 className="text-lg font-bold text-gray-900">Supporting Documents</h4>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(request.submittedDocuments ?? []).map((doc) => (
+                  <a 
+                    key={doc.id} 
+                    href={doc.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 rounded-3xl bg-gray-50 border border-gray-100 hover:border-primary/20 hover:bg-white transition-all group"
+                  >
+                    <div className="p-3 bg-white rounded-2xl text-primary shadow-sm group-hover:shadow-md transition-all">
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">{doc.file_name}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Document Attachment</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </ShadowCard>
+        )}
+
+        <div className="flex items-center justify-end mt-10 mb-10">
+          {renderActions('bottom')}
+        </div>
       </div>
+
+      {/* Confirmation Modal */}
+      <StatusConfirmModal 
+        {...confirmModal}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={handleStatusUpdate}
+        onReasonChange={(val) => setConfirmModal(prev => ({ ...prev, reason: val }))}
+        loading={isUpdating}
+      />
+
+      {/* Success Modal */}
+      <StatusSuccessModal
+        {...successModal}
+        onClose={() => setSuccessModal(prev => ({ ...prev, isOpen: false }))}
+        title={successModal.title}
+        message={successModal.message}
+      />
+
+      {request && (
+        <CreateEngagementModal
+          isOpen={isEngagementModalOpen}
+          onClose={() => {
+            setIsEngagementModalOpen(false);
+            refetch();
+          }}
+          companyId={request.companyId}
+          serviceCategory={request.service}
+          companyName={request.company?.name || request.clientName || 'Unknown Entity'}
+          serviceRequestId={request.id}
+        />
+      )}
     </div>
   );
 };

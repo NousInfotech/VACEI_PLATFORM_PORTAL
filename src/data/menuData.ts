@@ -35,6 +35,14 @@ export const menuData: MenuItem[] = [
         description: "Manage client accounts",
     },
     {
+        slug: "engagements",
+        icon: Building01Icon,
+        label: "Engagements",
+        href: "/dashboard/engagements",
+        section: "primary",
+        description: "Manage engagements",
+    },
+    {
         slug: "global-library",
         icon: ArchiveIcon,
         label: "Global Library",

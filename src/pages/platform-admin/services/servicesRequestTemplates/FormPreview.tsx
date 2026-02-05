@@ -3,6 +3,7 @@ import { X, CornerDownRight } from 'lucide-react';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import { Button } from '../../../../ui/Button';
 import type { ServiceRequestTemplate, FormField } from '../../../../types/service-request-template';
+import { isOptionWithQuestions, getOptionLabel } from '../../../../types/service-request-template';
 
 interface FormPreviewProps {
   template: ServiceRequestTemplate;
@@ -56,24 +57,62 @@ const PreviewField: React.FC<{ field: FormField }> = ({ field }) => {
           )}
 
           {field.input_type === 'radio' && (
-            <div className="space-y-3">
-              {(field.options || []).map((option, i) => (
-                <div key={i} className="flex items-center gap-3 group">
-                  <div className="h-5 w-5 rounded-full border-2 border-gray-200 group-hover:border-primary transition-colors" />
-                  <span className="text-gray-600 font-medium">{option}</span>
-                </div>
-              ))}
+            <div className="space-y-4">
+              {(field.options || []).map((option, i) => {
+                const isComplex = isOptionWithQuestions(option);
+                return (
+                  <div key={i} className="space-y-3">
+                    <div className="flex items-center gap-3 group">
+                      <div className="h-5 w-5 rounded-full border-2 border-gray-200 group-hover:border-primary transition-colors" />
+                      <span className="text-gray-600 font-medium">{getOptionLabel(option)}</span>
+                    </div>
+                    {isComplex && option.questions && option.questions.length > 0 && (
+                      <div className="ml-8 space-y-4 border-l-2 border-primary/10 pl-6 py-2">
+                        <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest">Conditional Questions</p>
+                        {option.questions.map((q, qidx) => (
+                          <PreviewField key={qidx} field={q} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {field.input_type === 'checkbox' && (
-            <div className="space-y-3">
-              {(field.options || []).map((option, i) => (
-                <div key={i} className="flex items-center gap-3 group">
-                  <div className="h-5 w-5 rounded border-2 border-gray-200 group-hover:border-primary transition-colors" />
-                  <span className="text-gray-600 font-medium">{option}</span>
-                </div>
-              ))}
+          {field.input_type === 'select' && (
+            <div className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                Select an option
+                <CornerDownRight className="h-4 w-4 rotate-90" />
+            </div>
+          )}
+
+          {field.input_type === 'checklist' && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 mb-4">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest bg-gray-50 px-2 py-1 rounded">Multi-select (Addictive)</p>
+              </div>
+              <div className="space-y-4">
+                {(field.options || []).map((option, i) => {
+                  const isComplex = isOptionWithQuestions(option);
+                  return (
+                    <div key={i} className="space-y-3">
+                      <div className="flex items-center gap-3 group">
+                        <div className="h-5 w-5 rounded border-2 border-gray-200 group-hover:border-primary transition-colors" />
+                        <span className="text-gray-600 font-medium">{getOptionLabel(option)}</span>
+                      </div>
+                      {isComplex && option.questions && option.questions.length > 0 && (
+                        <div className="ml-8 space-y-4 border-l-2 border-primary/10 pl-6 py-2">
+                          <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest">Conditional Questions</p>
+                          {option.questions.map((q, qidx) => (
+                            <PreviewField key={qidx} field={q} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

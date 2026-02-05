@@ -7,12 +7,13 @@ export const mockRequests: ServiceRequest[] = [
     clientId: 'client_1',
     templateId: 'template_1',
     service: 'ACCOUNTING',
-    status: 'PENDING',
+    status: 'SUBMITTED',
     createdAt: '2026-01-20T10:00:00Z',
     updatedAt: '2026-01-20T10:00:00Z',
     clientName: 'TechCorp Solutions',
     submittedBy: 'John Doe',
     statusHistory: [],
+    company: { id: 'company_1', name: 'TechCorp Solutions' }
   },
   {
     id: 'req_2',
@@ -20,12 +21,13 @@ export const mockRequests: ServiceRequest[] = [
     clientId: 'client_2',
     templateId: 'template_2',
     service: 'VAT',
-    status: 'IN_PROGRESS',
+    status: 'SUBMITTED',
     createdAt: '2026-01-22T14:30:00Z',
     updatedAt: '2026-01-22T14:30:00Z',
     clientName: 'Global Logistics',
     submittedBy: 'Sarah Smith',
     statusHistory: [],
+    company: { id: 'company_2', name: 'Global Logistics' }
   },
   {
     id: 'req_3',
@@ -33,12 +35,13 @@ export const mockRequests: ServiceRequest[] = [
     clientId: 'client_3',
     templateId: 'template_3',
     service: 'LEGAL',
-    status: 'COMPLETED',
+    status: 'APPROVED',
     createdAt: '2026-01-18T09:15:00Z',
     updatedAt: '2026-01-18T09:15:00Z',
     clientName: 'Apex Innovations',
     submittedBy: 'Mike Johnson',
     statusHistory: [],
+    company: { id: 'company_3', name: 'Apex Innovations' }
   },
   {
     id: 'req_4',
@@ -52,6 +55,7 @@ export const mockRequests: ServiceRequest[] = [
     clientName: 'Oceanic Ventures',
     submittedBy: 'Emma Wilson',
     statusHistory: [],
+    company: { id: 'company_4', name: 'Oceanic Ventures' }
   }
 ];
 
@@ -112,13 +116,54 @@ export const mockQuestions = [
     "placeholder": "Full registered address in Malta"
   },
   {
-    "options": [
-      "Yes",
-      "No"
-    ],
     "question": "Do you require a company secretary service?",
     "required": true,
-    "input_type": "checkbox"
+    "input_type": "select"
+  },
+  {
+    "question": "What service do you need?",
+    "required": true,
+    "input_type": "select",
+    "options": [
+      "Standard Monthly",
+      {
+        "label": "Catch-up / Backlog",
+        "value": "Catch-up / Backlog",
+        "questions": [
+          {
+            "question": "Which periods are affected?",
+            "required": true,
+            "input_type": "radio",
+            "options": [
+              {
+                "label": "Month",
+                "value": "Month",
+                "questions": [
+                  {
+                    "question": "Select the specific month",
+                    "required": true,
+                    "input_type": "select",
+                    "options": ["January 2026", "February 2026", "March 2026"]
+                  }
+                ]
+              },
+              {
+                "label": "Quarter",
+                "value": "Quarter",
+                "questions": [
+                  {
+                    "question": "Select the target quarter",
+                    "required": true,
+                    "input_type": "select",
+                    "options": ["Q1 2026", "Q2 2026", "Q3 2026", "Q4 2026"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ];
 

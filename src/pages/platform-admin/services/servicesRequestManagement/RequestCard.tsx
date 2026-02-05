@@ -29,9 +29,10 @@ export const RequestCard: React.FC<RequestCardProps> = ({
 }) => {
   const getStatusConfig = (status: string) => {
     switch (status) {
-      case 'PENDING': return { variant: 'gray' as const, icon: Clock };
-      case 'IN_PROGRESS': return { variant: 'primary' as const, icon: AlertCircle };
-      case 'COMPLETED': return { variant: 'success' as const, icon: CheckCircle2 };
+      case 'DRAFT': return { variant: 'gray' as const, icon: Clock };
+      case 'SUBMITTED': return { variant: 'primary' as const, icon: Clock };
+      case 'IN_REVIEW': return { variant: 'primary' as const, icon: AlertCircle };
+      case 'APPROVED': return { variant: 'success' as const, icon: CheckCircle2 };
       case 'REJECTED': return { variant: 'danger' as const, icon: XCircle };
       default: return { variant: 'gray' as const, icon: Clock };
     }
@@ -69,9 +70,9 @@ export const RequestCard: React.FC<RequestCardProps> = ({
       <div className="col-span-2 flex flex-col items-start gap-1">
         <Badge variant="label">Status</Badge>
         <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
-          request.status === 'COMPLETED' || request.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 
+          request.status === 'APPROVED' ? 'bg-green-50 text-green-600' : 
           request.status === 'REJECTED' ? 'bg-red-50 text-red-600' :
-          request.status === 'IN_PROGRESS' || request.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
+          request.status === 'IN_REVIEW' || request.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-600'
         }`}>
           <StatusIcon className="h-3 w-3" />
           {request.status.replace(/_/g, ' ')}

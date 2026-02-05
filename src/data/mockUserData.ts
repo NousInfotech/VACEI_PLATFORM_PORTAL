@@ -1,6 +1,9 @@
 export const RoleEnum = {
   PLATFORM_ADMIN: 'PLATFORM_ADMIN',
   PLATFORM_EMPLOYEE: 'PLATFORM_EMPLOYEE',
+  ORG_ADMIN: 'ORG_ADMIN',
+  ORG_EMPLOYEE: 'ORG_EMPLOYEE',
+  CLIENT: 'CLIENT',
 } as const;
 
 export type RoleEnum = typeof RoleEnum[keyof typeof RoleEnum];

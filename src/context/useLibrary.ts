@@ -31,7 +31,7 @@ export interface LibraryContextType {
   setViewMode: (mode: ViewMode) => void;
   setSearchQuery: (query: string) => void;
   setFilterType: (type: string) => void;
-  handleFolderClick: (id: string | null) => void;
+  handleFolderClick: (id: string | null, name?: string) => void;
   handleBack: () => void;
   handleDoubleClick: (item: LibraryItem) => void;
   handleSelection: (id: string, e: React.MouseEvent) => void;
@@ -42,6 +42,10 @@ export interface LibraryContextType {
   setIsMobileSidebarOpen: (open: boolean) => void;
   setSelectedItems: (ids: string[]) => void;
   handleDownload: (item?: LibraryItem) => void;
+  createFolder: (name: string) => Promise<void>;
+  uploadFiles: (files: FileList) => Promise<void>;
+  renameItem: (id: string, newName: string, type: 'folder' | 'file') => Promise<void>;
+  deleteItems: (ids: string[]) => Promise<void>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);

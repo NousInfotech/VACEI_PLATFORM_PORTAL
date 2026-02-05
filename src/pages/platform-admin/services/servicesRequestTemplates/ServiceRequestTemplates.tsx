@@ -16,9 +16,15 @@ import { TemplatesProvider, useTemplates } from '../../context/ServicesContext';
 
 const ServiceRequestTemplatesContent: React.FC = () => {
   const navigate = useNavigate();
-  const { templates, isLoading, toggleActiveMutation } = useTemplates();
-  const [search, setSearch] = useState('');
-  const [selectedService, setSelectedService] = useState('All Services');
+  const { 
+    templates, 
+    isLoading, 
+    toggleActiveMutation,
+    search,
+    setSearch,
+    selectedService,
+    setSelectedService
+  } = useTemplates();
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
 
   const services = useMemo(() => {
@@ -28,7 +34,7 @@ const ServiceRequestTemplatesContent: React.FC = () => {
 
   const filteredTemplates = useMemo(() => {
     return templates
-      .filter(template => {
+      .filter((template: ServiceRequestTemplate) => {
         const serviceName = template.service || 'General';
         const matchesSearch = serviceName.toLowerCase().includes(search.toLowerCase()) || 
                              template.type.toLowerCase().includes(search.toLowerCase());
@@ -36,7 +42,7 @@ const ServiceRequestTemplatesContent: React.FC = () => {
         
         return matchesSearch && matchesService;
       })
-      .sort((a, b) => {
+      .sort((a: ServiceRequestTemplate, b: ServiceRequestTemplate) => {
         // Active templates (true) first, inactive (false) last
         if (a.isActive && !b.isActive) return -1;
         if (!a.isActive && b.isActive) return 1;
@@ -112,7 +118,7 @@ const ServiceRequestTemplatesContent: React.FC = () => {
               <span className="font-semibold">{selectedService}</span>
             </Button>
           }
-          items={services.map(service => ({
+          items={services.map((service: string) => ({
             id: service,
             label: service,
             onClick: () => setSelectedService(service),

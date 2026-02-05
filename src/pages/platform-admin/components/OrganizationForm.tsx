@@ -79,6 +79,14 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
     }));
   };
 
+  const toggleAllServices = () => {
+    const allSelected = formData.availableServices.length === AVAILABLE_SERVICES.length;
+    setFormData(prev => ({
+      ...prev,
+      availableServices: allSelected ? [] : [...AVAILABLE_SERVICES]
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
@@ -122,11 +130,20 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
       </div>
 
       <div className="space-y-6 pt-4">
-        <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
-          <div className="p-2 bg-emerald-50 rounded-lg">
-            <LayoutGrid className="h-5 w-5 text-emerald-600" />
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-50 rounded-lg">
+              <LayoutGrid className="h-5 w-5 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Available Services</h3>
           </div>
-          <h3 className="text-lg font-bold text-gray-900">Available Services</h3>
+          <button
+            type="button"
+            onClick={toggleAllServices}
+            className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-primary-dark transition-colors px-3 py-1 bg-primary/5 hover:bg-primary/10 rounded-lg"
+          >
+            {formData.availableServices.length === AVAILABLE_SERVICES.length ? 'Deselect All' : 'Select All'}
+          </button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

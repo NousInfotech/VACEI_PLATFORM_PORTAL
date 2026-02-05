@@ -1,27 +1,127 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CornerDownRight } from 'lucide-react';
+import { ArrowLeft, CornerDownRight, CheckCircle2, MessageSquare, Send, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '../../../../ui/Button';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import { Skeleton } from '../../../../ui/Skeleton';
 import { apiGet } from '../../../../config/base';
 import { endPoints } from '../../../../config/endPoint';
-import type { ServiceRequestTemplate, FormField } from '../../../../types/service-request-template';
+import type { ServiceRequestTemplate, FormField, FormFieldOption } from '../../../../types/service-request-template';
+import { isOptionWithQuestions, getOptionLabel } from '../../../../types/service-request-template';
+import { Dropdown } from '../../../common/Dropdown';
 
-const PreviewField: React.FC<{ field: FormField }> = ({ field }) => {
+type PreviewValue =
+  | string
+  | number
+  | string[]
+  | {
+      selection?: string | string[];
+      // Nested answers keyed by e.g. q_0_1
+      [key: string]: PreviewValue;
+    }
+  | null
+  | undefined;
+
+const PreviewField: React.FC<{ 
+  field: FormField; 
+  value: PreviewValue; 
+  onValueChange: (val: PreviewValue) => void;
+  depth?: number;
+}> = ({ field, value, onValueChange, depth = 0 }) => {
+  const isSelected = (label: string) => {
+    const selection = (value && typeof value === 'object' && !Array.isArray(value)) 
+      ? value.selection 
+      : value;
+
+    if (field.input_type === 'checklist') {
+      return Array.isArray(selection) && selection.includes(label);
+    }
+    return selection === label;
+  };
+
+  const handleOptionChange = (label: string) => {
+    if (field.input_type === 'checklist') {
+      let current: string[] = [];
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const sel = value.selection;
+        if (Array.isArray(sel)) {
+          current = sel;
+        } else if (typeof sel === 'string') {
+          current = [sel];
+        }
+      } else if (Array.isArray(value)) {
+        current = value;
+      } else if (typeof value === 'string') {
+        current = [value];
+      }
+
+      const nextSelection = current.includes(label)
+        ? current.filter((v) => v !== label)
+        : [...current, label];
+      
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+          onValueChange({ ...value, selection: nextSelection });
+      } else {
+          onValueChange(nextSelection);
+      }
+    } else {
+      // For radio/select, we usually reset nested answers when switching top-level options
+      // to avoid stale conditional data.
+      onValueChange(label);
+    }
+  };
+
+  const renderNestedQuestions = (option: FormFieldOption, optIdx: number) => {
+    if (!isOptionWithQuestions(option) || !option.questions || option.questions.length === 0) return null;
+    
+    const selected = isSelected(getOptionLabel(option));
+    if (!selected) return null;
+
+    return (
+      <div className="ml-10 mt-6 space-y-8 border-l-2 border-primary/10 pl-8 py-2 animate-in slide-in-from-left-2 duration-300">
+        <div className="flex items-center gap-2 mb-2">
+            <MessageSquare className="h-3 w-3 text-primary/40" />
+            <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest">Conditional Questions for "{getOptionLabel(option)}"</p>
+        </div>
+        {option.questions.map((q, qidx) => (
+          <PreviewField 
+            key={qidx} 
+            field={q} 
+            value={
+              value && typeof value === 'object' && !Array.isArray(value)
+                ? (value as { [key: string]: PreviewValue })[`q_${optIdx}_${qidx}`]
+                : null
+            }
+            onValueChange={(val) => {
+              const base: { [key: string]: PreviewValue } =
+                value && typeof value === 'object' && !Array.isArray(value)
+                  ? { ...(value as { [key: string]: PreviewValue }) }
+                  : { selection: (value as string | string[] | undefined) };
+
+              base[`q_${optIdx}_${qidx}`] = val;
+              onValueChange(base);
+            }} 
+            depth={depth + 1}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <ShadowCard className="p-8 border-l-8 border-l-primary border border-gray-100 bg-white rounded-2xl hover:shadow-md transition-shadow">
-      <div className="space-y-4">
+    <ShadowCard className={`p-8 border-l-8 ${depth > 0 ? 'bg-gray-50/30' : 'bg-white'} border-l-primary border border-gray-100 rounded-2xl hover:shadow-md transition-shadow`}>
+      <div className="space-y-6">
         <div className="flex items-start justify-between">
-          <label className="text-lg font-semibold text-gray-900 flex gap-2">
+          <label className="text-lg font-bold text-gray-900 flex gap-2">
             {field.question}
-            {field.required && <span className="text-red-500 font-bold">*</span>}
+            {field.required && <span className="text-red-500">*</span>}
           </label>
         </div>
 
         {field.placeholder && (
-            <p className="text-xs text-gray-400 italic flex items-center gap-1">
+            <p className="text-xs text-gray-400 italic flex items-center gap-1 font-medium">
                 <CornerDownRight className="h-3 w-3" />
                 {field.placeholder}
             </p>
@@ -31,50 +131,127 @@ const PreviewField: React.FC<{ field: FormField }> = ({ field }) => {
           {field.input_type === 'text' && (
             <input
               type="text"
-              placeholder={field.placeholder || "Your answer"}
-              disabled
-              className="w-full border-b-2 border-gray-100 py-2 outline-none focus:border-primary transition-colors bg-transparent text-gray-400 cursor-not-allowed"
+              value={
+                value && typeof value === 'object' && !Array.isArray(value)
+                  ? value.selection || ''
+                  : typeof value === 'string'
+                    ? value
+                    : ''
+              }
+              onChange={(e) => onValueChange(e.target.value)}
+              placeholder={field.placeholder || "Enter your answer..."}
+              className="w-full border-b-2 border-gray-100 py-3 outline-none focus:border-primary transition-all bg-transparent text-gray-900 font-bold placeholder:text-gray-300"
             />
           )}
 
           {field.input_type === 'number' && (
             <input
               type="number"
+              value={
+                value && typeof value === 'object' && !Array.isArray(value)
+                  ? value.selection || ''
+                  : typeof value === 'string' || typeof value === 'number'
+                    ? String(value)
+                    : ''
+              }
+              onChange={(e) => onValueChange(e.target.value)}
               placeholder={field.placeholder || "0"}
-              disabled
-              className="w-64 border-b-2 border-gray-100 py-2 outline-none focus:border-primary transition-colors bg-transparent text-gray-400 cursor-not-allowed"
+              className="w-64 border-b-2 border-gray-100 py-3 outline-none focus:border-primary transition-all bg-transparent text-gray-900 font-bold placeholder:text-gray-300"
             />
           )}
 
           {field.input_type === 'text_area' && (
             <textarea
-              placeholder={field.placeholder || "Long answer text"}
-              disabled
+              value={
+                value && typeof value === 'object' && !Array.isArray(value)
+                  ? value.selection || ''
+                  : typeof value === 'string'
+                    ? value
+                    : ''
+              }
+              onChange={(e) => onValueChange(e.target.value)}
+              placeholder={field.placeholder || "Long answer text here..."}
               rows={3}
-              className="w-full border-b-2 border-gray-100 py-2 outline-none focus:border-primary transition-colors bg-transparent text-gray-400 cursor-not-allowed resize-none"
+              className="w-full border-b-2 border-gray-100 py-3 outline-none focus:border-primary transition-all bg-transparent text-gray-900 font-bold placeholder:text-gray-300 resize-none"
             />
           )}
 
-          {field.input_type === 'radio' && (
-            <div className="space-y-3">
-              {(field.options || []).map((option, i) => (
-                <div key={i} className="flex items-center gap-3 group">
-                  <div className="h-5 w-5 rounded-full border-2 border-gray-200 group-hover:border-primary transition-colors" />
-                  <span className="text-gray-600 font-medium">{option}</span>
+          {['radio', 'checklist'].includes(field.input_type) && (
+            <div className="space-y-4">
+              {field.input_type === 'checklist' && (
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Multi-select (Additive)</p>
                 </div>
-              ))}
+              )}
+              <div className="space-y-4">
+                {(field.options || []).map((option, i) => {
+                  const label = getOptionLabel(option);
+                  const selected = isSelected(label);
+                  
+                  return (
+                    <div key={i} className="space-y-4 text-left">
+                      <button 
+                        type="button"
+                        onClick={() => handleOptionChange(label)}
+                        className="flex items-center gap-4 group w-full text-left"
+                      >
+                        <div className={`h-6 w-6 rounded-lg border-2 transition-all flex items-center justify-center ${
+                          selected 
+                            ? (field.input_type === 'radio' ? 'border-primary bg-primary/5' : 'border-primary bg-primary') 
+                            : 'border-gray-200 group-hover:border-primary/50'
+                        }`}>
+                          {selected && (
+                             field.input_type === 'radio' 
+                               ? <div className="h-2.5 w-2.5 rounded-full bg-primary animate-in zoom-in-50" />
+                               : <div className="h-3 w-3 bg-white rounded-sm animate-in zoom-in-50" />
+                          )}
+                        </div>
+                        <span className={`font-bold transition-colors ${selected ? 'text-primary' : 'text-gray-600'}`}>
+                          {label}
+                        </span>
+                      </button>
+                      {renderNestedQuestions(option, i)}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {field.input_type === 'checkbox' && (
-            <div className="space-y-3">
-              {(field.options || []).map((option, i) => (
-                <div key={i} className="flex items-center gap-3 group">
-                  <div className="h-5 w-5 rounded border-2 border-gray-200 group-hover:border-primary transition-colors" />
-                  <span className="text-gray-600 font-medium">{option}</span>
-                </div>
-              ))}
-            </div>
+          {field.input_type === 'select' && (
+             <div className="space-y-6">
+                 {(() => {
+                   const selection =
+                     value && typeof value === 'object' && !Array.isArray(value)
+                       ? value.selection
+                       : value;
+
+                   const dropdownLabel =
+                     Array.isArray(selection)
+                       ? selection.join(', ')
+                       : selection != null
+                         ? String(selection)
+                         : 'Select an option';
+
+                   return (
+                 <Dropdown 
+                    fullWidth
+                    label={dropdownLabel}
+                    items={(field.options || []).map((opt, i) => ({
+                        id: i,
+                        label: getOptionLabel(opt),
+                        onClick: () => handleOptionChange(getOptionLabel(opt))
+                    }))}
+                 />
+                   );
+                 })()}
+                 {(field.options || []).map((option, i) => (
+                     <div key={i}>
+                         {renderNestedQuestions(option, i)}
+                     </div>
+                 ))}
+             </div>
           )}
         </div>
       </div>
@@ -82,9 +259,32 @@ const PreviewField: React.FC<{ field: FormField }> = ({ field }) => {
   );
 };
 
+const SuccessModal: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+  <div className="fixed inset-0 z-100 flex items-center justify-center p-6">
+    <div className="absolute inset-0 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose} />
+    <div className="relative bg-white w-full max-w-lg rounded-[48px] p-12 text-center shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+      <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce">
+        <CheckCircle2 className="h-12 w-12 text-green-500" />
+      </div>
+      <h2 className="text-3xl font-bold text-gray-900 mb-4">Submission Successful!</h2>
+      <p className="text-gray-500 font-medium mb-10 leading-relaxed">
+        This is a demo of how the client will see their response confirmation. In production, this data would be sent to the dashboard.
+      </p>
+      <Button onClick={onClose} className="w-full rounded-3xl py-4 font-bold text-lg shadow-xl shadow-primary/20">
+        Got it, Thanks!
+      </Button>
+      <button onClick={onClose} className="absolute top-8 right-8 p-2 text-gray-300 hover:text-gray-900 transition-colors">
+        <X className="h-6 w-6" />
+      </button>
+    </div>
+  </div>
+);
+
 const TemplatePreview: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [answers, setAnswers] = useState<Record<number, PreviewValue>>({});
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: template, isLoading } = useQuery({
     queryKey: ['service-request-template', id],
@@ -94,6 +294,10 @@ const TemplatePreview: React.FC = () => {
     },
     enabled: !!id,
   });
+
+  const handleAnswerChange = (index: number, value: PreviewValue) => {
+    setAnswers(prev => ({ ...prev, [index]: value }));
+  };
 
   if (isLoading) {
     return (
@@ -119,7 +323,9 @@ const TemplatePreview: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f0ebf8] flex flex-col items-center py-4 md:py-12 px-4">
+    <div className="min-h-screen bg-[#f0ebf8] flex flex-col items-center py-4 md:py-12 px-4 selection:bg-primary selection:text-white">
+      {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
+      
       {/* Container - mimics Google Forms white container feel */}
       <div className="w-full max-w-6xl flex flex-col gap-8">
         
@@ -137,32 +343,52 @@ const TemplatePreview: React.FC = () => {
 
         {/* Header Card */}
         <div className="relative">
-          <div className="absolute top-0 left-0 right-0 h-3 bg-primary rounded-t-3xl" />
-          <ShadowCard className="p-10 border-none bg-white rounded-3xl shadow-sm">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="absolute top-0 left-0 right-0 h-4 bg-primary rounded-t-3xl" />
+          <ShadowCard className="p-12 border-none bg-white rounded-3xl shadow-md">
+            <h1 className="text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
                 {template.service?.replace(/_/g, ' ') || 'General Section'}
             </h1>
-            {/* <div className="h-1.5 w-24 bg-primary/10 rounded-full mb-8" /> */}
-            <p className="text-gray-500 font-medium leading-relaxed max-w-2xl">
-              Standardized section preview. This reflects how the form will appear to the client during service fulfillment.
-            </p>
+            <div className="flex items-center gap-6 text-gray-500 font-medium">
+                <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-xl">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm font-bold uppercase tracking-wider">Preview Mode</span>
+                </div>
+                <p className="leading-relaxed max-w-2xl">
+                    This interactive demo shows exactly how the form will function for clients.
+                </p>
+            </div>
           </ShadowCard>
         </div>
 
         {/* Form Fields */}
-        <div className="space-y-6 pb-20">
+        <div className="space-y-8 pb-24">
           {template.formFields.map((field, index) => (
-            <PreviewField key={index} field={field} />
+            <PreviewField 
+                key={index} 
+                field={field} 
+                value={answers[index]}
+                onValueChange={(val) => handleAnswerChange(index, val)}
+            />
           ))}
 
           {/* Dummy Submission Footer */}
-          <div className="flex items-center justify-between pt-6">
-            <Button disabled className="rounded-xl px-12 py-3.5 font-bold opacity-40 shadow-none">
-              Submit Form
-            </Button>
-            <div className="flex flex-col items-end">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Preview Mode Only</p>
-                <p className="text-[9px] text-gray-300 font-medium">Responses are not captured in this view</p>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 pt-10 border-t border-gray-200">
+            <div className="flex flex-col">
+                <h4 className="text-xl font-bold text-gray-900 mb-1">Ready to test?</h4>
+                <p className="text-gray-400 font-medium">Click submit to see the success state</p>
+            </div>
+            <div className="flex items-center gap-6">
+                <div className="flex flex-col items-end">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sandbox Environment</p>
+                    <p className="text-[9px] text-gray-300 font-medium">Responses are not saved</p>
+                </div>
+                <Button 
+                    onClick={() => setShowSuccess(true)}
+                    className="rounded-[24px] px-16 py-4 font-bold text-lg shadow-2xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+                >
+                    <Send className="h-5 w-5" />
+                    Submit Form
+                </Button>
             </div>
           </div>
         </div>

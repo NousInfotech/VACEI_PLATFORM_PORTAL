@@ -1,7 +1,5 @@
-"use client"
-
-import React from 'react';
-import { Search, List, LayoutGrid, Download, ArrowLeft, Filter, ChevronDown, Menu } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Search, List, LayoutGrid, Download, ArrowLeft, Filter, ChevronDown, Menu, FolderPlus, Upload } from 'lucide-react';
 import { Button } from '../../../../ui/Button';
 import { Input } from '../../../../ui/input';
 import { cn } from '../../../../lib/utils';
@@ -21,9 +19,12 @@ export const Toolbar: React.FC = () => {
     setFilterType,
     handleDownload,
     isMobileSidebarOpen,
-    setIsMobileSidebarOpen
+    setIsMobileSidebarOpen,
+    createFolder,
+    uploadFiles
   } = useLibrary();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
   const filterOptions = [
@@ -32,6 +33,33 @@ export const Toolbar: React.FC = () => {
     { id: 'spreadsheet', label: 'Spreadsheets' },
     { id: 'document', label: 'Word Documents' },
   ];
+
+  const handleCreateFolder = async () => {
+    const name = prompt('Enter folder name:');
+    if (name) {
+      try {
+        await createFolder(name);
+      } catch (err) {
+        alert('Failed to create folder');
+        console.error(err);
+      }
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      try {
+        await uploadFiles(e.target.files);
+      } catch (err) {
+        alert('Failed to upload files');
+        console.error(err);
+      }
+    }
+  };
 
   return (
     <div className="relative z-20 flex items-center justify-between p-2 md:p-3 border-b border-gray-200 gap-2 bg-white/50 backdrop-blur-sm">
@@ -57,7 +85,7 @@ export const Toolbar: React.FC = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </Button>
         )}
-        <div className="relative flex-1 min-w-0 max-w-md shrink">
+        <div className="relative flex-1 min-w-0 max-w-sm shrink">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
           <Input 
             placeholder="Search..." 
@@ -65,6 +93,38 @@ export const Toolbar: React.FC = () => {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             className="pl-8 h-9 border-gray-200 bg-white/50 md:bg-gray-50/50 rounded-lg focus-visible:ring-primary/20 text-sm"
           />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCreateFolder}
+            className="h-9 border-gray-200 rounded-lg gap-1.5 font-medium px-2 md:px-3 text-gray-600 bg-white"
+            title="New Folder"
+          >
+            <FolderPlus className="w-4 h-4" />
+            <span className="hidden xl:inline text-xs">New Folder</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUploadClick}
+            className="h-9 border-gray-200 rounded-lg gap-1.5 font-medium px-2 md:px-3 text-gray-600 bg-white"
+            title="Upload Files"
+          >
+            <Upload className="w-4 h-4" />
+            <span className="hidden xl:inline text-xs">Upload</span>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              multiple 
+              onChange={handleFileChange}
+            />
+          </Button>
         </div>
 
         {/* Filter Dropdown */}
@@ -114,7 +174,7 @@ export const Toolbar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-        <div className="hidden md:flex items-center bg-gray-50/50 p-1 rounded-lg border border-gray-200 shrink-0">
+        <div className="hidden lg:flex items-center bg-gray-50/50 p-1 rounded-lg border border-gray-200 shrink-0">
           {(['name', 'type', 'size'] as const).map((field) => (
             <button
               key={field}

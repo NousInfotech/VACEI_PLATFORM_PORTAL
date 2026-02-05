@@ -1,12 +1,29 @@
-export type InputType = 'text' | 'number' | 'checkbox' | 'radio' | 'text_area';
+export type InputType = 'text' | 'number' | 'select' | 'radio' | 'text_area' | 'checklist';
+
+export interface OptionWithQuestions {
+  value: string;
+  label?: string;
+  questions?: FormField[];
+}
+
+export type FormFieldOption = string | OptionWithQuestions;
 
 export interface FormField {
   question: string;
   input_type: InputType;
-  options?: string[];
+  options?: FormFieldOption[];
   required?: boolean;
   placeholder?: string;
   maxLength?: number;
+}
+
+export function isOptionWithQuestions(opt: FormFieldOption): opt is OptionWithQuestions {
+  return typeof opt === 'object' && opt !== null && 'value' in opt;
+}
+
+export function getOptionLabel(opt: FormFieldOption): string {
+  if (typeof opt === 'string') return opt;
+  return opt.label || opt.value;
 }
 
 export type TemplateType = 'GENERAL' | 'SERVICE';
@@ -58,7 +75,7 @@ export interface UpdateTemplateDto {
   isActive?: boolean;
 }
 
-export type ServiceRequestStatus = 'DRAFT' | 'SUBMITTED' | 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'APPROVED';
+export type ServiceRequestStatus = 'DRAFT' | 'SUBMITTED' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED';
 
 export interface DetailEntry {
   question: string;
@@ -93,4 +110,5 @@ export interface ServiceRequest {
     type: string;
     formFields: FormField[];
   };
+  submittedDocuments?: { id: string; file_name: string; url: string }[];
 }

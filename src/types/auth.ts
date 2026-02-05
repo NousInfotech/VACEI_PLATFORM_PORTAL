@@ -30,6 +30,7 @@ export interface LoginResponse {
         user: User;
         organizationMember: OrganizationMember;
         token: string;
+        refreshToken?: string;
     };
     message?: string;
 }
@@ -40,6 +41,7 @@ export interface AuthMeResponse {
         user?: User;
         organizationMember?: OrganizationMember;
         role?: string;
+        refreshToken?: string;
     } & Partial<User>;
     message?: string;
 }

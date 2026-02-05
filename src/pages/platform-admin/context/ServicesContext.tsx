@@ -6,6 +6,7 @@ import {
   CheckSquare, 
   CircleDot, 
   AlignLeft,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { apiGet, apiPut, apiPost } from '../../../config/base';
@@ -27,6 +28,11 @@ interface TemplatesContextType {
   inputTypeIcons: Record<InputType, LucideIcon>;
   inputTypeItems: (onClick: (type: InputType) => void) => { id: string; label: string; icon: React.ReactNode; onClick: () => void }[];
   requiredTabs: { id: string; label: string }[];
+  // Persisted search/filter state
+  search: string;
+  setSearch: (s: string) => void;
+  selectedService: string;
+  setSelectedService: (s: string) => void;
 }
 
 const TemplatesContext = createContext<TemplatesContextType | undefined>(undefined);
@@ -41,6 +47,9 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return response.data;
     }
   });
+
+  const [search, setSearch] = React.useState('');
+  const [selectedService, setSelectedService] = React.useState('All Services');
 
   const toggleActiveMutation = useMutation({
     mutationFn: async (template: ServiceRequestTemplate) => {
@@ -94,13 +103,14 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const inputTypeIcons: Record<InputType, LucideIcon> = useMemo(() => ({
     text: Type,
     number: Hash,
-    checkbox: CheckSquare,
+    select: ChevronDown,
     radio: CircleDot,
     text_area: AlignLeft,
+    checklist: CheckSquare,
   }), []);
 
   const inputTypeItems = useCallback((onClick: (type: InputType) => void) => 
-    (['text', 'number', 'text_area', 'radio', 'checkbox'] as InputType[]).map((type) => {
+    (['text', 'number', 'text_area', 'radio', 'select', 'checklist'] as InputType[]).map((type) => {
       const Icon = inputTypeIcons[type];
       return {
         id: type,
@@ -129,7 +139,11 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     inputTypeIcons,
     inputTypeItems,
     requiredTabs,
-  }), [templates, isLoading, isError, refetch, formatServiceLabel, toggleActiveMutation, createMutation, updateMutation, queryClient, serviceOptions, inputTypeIcons, inputTypeItems, requiredTabs]);
+    search,
+    setSearch,
+    selectedService,
+    setSelectedService,
+  }), [templates, isLoading, isError, refetch, formatServiceLabel, toggleActiveMutation, createMutation, updateMutation, queryClient, serviceOptions, inputTypeIcons, inputTypeItems, requiredTabs, search, selectedService]);
 
   return (
     <TemplatesContext.Provider value={value}>

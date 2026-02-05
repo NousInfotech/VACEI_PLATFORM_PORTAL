@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSelectedServiceState(null);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
         localStorage.removeItem("userRole");
         localStorage.removeItem("organizationMember");
         localStorage.removeItem("selectedService");
@@ -60,14 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 const responseData = response.data;
                 const userData = (responseData.user || (responseData.id ? responseData : null)) as User | null;
                 let memberData = responseData.organizationMember || null;
+                const refreshToken = responseData.refreshToken;
                 
                 if (userData) {
                     setUser(userData);
+                    if (refreshToken) {
+                        localStorage.setItem("refreshToken", refreshToken);
+                    }
                     
                     // Fallback to localStorage for organizationMember if not provided by /auth/me
                     if (!memberData) {
                         const savedMember = localStorage.getItem("organizationMember");
-                        if (savedMember) {
+                        if (savedMember && savedMember !== "undefined" && savedMember !== "null") {
                             try {
                                 memberData = JSON.parse(savedMember);
                             } catch (e) {
@@ -123,9 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
 
                 localStorage.setItem("user", JSON.stringify(userData));
-                localStorage.setItem("organizationMember", JSON.stringify(memberData));
+                if (memberData) {
+                    localStorage.setItem("organizationMember", JSON.stringify(memberData));
+                }
                 if (token) {
                     localStorage.setItem("token", token);
+                }
+                if (response.data.refreshToken) {
+                    localStorage.setItem("refreshToken", response.data.refreshToken);
                 }
                 localStorage.setItem("userRole", userData.role);
                 

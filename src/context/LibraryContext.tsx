@@ -1,11 +1,47 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useState, useMemo, useEffect } from 'react';
-import { type LibraryItem, mockLibraryData, formatFileSize } from '../data/libraryData';
+import { type LibraryItem, formatFileSize } from '../data/libraryData';
 import { LibraryContext, type SortConfig } from './useLibrary';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../config/base';
+import { endPoints } from '../config/endPoint';
+import axiosInstance from '../config/axiosConfig';
+
+interface LibraryRootApiItem {
+  id: string;
+  name?: string;
+  folder_name?: string;
+  updatedAt?: string;
+  rootType?: string;
+}
+
+interface LibraryContentFolder extends LibraryRootApiItem {
+  parentId?: string | null;
+}
+
+interface LibraryContentFile {
+  id: string;
+  filename?: string;
+  file_name?: string;
+  type?: string;
+  file_type?: string;
+  size?: number;
+  file_size?: number;
+  url?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface LibraryContentResponse {
+  folder: LibraryContentFolder | null;
+  folders: LibraryContentFolder[];
+  files: LibraryContentFile[];
+}
 
 export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [navigationPath, setNavigationPath] = useState<{ id: string; name: string }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ field: 'name', order: 'asc' });
@@ -13,13 +49,29 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [filterType, setFilterType] = useState('all');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const { isLoading } = useQuery({
-    queryKey: ['library-items', currentFolderId, filterType],
-    queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      return true;
-    }
+  const { data: rootsData, isLoading: isLoadingRoots } = useQuery({
+    queryKey: ['library-roots'],
+    queryFn: () => apiGet<{ data: LibraryRootApiItem[] }>(endPoints.LIBRARY.ROOTS)
   });
+
+  const { data: contentData, isLoading: isLoadingContent } = useQuery<{ data: LibraryContentResponse }>({
+    queryKey: ['library-content', currentFolderId],
+    queryFn: () => currentFolderId 
+      ? apiGet<{ data: LibraryContentResponse }>(endPoints.LIBRARY.FOLDER_CONTENT(currentFolderId))
+      : Promise.resolve({
+          data: {
+            folder: null,
+            folders: (rootsData?.data ?? []).map(root => ({
+              ...root,
+              parentId: null
+            })),
+            files: []
+          }
+        }),
+    enabled: !!rootsData || currentFolderId !== null
+  });
+
+  const isLoading = isLoadingRoots || isLoadingContent;
 
   const closeContextMenu = () => setContextMenu(null);
 
@@ -28,102 +80,180 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => window.removeEventListener('click', closeContextMenu);
   }, []);
 
-  const breadcrumbs = useMemo(() => {
-    const path: LibraryItem[] = [];
-    let currentId = currentFolderId;
-    while (currentId) {
-      const folder = mockLibraryData.find(item => item.id === currentId && item.type === 'folder');
-      if (folder && folder.type === 'folder') {
-        path.unshift({
-          ...folder,
-          name: folder.folder_name,
-        });
-        currentId = folder.parentId;
-      } else {
-        break;
-      }
+  // Mutations
+  const createFolderMutation = useMutation({
+    mutationFn: (name: string) => apiPost(endPoints.LIBRARY.FOLDERS, { 
+      folder_name: name, 
+      parentId: currentFolderId,
+      rootType: contentData?.data?.folder?.rootType || 'PLATFORM'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-content', currentFolderId] });
+      queryClient.invalidateQueries({ queryKey: ['library-roots'] });
     }
-    return path;
-  }, [currentFolderId]);
+  });
 
-  const currentItems = useMemo(() => {
-    const filtered = mockLibraryData.filter(item => {
-      const itemParentId = item.type === 'folder' ? item.parentId : item.folderId;
-      const itemName = item.type === 'folder' ? item.folder_name : item.file_name;
+  const uploadFilesMutation = useMutation({
+    mutationFn: async (files: FileList) => {
+      const formData = new FormData();
+      Array.from(files).forEach(file => {
+        formData.append('file', file);
+      });
+      formData.append('folderId', currentFolderId || '');
+      
+      const response = await axiosInstance.post(endPoints.LIBRARY.FILE_UPLOAD, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-content', currentFolderId] });
+    }
+  });
 
-      const matchesFolder = itemParentId === currentFolderId;
-      const matchesSearch = searchQuery === '' || itemName.toLowerCase().includes(searchQuery.toLowerCase());
+  const renameMutation = useMutation({
+    mutationFn: ({ id, newName, type }: { id: string, newName: string, type: 'folder' | 'file' }) => {
+      const endpoint = type === 'folder' 
+        ? endPoints.LIBRARY.FOLDER_BY_ID(id) 
+        : endPoints.LIBRARY.FILE_BY_ID(id);
+      const data: Record<string, unknown> = type === 'folder' ? { folder_name: newName } : { file_name: newName };
+      return apiPatch(endpoint, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-content', currentFolderId] });
+      queryClient.invalidateQueries({ queryKey: ['library-roots'] });
+    }
+  });
 
-      let matchesFilter = true;
-      if (filterType === 'pdf') {
-        matchesFilter = item.type === 'file' && item.file_type?.toUpperCase() === 'PDF';
-      } else if (filterType === 'spreadsheet') {
-        matchesFilter = item.type === 'file' && (item.file_type?.toUpperCase() === 'XLSX' || item.file_type?.toUpperCase() === 'CSV');
-      } else if (filterType === 'document') {
-        matchesFilter = item.type === 'file' && (item.file_type?.toUpperCase() === 'DOCX' || item.file_type?.toUpperCase() === 'DOC');
+  const deleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        const item = currentItems.find(i => i.id === id);
+        if (!item) continue;
+        const endpoint = item.type === 'folder' 
+          ? endPoints.LIBRARY.FOLDER_BY_ID(id) 
+          : endPoints.LIBRARY.FILE_BY_ID(id);
+        await apiDelete(endpoint);
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['library-content', currentFolderId] });
+      queryClient.invalidateQueries({ queryKey: ['library-roots'] });
+      setSelectedItems([]);
+    }
+  });
 
-      return matchesFolder && matchesSearch && matchesFilter;
+  const breadcrumbs = useMemo(() => {
+    return navigationPath.map(p => ({
+      id: p.id,
+      name: p.name,
+      type: 'folder'
+    })) as LibraryItem[];
+  }, [navigationPath]);
+
+  const currentItems: LibraryItem[] = (() => {
+    if (!contentData?.data) return [];
+    const { folders = [], files = [] } = contentData.data;
+
+    const folderItems = folders.map((f: LibraryContentFolder) => ({
+      ...f,
+      id: f.id,
+      folder_name: f.name ?? f.folder_name ?? '',
+      type: 'folder',
+      name: f.name ?? f.folder_name ?? '',
+      fileType: 'Folder',
+      size: '',
+      updatedAt: f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : undefined,
+    }));
+
+    const fileItems = files.map((f: LibraryContentFile) => ({
+      ...f,
+      id: f.id,
+      file_name: f.filename ?? f.file_name ?? '',
+      type: 'file',
+      name: f.filename ?? f.file_name ?? '',
+      fileType: f.type ?? f.file_type,
+      size: formatFileSize(f.size ?? f.file_size ?? 0),
+      updatedAt: new Date(f.createdAt ?? f.updatedAt ?? '').toLocaleDateString(),
+    }));
+
+    const all: LibraryItem[] = [...folderItems, ...fileItems] as LibraryItem[];
+
+    const filtered = all.filter(item => {
+      const itemName = item.name || '';
+      const matchesSearch = searchQuery === '' || itemName.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      let matchesFilter = true;
+      if (item.type === 'file' && filterType !== 'all') {
+        if (filterType === 'pdf') {
+          matchesFilter = item.fileType?.toUpperCase() === 'PDF';
+        } else if (filterType === 'spreadsheet') {
+          matchesFilter = item.fileType?.toUpperCase() === 'XLSX' || item.fileType?.toUpperCase() === 'CSV';
+        } else if (filterType === 'document') {
+          matchesFilter = item.fileType?.toUpperCase() === 'DOCX' || item.fileType?.toUpperCase() === 'DOC';
+        }
+      }
+      return matchesSearch && matchesFilter;
     });
 
-    const normalized = filtered.map(item => {
-      const name = item.type === 'folder' ? item.folder_name : item.file_name;
-      const fileType = item.type === 'file' ? item.file_type : 'Folder';
-      const size = item.type === 'file' ? formatFileSize(item.file_size) : '';
-      const updatedAtStr = item.type === 'folder' ? item.updatedAt : item.createdAt;
-
-      return {
-        ...item,
-        name,
-        fileType,
-        size,
-        updatedAt: new Date(updatedAtStr).toLocaleDateString(),
-        parentId: item.type === 'folder' ? item.parentId : item.folderId,
-      };
-    });
-
-    normalized.sort((a, b) => {
+    filtered.sort((a, b) => {
       let comparison = 0;
+      const nameA = a.name || '';
+      const nameB = b.name || '';
+      const typeA = a.fileType || '';
+      const typeB = b.fileType || '';
+      const sizeA = a.size || '';
+      const sizeB = b.size || '';
+
       if (sortConfig.field === 'name') {
-        comparison = a.name.localeCompare(b.name);
+        comparison = nameA.localeCompare(nameB);
       } else if (sortConfig.field === 'type') {
-        comparison = a.fileType.localeCompare(b.fileType);
+        comparison = typeA.localeCompare(typeB);
       } else if (sortConfig.field === 'size') {
-        comparison = a.size.localeCompare(b.size);
+        comparison = sizeA.localeCompare(sizeB);
       }
       return sortConfig.order === 'asc' ? comparison : -comparison;
     });
 
-    return normalized;
-  }, [currentFolderId, searchQuery, sortConfig, filterType]);
+    return filtered as LibraryItem[];
+  })();
 
-  const rootFolders = useMemo(() => {
-    return mockLibraryData
-      .filter(item => item.type === 'folder' && item.parentId === null)
-      .map(folder => ({
-        ...folder,
-        name: folder.type === 'folder' ? folder.folder_name : '',
-      }));
-  }, []);
+  const rootFolders = (rootsData?.data ?? []).map((f: LibraryRootApiItem) => ({
+    ...f,
+    id: f.id,
+    folder_name: f.name ?? f.folder_name ?? '',
+    name: f.name ?? f.folder_name ?? '',
+    type: 'folder' as const,
+  })) as LibraryItem[];
 
-  const handleFolderClick = (id: string | null) => {
+  const handleFolderClick = (id: string | null, name?: string) => {
+    if (id === null) {
+      setNavigationPath([]);
+    } else {
+      const existingIndex = navigationPath.findIndex((p) => p.id === id);
+      if (existingIndex !== -1) {
+        setNavigationPath(navigationPath.slice(0, existingIndex + 1));
+      } else if (name) {
+        setNavigationPath([...navigationPath, { id, name }]);
+      }
+    }
     setCurrentFolderId(id);
     setSelectedItems([]);
     setContextMenu(null);
   };
 
   const handleBack = () => {
-    if (currentFolderId) {
-      const current = mockLibraryData.find(item => item.id === currentFolderId);
-      setCurrentFolderId(current?.parentId || null);
-      setSelectedItems([]);
-      setContextMenu(null);
+    if (navigationPath.length > 1) {
+      const parent = navigationPath[navigationPath.length - 2];
+      handleFolderClick(parent.id, parent.name);
+    } else {
+      handleFolderClick(null);
     }
   };
 
   const handleDoubleClick = (item: LibraryItem) => {
     if (item.type === 'folder') {
-      handleFolderClick(item.id);
+      handleFolderClick(item.id, item.name);
     } else {
       const isExcel = item.fileType?.toUpperCase() === 'XLSX' || item.fileType?.toUpperCase() === 'CSV';
       if (isExcel) {
@@ -136,70 +266,68 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const handleDownload = async (item?: LibraryItem) => {
     let itemsToDownload: LibraryItem[] = [];
-    let isZip = false;
-    let zipName = "library_export.zip";
 
     if (item) {
-      itemsToDownload = [item];
       if (item.type === 'folder') {
-        isZip = true;
-        zipName = `${item.name}.zip`;
-      }
-    } else if (selectedItems.length > 0) {
-      itemsToDownload = mockLibraryData.filter(i => selectedItems.includes(i.id));
-      if (itemsToDownload.length > 1 || itemsToDownload.some(i => i.type === 'folder')) {
-        isZip = true;
-      }
-    } else {
-      itemsToDownload = currentItems;
-      isZip = true;
-      const folderName = currentFolderId
-        ? mockLibraryData.find(i => i.id === currentFolderId)?.name
-        : "Root";
-      zipName = `${folderName}_all_files.zip`;
-    }
-
-    if (isZip) {
-      console.log(`Simulating Zip Creation: ${zipName}`);
-      const blob = new Blob(["This is a simulated ZIP file content for " + zipName], { type: 'application/zip' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = zipName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      return;
-    }
-
-    const filesToDownload = itemsToDownload.filter(i => i.type === 'file' && i.url);
-    for (const i of filesToDownload) {
-      const itemName = i.type === 'folder' ? i.folder_name : i.file_name;
-      const itemUrl = i.type === 'file' ? i.url : undefined;
-
-      if (itemUrl) {
-        console.log(`Downloading ${itemName}...`);
+        // Use backend ZIP download for folders
         try {
-          const response = await fetch(itemUrl);
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
+          const response = await axiosInstance.get(endPoints.LIBRARY.FOLDER_DOWNLOAD(item.id), {
+            responseType: 'blob',
+          });
+          const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement('a');
           link.href = url;
-          link.download = itemName;
+          link.setAttribute('download', `${item.name || 'folder'}.zip`);
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
           window.URL.revokeObjectURL(url);
-        } catch {
-          const link = document.createElement('a');
-          link.href = itemUrl;
-          link.setAttribute('download', itemName);
-          link.setAttribute('target', '_blank');
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        } catch (error) {
+          console.error('Folder download failed:', error);
+          alert('Failed to download folder.');
         }
+        return;
+      } else {
+        itemsToDownload = [item];
+      }
+    } else if (selectedItems.length > 0) {
+      itemsToDownload = currentItems.filter((i) => selectedItems.includes(i.id));
+      // If multiple items are selected and contain a folder, we might want to ZIP them all,
+      // but for now let's handle them individually or just the files.
+    } else {
+      itemsToDownload = currentItems.filter((i) => i.type === 'file');
+    }
+
+    const filesToDownload = itemsToDownload.filter((i) => i.type === 'file');
+
+    if (filesToDownload.length === 0) {
+      alert('No files found to download.');
+      return;
+    }
+
+    for (const i of filesToDownload) {
+      const itemName = i.name || i.file_name || 'download';
+      const itemUrl = i.url;
+
+      if (!itemUrl) {
+        console.warn(`No URL found for item: ${itemName}`);
+        continue;
+      }
+
+      console.log(`Downloading ${itemName}...`);
+      
+      // Use a simple hidden link approach for better browser compatibility without CORS issues
+      const link = document.createElement('a');
+      link.href = itemUrl;
+      link.setAttribute('download', itemName);
+      link.setAttribute('target', '_blank'); // Open in new tab to trigger download or view
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Add a small delay between downloads to prevent browser from blocking them
+      if (filesToDownload.length > 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
   };
@@ -252,8 +380,15 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     handleSort,
     handleContextMenu,
     closeContextMenu,
-    handleDownload
+    handleDownload,
+    createFolder: async (name: string) => { await createFolderMutation.mutateAsync(name); },
+    uploadFiles: async (files: FileList) => { await uploadFilesMutation.mutateAsync(files); },
+    renameItem: async (id: string, newName: string, type: 'folder' | 'file') => { 
+      await renameMutation.mutateAsync({ id, newName, type }); 
+    },
+    deleteItems: async (ids: string[]) => { await deleteMutation.mutateAsync(ids); }
   };
 
   return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
 };
+

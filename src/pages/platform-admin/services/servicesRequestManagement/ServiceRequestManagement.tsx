@@ -62,9 +62,10 @@ const ServiceRequestManagement: React.FC = () => {
   }, [requestsData]);
 
   const statuses = useMemo(() => {
-    const uniqueStatuses = Array.from(new Set(requests.map((r: ServiceRequest) => r.status)));
+    const uniqueStatuses = Array.from(new Set(requests.map((r: ServiceRequest) => r.status).filter(s => s !== 'DRAFT')));
     return ['All Statuses', ...uniqueStatuses.sort()];
   }, [requests]);
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -82,6 +83,8 @@ const ServiceRequestManagement: React.FC = () => {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((req: ServiceRequest) => {
+      if (req.status === 'DRAFT') return false;
+
       const companyName = req.company?.name || '';
       const matchesSearch = companyName.toLowerCase().includes(search.toLowerCase()) ||
                            req.service.toLowerCase().includes(search.toLowerCase());
@@ -90,6 +93,7 @@ const ServiceRequestManagement: React.FC = () => {
       return matchesSearch && matchesStatus;
     });
   }, [requests, search, selectedStatus]);
+
 
   if (isLoading) {
     return (
@@ -195,13 +199,13 @@ const ServiceRequestManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      req.status === 'COMPLETED' || req.status === 'APPROVED' ? 'bg-green-50 text-green-600 border-green-100' : 
+                      req.status === 'APPROVED' ? 'bg-green-50 text-green-600 border-green-100' : 
                       req.status === 'REJECTED' ? 'bg-red-50 text-red-600 border-red-100' :
-                      req.status === 'IN_PROGRESS' || req.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-600 border-gray-100'
+                      req.status === 'IN_REVIEW' || req.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-gray-50 text-gray-600 border-gray-100'
                     }`}>
-                      {req.status === 'COMPLETED' || req.status === 'APPROVED' ? <CheckCircle2 className="h-3 w-3" /> :
+                      {req.status === 'APPROVED' ? <CheckCircle2 className="h-3 w-3" /> :
                        req.status === 'REJECTED' ? <AlertCircle className="h-3 w-3" /> :
-                       req.status === 'IN_PROGRESS' || req.status === 'SUBMITTED' ? <Clock className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                       req.status === 'IN_REVIEW' || req.status === 'SUBMITTED' ? <Clock className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                       {req.status.replace(/_/g, ' ')}
                     </div>
                   </TableCell>

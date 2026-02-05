@@ -103,7 +103,7 @@ const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
                         <Globe className="h-5 w-5 text-gray-600 mt-0.5" />
                         <div>
                             <p className="text-sm text-gray-500 font-medium">Industry</p>
-                            <p className="text-gray-900 text-xl font-light">{company.industry.join(', ')}</p>
+                            <p className="text-gray-900 text-xl font-light">{company.industry}</p>
                         </div>
                     </ShadowCard>
                 )}

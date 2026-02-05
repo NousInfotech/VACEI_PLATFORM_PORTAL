@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext'
 import Organizations from './pages/platform-admin/organization/Organizations'
 import CreateOrganization from './pages/platform-admin/organization/CreateOrganization'
 import EditOrganization from './pages/platform-admin/organization/EditOrganization'
+import ViewOrganization from './pages/platform-admin/organization/ViewOrganization'
 import ServiceRequestTemplates from './pages/platform-admin/services/servicesRequestTemplates/ServiceRequestTemplates'
 import CreateTemplate from './pages/platform-admin/services/servicesRequestTemplates/CreateTemplate'
 import ViewTemplate from './pages/platform-admin/services/servicesRequestTemplates/ViewTemplate'
@@ -21,6 +22,9 @@ import IncorpCycle from './pages/platform-admin/clients/IncorpCycle'
 import KycPage from './pages/platform-admin/clients/KycPage'
 import GlobalLibrary from './pages/platform-admin/global-library/GlobalLibrary'
 import Settings from './pages/platform-admin/settings/Settings'
+
+import EngagementsList from './pages/platform-admin/engagements/EngagementsList'
+import CreateEngagementPage from './pages/platform-admin/services/servicesRequestManagement/CreateEngagementPage'
 
 const App = () => {
   return (
@@ -38,12 +42,14 @@ const App = () => {
           <Route path="/dashboard/service-request-templates/:id/view" element={<ViewTemplate />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/companies" element={<Dashboard activeSection="Companies" />} />
-          <Route path="/dashboard/engagements" element={<Dashboard activeSection="Engagements" />} />
+          <Route path="/dashboard/engagements" element={<EngagementsList />} />
+          <Route path="/dashboard/engagements/create" element={<CreateEngagementPage />} />
           <Route path="/dashboard/compliance" element={<Dashboard activeSection="Compliance" />} />
           <Route path="/dashboard/templates" element={<Dashboard activeSection="Document Request Templates" />} />
           <Route path="/dashboard/settings" element={<Dashboard activeSection="Settings" />} />
           <Route path="/dashboard/organizations" element={<Organizations />} />
           <Route path="/dashboard/organizations/create" element={<CreateOrganization />} />
+          <Route path="/dashboard/organizations/:id" element={<ViewOrganization />} />
           <Route path="/dashboard/organizations/:id/edit" element={<EditOrganization />} />
           <Route path="/dashboard/clients" element={<Clients />} />
           <Route path="/dashboard/clients/:clientId" element={<ViewClient />} />

@@ -1,22 +1,23 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Building2, Trash2, MoreVertical, Edit2, Users } from 'lucide-react';
+import { Plus, Search, Building2, Trash2, Edit2, Eye } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '../../../ui/Table';
 import { apiGet, apiDelete } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Organization } from '../../../types/organization';
 import AlertMessage from '../../common/AlertMessage';
 import PageHeader from '../../common/PageHeader';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
-const formatServiceLabel = (service: string) => {
-  return service
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
-    .replace('And', '&');
-};
 
 const Organizations: React.FC = () => {
   const navigate = useNavigate();
@@ -142,183 +143,106 @@ const Organizations: React.FC = () => {
           />
         </div>
  
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {loading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <ShadowCard key={i} className="p-6 border border-gray-100 shadow-sm bg-white flex flex-col h-[280px] rounded-2xl space-y-6">
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-12 w-12 rounded-xl" />
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-              </div>
-              <div className="space-y-3 flex-1">
-                <Skeleton className="h-3 w-24" />
-                <div className="flex flex-wrap gap-1.5">
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-6 w-20" />
-                  <Skeleton className="h-6 w-14" />
-                </div>
-              </div>
-              <div className="pt-5 border-t border-gray-50 flex justify-between">
-                <Skeleton className="h-8 w-24 rounded-md" />
-                <Skeleton className="h-8 w-12 rounded-md" />
-              </div>
-            </ShadowCard>
-          ))
-        ) : filteredOrganizations.length > 0 ? (
-          filteredOrganizations.map((org: Organization) => (
-            <ShadowCard key={org.id} className="p-6 group relative border hover:border-gray-300 border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 bg-white flex flex-col h-full rounded-2xl">
-              {/* Header: Icon, Name, Status & Actions */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-primary/5 text-primary">
-                    <Building2 className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-md font-semibold text-gray-900 group-hover:text-primary transition-colors leading-tight">
+      <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-2xl bg-white">
+        <Table>
+          <TableHeader className="bg-gray-50/50">
+            <TableRow>
+              <TableHead className="py-4 px-6 text-nowrap font-bold text-gray-400 uppercase tracking-widest text-[10px]">S.No</TableHead>
+              <TableHead className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">Organization</TableHead>
+              <TableHead className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">Status</TableHead>
+              <TableHead className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">Services</TableHead>
+              <TableHead className="font-bold text-gray-400 uppercase tracking-widest text-[10px]">Onboarded</TableHead>
+              <TableHead className="text-right px-6 font-bold text-gray-400 uppercase tracking-widest text-[10px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="[&_tr:last-child]:border-0 text-nowrap whitespace-nowrap">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell className="px-6"><Skeleton className="h-4 w-4" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="text-right px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
+                </TableRow>
+              ))
+            ) : filteredOrganizations.length > 0 ? (
+              filteredOrganizations.map((org: Organization, index: number) => (
+                <TableRow key={org.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
+                    {(index + 1).toString().padStart(2, '0')}
+                  </TableCell>
+                  <TableCell className="font-semibold text-gray-900 group-hover:text-primary transition-colors py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary text-light">  
+                        <Building2 className="h-4 w-4" />
+                      </div>
                       {org.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 ${
-                        org.status === 'ACTIVE' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                      }`}>
-                        <span className={`w-1 h-1 rounded-full ${org.status === 'ACTIVE' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                        {org.status}
-                      </span>
                     </div>
-                  </div>
-                </div>
-                
-                <div className="relative dropdown-trigger">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveDropdownId(activeDropdownId === org.id ? null : org.id);
-                    }}
-                    className={`p-2 rounded-xl transition-all duration-200 ${
-                      activeDropdownId === org.id 
-                        ? 'bg-primary text-white shadow-lg shadow-primary/20 rotate-90' 
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                    }`}
-                    title="Actions"
-                  >
-                    <MoreVertical className="h-5 w-5" />
-                  </button>
-
-                  {/* Floating Dropdown Menu */}
-                  {activeDropdownId === org.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-200 origin-top-right">
-                      <button
-                        onClick={() => {
-                          setActiveDropdownId(null);
-                          navigate(`/dashboard/organizations/${org.id}/edit`, { state: { organization: org } });
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
+                  </TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 w-fit ${
+                      org.status === 'ACTIVE' ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                    }`}>
+                      <span className={`w-1 h-1 rounded-full ${org.status === 'ACTIVE' ? 'bg-green-500' : 'bg-amber-500'}`} />
+                      {org.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-xs font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg">
+                      {org.availableServices?.length || 0} Services
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-gray-500 font-medium text-xs">
+                    {new Date(org.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right px-6">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/dashboard/organizations/${org.id}`)}
+                        className="rounded-xl border-gray-100 text-primary hover:bg-primary/5 hover:border-primary/20 transition-all shadow-none"
                       >
-                        <div className="p-1.5 rounded-lg bg-primary/5 text-primary">
-                          <Edit2 className="h-4 w-4" />
-                        </div>
-                        Edit Details
-                      </button>
-                      
-                      <div className="h-px bg-gray-50 mx-4 my-1" />
-                      
-                      <button
-                        onClick={() => {
-                          setActiveDropdownId(null);
-                          handleDeleteClick(org, 'soft');
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-amber-600 hover:bg-amber-50 transition-colors"
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/dashboard/organizations/${org.id}/edit`, { state: { organization: org } })}
+                        className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 transition-all shadow-none"
                       >
-                        <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-                          <Trash2 className="h-4 w-4" />
-                        </div>
-                         Delete
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setActiveDropdownId(null);
-                          handleDeleteClick(org, 'hard');
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClick(org, 'soft')}
+                        className="rounded-xl border-gray-200 text-amber-600 hover:bg-amber-50 transition-all shadow-none"
                       >
-                        <div className="p-1.5 rounded-lg bg-red-50 text-red-500">
-                          <Trash2 className="h-4 w-4" />
-                        </div>
-                        <div className="flex flex-col items-start leading-tight">
-                           <span>Hard Delete</span>
-                           <span className="text-[9px] uppercase tracking-tighter opacity-70">Dev Only</span>
-                        </div>
-                      </button>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Body: Available Services */}
-              <div className="mt-5 flex-1">
-                {org.availableServices && org.availableServices.length > 0 ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                       <span className="text-[10px] font-bold text-gray-800 uppercase tracking-widest">Available Services</span>
-                       <div className="h-px flex-1 bg-gray-50"></div>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {org.availableServices.map((service: string) => (
-                        <span 
-                          key={service} 
-                          className="px-2.5 py-1 bg-primary/90 text-light text-[8px] font-medium rounded-full uppercase tracking-tight"
-                        >
-                          {formatServiceLabel(service)}
-                        </span>
-                      ))}
-                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="py-32 text-center">
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <Building2 className="h-16 w-16 mb-4 opacity-20" />
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">No Organizations Found</h2>
+                    <p className="text-gray-500 max-w-sm mx-auto mt-2 text-sm italic">
+                      We couldn't find any entities matching your search. Try adjusting your keywords.
+                    </p>
                   </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-50 rounded-xl py-4">
-                    <span className="text-xs text-gray-300 italic">No services configured</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer: Metadata */}
-              <div className="mt-6 pt-5 border-t border-gray-50 flex items-center justify-between text-[10px]">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-gray-700 font-medium uppercase tracking-tighter text-[12px]">Onboarded</span>
-                  <span className="font-semibold text-gray-600">{new Date(org.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                </div>
-                <div className="flex flex-col gap-0.5 items-end">
-                  <span className="text-gray-700 font-medium uppercase tracking-tighter text-[12px]">Administrators</span>
-                  <span className="font-bold bg-primary text-light px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    <Users className="h-3.5 w-3.5" />
-                    {org.members?.length || 0}
-                  </span>
-                </div>
-              </div>
-            </ShadowCard>
-          ))
-        ) : (
-          <div className="col-span-full py-32 text-center animate-in zoom-in duration-500">
-            <div className="inline-flex p-10 bg-gray-50 rounded-[40px] text-gray-200 shadow-inner">
-              <Building2 className="h-20 w-20" />
-            </div>
-            <h2 className="text-3xl font-bold text-gray-900 mt-8 tracking-tight">No Organizations Found</h2>
-            <p className="text-gray-500 max-w-sm mx-auto mt-4 text-lg">
-              We couldn't find any entities matching your search. Try adjusting your keywords.
-            </p>
-            <Button 
-               onClick={() => navigate('/dashboard/organizations/create')}
-               variant="outline" 
-               className="mt-8 px-8 py-3 rounded-2xl font-bold"
-            >
-              Add New Organization
-            </Button>
-          </div>
-        )}
-      </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </ShadowCard>
 
       <DeleteConfirmModal
         isOpen={deleteModalOpen}

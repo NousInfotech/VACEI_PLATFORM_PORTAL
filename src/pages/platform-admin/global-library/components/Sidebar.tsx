@@ -8,8 +8,8 @@ import { useLibrary } from '../../../../context/useLibrary';
 export const Sidebar: React.FC = () => {
   const { rootFolders, currentFolderId, handleFolderClick, setIsMobileSidebarOpen } = useLibrary();
 
-  const onFolderClick = (id: string | null) => {
-    handleFolderClick(id);
+  const onFolderClick = (id: string | null, name?: string) => {
+    handleFolderClick(id, name);
     setIsMobileSidebarOpen(false);
   };
 
@@ -31,7 +31,7 @@ export const Sidebar: React.FC = () => {
           {rootFolders.map((folder) => (
             <button
               key={folder.id}
-              onClick={() => onFolderClick(folder.id)}
+              onClick={() => onFolderClick(folder.id, folder.name)}
               className={cn(
                 "flex items-center w-full gap-3 px-3 py-2.5 rounded-xl transition-all text-sm group text-left",
                 currentFolderId === folder.id ? "bg-primary shadow-md text-white border-0" : "text-gray-600 hover:bg-gray-100/50"

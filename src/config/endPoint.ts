@@ -6,6 +6,7 @@ export const endPoints = {
     LOGOUT: '/auth/logout',
     CHANGE_PASSWORD: '/auth/change-password',
     ME: '/auth/me',
+    REFRESH: '/auth/refresh',
   },
   ORGANIZATION: {
     BASE: '/organizations',
@@ -48,5 +49,24 @@ export const endPoints = {
     BASE: '/service-requests',
     GET_ALL: '/service-requests',
     GET_BY_ID: (id: string) => `/service-requests/${id}`,
+    UPDATE_STATUS: (id: string) => `/service-requests/${id}/status`,
+  },
+  ENGAGEMENT: {
+    BASE: '/engagements',
+    GET_ALL: '/engagements',
+    GET_BY_ID: (id: string) => `/engagements/${id}`,
+    CREATE: '/engagements',
+    UPDATE: (id: string) => `/engagements/${id}`,
+    UPDATE_STATUS: (id: string) => `/engagements/${id}/status`,
+  },
+  LIBRARY: {
+    FOLDERS: '/library/folders',
+    FOLDER_CONTENT: (id: string) => `/library/folders/${id}/content`,
+    ROOTS: '/library/folders/roots',
+    FOLDER_BY_ID: (id: string) => `/library/folders/${id}`,
+    FILES: '/library/files',
+    FILE_UPLOAD: '/library/files/upload',
+    FILE_BY_ID: (id: string) => `/library/files/${id}`,
+    FOLDER_DOWNLOAD: (id: string) => `/library/folders/${id}/download`,
   },
 };
