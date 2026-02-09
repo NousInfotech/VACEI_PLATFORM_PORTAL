@@ -1,4 +1,4 @@
-export type InputType = 'text' | 'number' | 'select' | 'radio' | 'text_area' | 'checklist' | 'date' | 'month';
+export type InputType = 'text' | 'number' | 'select' | 'radio' | 'text_area' | 'checklist' | 'date' | 'month' | 'year' | 'month_year';
 
 export interface OptionWithQuestions {
   value: string;
@@ -15,6 +15,11 @@ export interface FormField {
   required?: boolean;
   placeholder?: string;
   maxLength?: number;
+  minYear?: number;
+  maxYear?: number;
+  minMonth?: string;
+  maxMonth?: string;
+  isRange?: boolean;
 }
 
 export function isOptionWithQuestions(opt: FormFieldOption): opt is OptionWithQuestions {

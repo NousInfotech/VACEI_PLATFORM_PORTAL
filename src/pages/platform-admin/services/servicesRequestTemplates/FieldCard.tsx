@@ -227,6 +227,89 @@ function NestedFieldEditor({
                     </div>
                 </div>
 
+                {['year', 'month', 'month_year'].includes(field.input_type) && (
+                  <div className="flex items-center gap-3 py-2 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => onUpdate({ isRange: !field.isRange })}
+                      className={`h-6 w-11 rounded-full transition-colors relative ${field.isRange ? 'bg-primary' : 'bg-gray-200'}`}
+                    >
+                      <div className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform ${field.isRange ? 'translate-x-5' : ''}`} />
+                    </button>
+                    <span className="text-[10px] font-bold text-gray-700 uppercase tracking-widest">Enable Period Selection (e.g. From 2024 - To 2026)</span>
+                  </div>
+                )}
+
+                {['year', 'month_year'].includes(field.input_type) && (
+                  <div className="grid grid-cols-2 gap-4 pb-2">
+                    <div className="space-y-1.5">
+                      <Badge variant="label" className="ml-1">Earliest Year (Min)</Badge>
+                      <input
+                        type="number"
+                        value={field.minYear || ''}
+                        onChange={(e) => onUpdate({ minYear: parseInt(e.target.value) || undefined })}
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-primary/20 outline-none text-sm font-medium"
+                        placeholder="e.g. 2020"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Badge variant="label" className="ml-1">Latest Year (Max)</Badge>
+                      <input
+                        type="number"
+                        value={field.maxYear || ''}
+                        onChange={(e) => onUpdate({ maxYear: parseInt(e.target.value) || undefined })}
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:border-primary/20 outline-none text-sm font-medium"
+                        placeholder="e.g. 2030"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {['month', 'month_year'].includes(field.input_type) && (
+                  <div className="grid grid-cols-2 gap-4 pb-2">
+                    <div className="space-y-1.5">
+                      <Badge variant="label" className="ml-1">Earliest Month (Min)</Badge>
+                      <Dropdown
+                        fullWidth
+                        items={[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].map(month => ({
+                          id: month,
+                          label: month,
+                          onClick: () => onUpdate({ minMonth: month })
+                        }))}
+                        trigger={
+                            <button type="button" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl flex items-center justify-between text-xs font-bold text-gray-700">
+                                <span className="uppercase">{field.minMonth || 'Select'}</span>
+                                <ChevronDown className="h-4 w-4 text-gray-400" />
+                            </button>
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Badge variant="label" className="ml-1">Latest Month (Max)</Badge>
+                      <Dropdown
+                        fullWidth
+                        items={[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].map(month => ({
+                          id: month,
+                          label: month,
+                          onClick: () => onUpdate({ maxMonth: month })
+                        }))}
+                        trigger={
+                            <button type="button" className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl flex items-center justify-between text-xs font-bold text-gray-700">
+                                <span className="uppercase">{field.maxMonth || 'Select'}</span>
+                                <ChevronDown className="h-4 w-4 text-gray-400" />
+                            </button>
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {['radio', 'select', 'checklist'].includes(field.input_type) && (
                     <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-6">
                         <div className="flex items-center justify-between">
@@ -417,8 +500,29 @@ export const FieldCard: React.FC<FieldCardProps> = ({
               </div>
               <div className="flex flex-col gap-1 items-start">
                 <Badge variant="label">Input Type</Badge>
-                <span className="font-bold uppercase text-gray-900 text-sm tracking-tight">{field.input_type.replace(/_/g, ' ')}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold uppercase text-gray-900 text-sm tracking-tight">{field.input_type.replace(/_/g, ' ')}</span>
+                  {field.isRange && (
+                    <Badge variant="primary" className="scale-75 origin-left">Range Enabled</Badge>
+                  )}
+                </div>
               </div>
+              {field.isRange && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                  <div className="flex flex-col gap-1 items-start">
+                    <Badge variant="label">Configuration Boundary</Badge>
+                    <span className="text-xs font-bold text-gray-500 uppercase">
+                      {[
+                        field.minMonth,
+                        field.minYear,
+                        (field.minMonth || field.minYear || field.maxMonth || field.maxYear) ? 'to' : null,
+                        field.maxMonth,
+                        field.maxYear
+                      ].filter(Boolean).join(' ')}
+                    </span>
+                  </div>
+                </div>
+              )}
               {field.placeholder && (
                 <div className="flex flex-col gap-1 items-start">
                   <Badge variant="label">Placeholder</Badge>

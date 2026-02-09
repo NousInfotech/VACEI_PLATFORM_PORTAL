@@ -398,6 +398,79 @@ export const FieldEditorModal: React.FC<FieldEditorModalProps> = ({
                       />
                     </div>
                 </div>
+
+                {['year', 'month', 'month_year'].includes(field.input_type) && (
+                  <div className="flex items-center gap-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => updateField({ isRange: !field.isRange })}
+                      className={`h-6 w-11 rounded-full transition-colors relative ${field.isRange ? 'bg-primary' : 'bg-gray-200'}`}
+                    >
+                      <div className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white transition-transform ${field.isRange ? 'translate-x-5' : ''}`} />
+                    </button>
+                    <span className="text-sm font-medium text-gray-700">Enable Period Selection (e.g. From 2024 - To 2026)</span>
+                  </div>
+                )}
+
+                {['year', 'month_year'].includes(field.input_type) && (
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Earliest Year (Min)</label>
+                      <input
+                        type="number"
+                        value={field.minYear || ''}
+                        onChange={(e) => updateField({ minYear: parseInt(e.target.value) || undefined })}
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary/5 outline-none text-sm font-medium"
+                        placeholder="e.g. 2020"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Latest Year (Max)</label>
+                      <input
+                        type="number"
+                        value={field.maxYear || ''}
+                        onChange={(e) => updateField({ maxYear: parseInt(e.target.value) || undefined })}
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary/5 outline-none text-sm font-medium"
+                        placeholder="e.g. 2030"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {['month', 'month_year'].includes(field.input_type) && (
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Earliest Month (Min)</label>
+                      <Dropdown
+                        fullWidth
+                        label={field.minMonth || 'Select Month'}
+                        items={[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].map(month => ({
+                          id: month,
+                          label: month,
+                          onClick: () => updateField({ minMonth: month })
+                        }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Latest Month (Max)</label>
+                      <Dropdown
+                        fullWidth
+                        label={field.maxMonth || 'Select Month'}
+                        items={[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].map(month => ({
+                          id: month,
+                          label: month,
+                          onClick: () => updateField({ maxMonth: month })
+                        }))}
+                      />
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
 

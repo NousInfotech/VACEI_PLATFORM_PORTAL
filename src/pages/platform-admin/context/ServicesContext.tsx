@@ -111,10 +111,12 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     checklist: CheckSquare,
     date: Calendar,
     month: CalendarDays,
+    year: CalendarDays,
+    month_year: CalendarDays,
   }), []);
 
   const inputTypeItems = useCallback((onClick: (type: InputType) => void) => 
-    (['text', 'number', 'text_area', 'radio', 'select', 'checklist', 'date', 'month'] as InputType[]).map((type) => {
+    (['text', 'number', 'text_area', 'radio', 'select', 'checklist', 'date', 'month', 'year', 'month_year'] as InputType[]).map((type) => {
       const Icon = inputTypeIcons[type];
       return {
         id: type,

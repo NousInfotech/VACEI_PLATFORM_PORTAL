@@ -391,9 +391,54 @@ const ViewServiceRequest: React.FC = () => {
                     </h5>
                     <div className="relative">
                       <p className="text-[17px] text-gray-500 font-medium leading-relaxed max-w-4xl">
-                        {(detail.answer !== undefined && detail.answer !== null && detail.answer !== '')
-                          ? (Array.isArray(detail.answer) ? detail.answer.join(', ') : String(detail.answer))
-                          : <span className="text-gray-300 italic font-normal">No response provided</span>}
+                        {(() => {
+                          if (detail.answer === undefined || detail.answer === null || detail.answer === '') {
+                            return <span className="text-gray-300 italic font-normal">No response provided</span>;
+                          }
+
+                          const formatValue = (val: string | { month?: string; year?: string } | null | undefined) => {
+                            if (!val) return '';
+                            if (typeof val === 'string') return val;
+                            if (typeof val === 'object' && val !== null) {
+                              if (val.month && val.year) return `${val.month} ${val.year}`;
+                              return JSON.stringify(val);
+                            }
+                            return String(val);
+                          };
+
+                          if (Array.isArray(detail.answer)) {
+                            return detail.answer.join(', ');
+                          }
+
+                          if (typeof detail.answer === 'object' && detail.answer !== null) {
+                            interface LocalDateValue {
+                              month?: string;
+                              year?: string;
+                            }
+                            const ans = detail.answer as { 
+                              start?: LocalDateValue; 
+                              end?: LocalDateValue; 
+                              month?: string; 
+                              year?: string 
+                            };
+                            if (ans.start || ans.end) {
+                              return (
+                                <span className="flex items-center gap-2">
+                                  <span className="text-primary/60 font-bold uppercase text-[10px] tracking-widest">From</span>
+                                  {formatValue(ans.start)}
+                                  <span className="text-primary/60 font-bold uppercase text-[10px] tracking-widest ml-2">To</span>
+                                  {formatValue(ans.end)}
+                                </span>
+                              );
+                            }
+                            if (ans.month && ans.year) {
+                              return `${ans.month} ${ans.year}`;
+                            }
+                            return JSON.stringify(ans);
+                          }
+
+                          return String(detail.answer);
+                        })()}
                       </p>
                     </div>
                   </div>

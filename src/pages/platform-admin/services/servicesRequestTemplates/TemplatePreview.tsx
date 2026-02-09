@@ -11,17 +11,31 @@ import type { ServiceRequestTemplate, FormField, FormFieldOption } from '../../.
 import { isOptionWithQuestions, getOptionLabel } from '../../../../types/service-request-template';
 import { Dropdown } from '../../../common/Dropdown';
 
+type PreviewObjectBase = {
+  selection?: string | string[];
+  start?: string | DateValue;
+  end?: string | DateValue;
+  month?: string;
+  year?: string;
+};
+
 type PreviewValue =
   | string
   | number
   | string[]
-  | {
-      selection?: string | string[];
-      // Nested answers keyed by e.g. q_0_1
-      [key: string]: PreviewValue;
-    }
+  | (PreviewObjectBase & Record<string, unknown>)
   | null
   | undefined;
+
+interface DateValue {
+  month?: string;
+  year?: string;
+}
+
+interface RangeValue {
+  start?: string | DateValue;
+  end?: string | DateValue;
+}
 
 const PreviewField: React.FC<{ 
   field: FormField; 
@@ -162,23 +176,313 @@ const PreviewField: React.FC<{
           )}
 
           {field.input_type === 'month' && (
-            <div className="w-64">
-              <Dropdown
-                fullWidth
-                label={
-                  value && typeof value === 'string'
-                    ? value
-                    : 'Select Month'
-                }
-                items={[
-                  'January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'
-                ].map(month => ({
-                  id: month,
-                  label: month,
-                  onClick: () => onValueChange(month)
-                }))}
-              />
+            <div className="flex items-center gap-4">
+              <div className="w-64">
+                <Dropdown
+                  fullWidth
+                  label={
+                    field.isRange
+                      ? (value && typeof value === 'object' && !Array.isArray(value) && typeof value.start === 'string' ? `From: ${value.start}` : 'From: Month')
+                      : (value && typeof value === 'string' ? value : 'Select Month')
+                  }
+                  items={[
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                  ].filter(month => {
+                    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                    const minIdx = field.minMonth ? months.indexOf(field.minMonth) : 0;
+                    const maxIdx = field.maxMonth ? months.indexOf(field.maxMonth) : 11;
+                    const currIdx = months.indexOf(month);
+                    return currIdx >= minIdx && currIdx <= maxIdx;
+                  }).map(month => ({
+                    id: month,
+                    label: month,
+                    onClick: () => {
+                      if (field.isRange) {
+                        const current = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+                        onValueChange({ ...current, start: month });
+                      } else {
+                        onValueChange(month);
+                      }
+                    }
+                  }))}
+                />
+              </div>
+              {field.isRange && (
+                <>
+                  <div className="text-gray-400 font-bold">to</div>
+                  <div className="w-64">
+                    <Dropdown
+                      fullWidth
+                      label={
+                        value && typeof value === 'object' && !Array.isArray(value) && typeof value.end === 'string'
+                          ? `To: ${value.end}`
+                          : 'To: Month'
+                      }
+                      items={[
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ].filter(month => {
+                        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                        const minIdx = field.minMonth ? months.indexOf(field.minMonth) : 0;
+                        const maxIdx = field.maxMonth ? months.indexOf(field.maxMonth) : 11;
+                        const currIdx = months.indexOf(month);
+                        return currIdx >= minIdx && currIdx <= maxIdx;
+                      }).map(month => ({
+                        id: month,
+                        label: month,
+                        onClick: () => {
+                          const current = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+                          onValueChange({ ...current, end: month });
+                        }
+                      }))}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {field.input_type === 'year' && (
+            <div className="flex items-center gap-4">
+              <div className="w-64">
+                <Dropdown
+                  fullWidth
+                  label={
+                    field.isRange
+                      ? (value && typeof value === 'object' && !Array.isArray(value) && typeof value.start === 'string' ? `From: ${value.start}` : 'From: Year')
+                      : (value && typeof value === 'string' ? value : 'Select Year')
+                  }
+                  items={(() => {
+                    const startYear = field.minYear || (new Date().getFullYear() - 10);
+                    const endYear = field.maxYear || (new Date().getFullYear() + 10);
+                    const length = Math.max(0, endYear - startYear + 1);
+                    return Array.from({ length }, (_, i) => {
+                      const year = String(startYear + i);
+                      return {
+                        id: year,
+                        label: year,
+                        onClick: () => {
+                          if (field.isRange) {
+                            const current = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+                            onValueChange({ ...current, start: year });
+                          } else {
+                            onValueChange(year);
+                          }
+                        }
+                      };
+                    });
+                  })()}
+                />
+              </div>
+              {field.isRange && (
+                <>
+                  <div className="text-gray-400 font-bold">to</div>
+                  <div className="w-64">
+                    <Dropdown
+                      fullWidth
+                      label={
+                        value && typeof value === 'object' && !Array.isArray(value) && typeof value.end === 'string'
+                          ? `To: ${value.end}`
+                          : 'To: Year'
+                      }
+                      items={(() => {
+                        const startYear = field.minYear || (new Date().getFullYear() - 10);
+                        const endYear = field.maxYear || (new Date().getFullYear() + 10);
+                        const length = Math.max(0, endYear - startYear + 1);
+                        return Array.from({ length }, (_, i) => {
+                          const year = String(startYear + i);
+                          return {
+                            id: year,
+                            label: year,
+                            onClick: () => {
+                              const current = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+                              onValueChange({ ...current, end: year });
+                            }
+                          };
+                        });
+                      })()}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {field.input_type === 'month_year' && (
+            <div className={`flex flex-col gap-6 ${field.isRange ? 'p-6 bg-primary/5 rounded-3xl border border-primary/10' : ''}`}>
+              {field.isRange && <p className="text-[10px] text-primary/40 font-bold uppercase tracking-widest leading-none">Start Period</p>}
+              <div className="flex gap-4">
+                <div className="w-48">
+                  <Dropdown
+                    fullWidth
+                    label={
+                      (() => {
+                        const target = field.isRange ? (value as RangeValue)?.start : value;
+                        return (target && typeof target === 'object' && !Array.isArray(target) && (target as DateValue).month)
+                          ? (target as DateValue).month
+                          : 'Month';
+                      })()
+                    }
+                    items={[
+                      'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'
+                    ].filter(month => {
+                      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                      const target = field.isRange ? (value as RangeValue)?.start : value;
+                      const currentYear = (target && typeof target === 'object' && !Array.isArray(target)) ? Number((target as DateValue).year) : null;
+                      
+                      let minIdx = 0;
+                      let maxIdx = 11;
+                      if (currentYear && field.minYear && currentYear === field.minYear && field.minMonth) minIdx = months.indexOf(field.minMonth);
+                      if (currentYear && field.maxYear && currentYear === field.maxYear && field.maxMonth) maxIdx = months.indexOf(field.maxMonth);
+
+                      const currIdx = months.indexOf(month);
+                      return currIdx >= minIdx && currIdx <= maxIdx;
+                    }).map(month => ({
+                      id: month,
+                      label: month,
+                      onClick: () => {
+                        const target = field.isRange ? (value as RangeValue)?.start : (value as DateValue);
+                        const current = (target && typeof target === 'object' && !Array.isArray(target)) ? target : {};
+                        const next = { ...current, month };
+                        if (field.isRange) {
+                          onValueChange({ ...(value as RangeValue), start: next });
+                        } else {
+                          onValueChange(next);
+                        }
+                      }
+                    }))}
+                  />
+                </div>
+                <div className="w-32">
+                  <Dropdown
+                    fullWidth
+                    label={
+                      (() => {
+                        const target = field.isRange ? (value as RangeValue)?.start : value;
+                        return (target && typeof target === 'object' && !Array.isArray(target) && (target as DateValue).year)
+                          ? (target as DateValue).year
+                          : 'Year';
+                      })()
+                    }
+                    items={(() => {
+                      const startYear = field.minYear || (new Date().getFullYear() - 10);
+                      const endYear = field.maxYear || (new Date().getFullYear() + 10);
+                      const length = Math.max(0, endYear - startYear + 1);
+                      return Array.from({ length }, (_, i) => {
+                        const year = String(startYear + i);
+                        return {
+                          id: year,
+                          label: year,
+                          onClick: () => {
+                            const target = field.isRange ? (value as RangeValue)?.start : (value as DateValue);
+                            const current = (target && typeof target === 'object' && !Array.isArray(target)) ? target : {};
+                            const next = { ...current, year };
+                            if (field.isRange) {
+                              onValueChange({ ...(value as RangeValue), start: next });
+                            } else {
+                              onValueChange(next);
+                            }
+                          }
+                        };
+                      });
+                    })()}
+                  />
+                </div>
+              </div>
+
+              {field.isRange && (
+                <>
+                  <div className="flex items-center gap-4">
+                    <div className="h-px flex-1 bg-primary/10" />
+                    <span className="text-[10px] text-primary/40 font-bold uppercase tracking-widest">End Period</span>
+                    <div className="h-px flex-1 bg-primary/10" />
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-48">
+                      <Dropdown
+                        fullWidth
+                        label={
+                          (() => {
+                            const range = (value && typeof value === 'object' && !Array.isArray(value))
+                              ? (value as RangeValue)
+                              : undefined;
+                            const endValue = range?.end;
+                            const endMonth =
+                              endValue && typeof endValue === 'object' && !Array.isArray(endValue)
+                                ? (endValue as DateValue).month
+                                : undefined;
+                            return endMonth ?? 'Month';
+                          })()
+                        }
+                        items={[
+                          'January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'
+                        ].filter(month => {
+                          const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                          const range = (value && typeof value === 'object' && !Array.isArray(value))
+                            ? (value as RangeValue)
+                            : undefined;
+                          const target = range?.end;
+                          const currentYear = (target && typeof target === 'object' && !Array.isArray(target)) ? Number((target as DateValue).year) : null;
+                          
+                          let minIdx = 0;
+                          let maxIdx = 11;
+                          if (currentYear && field.minYear && currentYear === field.minYear && field.minMonth) minIdx = months.indexOf(field.minMonth);
+                          if (currentYear && field.maxYear && currentYear === field.maxYear && field.maxMonth) maxIdx = months.indexOf(field.maxMonth);
+
+                          const currIdx = months.indexOf(month);
+                          return currIdx >= minIdx && currIdx <= maxIdx;
+                        }).map(month => ({
+                          id: month,
+                          label: month,
+                          onClick: () => {
+                            const target = (value as RangeValue)?.end;
+                            const current = (target && typeof target === 'object' && !Array.isArray(target)) ? target : {};
+                            onValueChange({ ...(value as RangeValue), end: { ...current, month } });
+                          }
+                        }))}
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Dropdown
+                        fullWidth
+                        label={
+                          (() => {
+                            const range = (value && typeof value === 'object' && !Array.isArray(value))
+                              ? (value as RangeValue)
+                              : undefined;
+                            const endValue = range?.end;
+                            const endYear =
+                              endValue && typeof endValue === 'object' && !Array.isArray(endValue)
+                                ? (endValue as DateValue).year
+                                : undefined;
+                            return endYear ?? 'Year';
+                          })()
+                        }
+                        items={(() => {
+                          const startYear = field.minYear || (new Date().getFullYear() - 10);
+                          const endYear = field.maxYear || (new Date().getFullYear() + 10);
+                          const length = Math.max(0, endYear - startYear + 1);
+                          return Array.from({ length }, (_, i) => {
+                            const year = String(startYear + i);
+                            return {
+                              id: year,
+                              label: year,
+                              onClick: () => {
+                                const target = (value as RangeValue)?.end;
+                                const current = (target && typeof target === 'object' && !Array.isArray(target)) ? target : {};
+                                onValueChange({ ...(value as RangeValue), end: { ...current, year } });
+                              }
+                            };
+                          });
+                        })()}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

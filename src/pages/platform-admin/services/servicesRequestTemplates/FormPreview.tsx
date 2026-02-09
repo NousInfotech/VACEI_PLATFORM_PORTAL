@@ -80,10 +80,77 @@ const PreviewField: React.FC<{ field: FormField }> = ({ field }) => {
             </div>
           )}
 
+          {field.input_type === 'month' && (
+            <div className="flex items-center gap-4">
+              <div className="w-64 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                  {field.isRange ? 'From: Month' : (field.minMonth && field.maxMonth ? `Month (${field.minMonth.substring(0,3)} - ${field.maxMonth.substring(0,3)})` : 'Select Month')}
+                  <CornerDownRight className="h-4 w-4 rotate-90" />
+              </div>
+              {field.isRange && (
+                <>
+                  <div className="text-gray-300 font-bold">to</div>
+                  <div className="w-64 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                      To: Month
+                      <CornerDownRight className="h-4 w-4 rotate-90" />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {field.input_type === 'select' && (
             <div className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
                 Select an option
                 <CornerDownRight className="h-4 w-4 rotate-90" />
+            </div>
+          )}
+
+          {field.input_type === 'year' && (
+            <div className="flex items-center gap-4">
+              <div className="w-64 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                  {field.isRange ? 'From: Year' : (field.minYear && field.maxYear ? `Year (${field.minYear} - ${field.maxYear})` : 'Select Year')}
+                  <CornerDownRight className="h-4 w-4 rotate-90" />
+              </div>
+              {field.isRange && (
+                <>
+                  <div className="text-gray-300 font-bold">to</div>
+                  <div className="w-64 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                      To: Year
+                      <CornerDownRight className="h-4 w-4 rotate-90" />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {field.input_type === 'month_year' && (
+            <div className={`space-y-4 ${field.isRange ? 'p-4 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200' : ''}`}>
+              {field.isRange && <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest pl-2">Start Period</p>}
+              <div className="flex gap-4">
+                <div className="flex-1 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                    {field.isRange ? 'Month' : (field.minMonth && field.maxMonth ? `Month (${field.minMonth.substring(0,3)} - ${field.maxMonth.substring(0,3)})` : 'Month')}
+                    <CornerDownRight className="h-4 w-4 rotate-90" />
+                </div>
+                <div className="w-32 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                    {field.isRange ? 'Year' : (field.minYear && field.maxYear ? `${field.minYear}-${field.maxYear}` : 'Year')}
+                    <CornerDownRight className="h-4 w-4 rotate-90" />
+                </div>
+              </div>
+              {field.isRange && (
+                <>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest pl-2">End Period</p>
+                  <div className="flex gap-4">
+                    <div className="flex-1 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                        Month
+                        <CornerDownRight className="h-4 w-4 rotate-90" />
+                    </div>
+                    <div className="w-32 px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between text-sm text-gray-400 italic">
+                        Year
+                        <CornerDownRight className="h-4 w-4 rotate-90" />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
