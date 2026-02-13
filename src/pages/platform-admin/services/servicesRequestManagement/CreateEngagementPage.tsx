@@ -170,7 +170,7 @@ const CreateEngagementPage: React.FC = () => {
           organizationId: selectedOrgId,
           organizationName: organizations.find(o => o.id === selectedOrgId)?.name || 'Mock Org',
           serviceCategory: selectedService as keyof typeof Services,
-          status: 'ACTIVE',
+          status: 'ASSIGNED',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

@@ -21,7 +21,7 @@ const PillTab: React.FC<PillTabsProps> = ({
   className = "" 
 }) => {
   return (
-    <div className={`overflow-x-auto flex space-x-1 bg-gray-100 p-1 rounded-xl w-fit ${className}`}>
+    <div className={`overflow-x-auto flex space-x-1 bg-gray-100 p-1 rounded-xl ${className}`}>
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -31,7 +31,7 @@ const PillTab: React.FC<PillTabsProps> = ({
             type="button"
             onClick={() => onTabChange(tab.id)}
             className={`
-              flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap
+              flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 whitespace-nowrap flex-1
               ${isActive 
                 ? 'bg-primary text-light shadow-sm' 
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}

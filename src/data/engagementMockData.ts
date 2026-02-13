@@ -7,7 +7,7 @@ export interface Engagement {
   organizationId: string;
   organizationName: string;
   serviceCategory: keyof typeof Services;
-  status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'SUSPENDED';
+  status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'TERMINATED' | 'ASSIGNED';
   createdAt: string;
   updatedAt: string;
 }

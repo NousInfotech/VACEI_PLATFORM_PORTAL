@@ -14,10 +14,20 @@ import type { ServiceRequest } from '../../../types/service-request-template';
 import { USE_MOCK_DATA, getMockClientById, getMockCompaniesByClientId } from '../../../data/mockCompanyData';
 import PageHeader from '../../common/PageHeader';
 import ViewClientSkeleton from './components/skeletons/ViewClientSkeleton';
+import PillTab from '../../common/PillTab';
+import Messages from '../../messages/Messages';
+import { MessageSquare, type LucideIcon } from 'lucide-react';
+
+interface Tab {
+    id: string;
+    label: string;
+    icon?: LucideIcon;
+}
 
 const ViewClient: React.FC = () => {
     const { clientId } = useParams<{ clientId: string }>();
     const navigate = useNavigate();
+    const [activeTab, setActiveTab] = React.useState('info');
 
     const { data: realClient, isLoading: isRealClientLoading } = useQuery<Client>({
         queryKey: ['client', clientId],
@@ -49,6 +59,11 @@ const ViewClient: React.FC = () => {
         );
     }
 
+    const tabs: Tab[] = [
+        { id: 'info', label: 'Client Details', icon: User },
+        { id: 'messages', label: 'Messages', icon: MessageSquare },
+    ];
+
     return (
         <div className="space-y-6">
             <PageHeader 
@@ -59,7 +74,15 @@ const ViewClient: React.FC = () => {
                 backUrl="/dashboard/clients"
             />
 
-            <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-2xl bg-white space-y-6">
+            <PillTab 
+                tabs={tabs} 
+                activeTab={activeTab} 
+                onTabChange={setActiveTab} 
+            />
+
+            {activeTab === 'info' ? (
+                <>
+                    <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-2xl bg-white space-y-6">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -141,7 +164,13 @@ const ViewClient: React.FC = () => {
                         )}
                     </TableBody>
                 </Table>
-            </ShadowCard>
+                </ShadowCard>
+                </>
+            ) : (
+                <div className="animate-in fade-in duration-500">
+                    <Messages isSingleChat={true} contextualChatId="8" />
+                </div>
+            )}
         </div>
     );
 };

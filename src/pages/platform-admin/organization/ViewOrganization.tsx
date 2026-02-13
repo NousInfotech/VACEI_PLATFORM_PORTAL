@@ -6,6 +6,7 @@ import {
     Briefcase,
     LayoutGrid,
     ClipboardList,
+    MessageSquare,
     type LucideIcon
 } from 'lucide-react';
 import { 
@@ -23,6 +24,7 @@ import { endPoints } from '../../../config/endPoint';
 import type { Organization } from '../../../types/organization';
 import PageHeader from '../../common/PageHeader';
 import PillTab from '../../common/PillTab';
+import Messages from '../../messages/Messages';
 import type { Engagement } from '../../../data/engagementMockData';
 
 
@@ -92,6 +94,7 @@ const ViewOrganization: React.FC = () => {
     const tabs: Tab[] = [
         { id: 'services', label: 'Available Services', icon: LayoutGrid },
         { id: 'engagements', label: 'Engagements', icon: Briefcase },
+        { id: 'messages', label: 'Messages', icon: MessageSquare },
     ];
 
     return (
@@ -258,6 +261,12 @@ const ViewOrganization: React.FC = () => {
                             )}
                         </div>
                     </ShadowCard>
+                )}
+
+                {activeTab === 'messages' && (
+                    <div className="animate-in fade-in duration-500">
+                        <Messages isSingleChat={true} contextualChatId="1" />
+                    </div>
                 )}
             </div>
         </div>

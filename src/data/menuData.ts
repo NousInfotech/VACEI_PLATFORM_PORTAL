@@ -5,7 +5,8 @@ import {
   InboxIcon,
   ArchiveIcon,
   Settings02Icon,
-  UserGroupIcon as UsersIcon
+  UserGroupIcon as UsersIcon,
+  BubbleChatIcon
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -65,6 +66,14 @@ export const menuData: MenuItem[] = [
         href: "/dashboard/service-request-templates",
         section: "primary",
         description: "Configure form fields",
+    },
+    {
+        slug: "messages",
+        icon: BubbleChatIcon,
+        label: "Messages",
+        href: "/dashboard/messages",
+        section: "primary",
+        description: "Chat with your team",
     },
     {
         slug: "settings",
