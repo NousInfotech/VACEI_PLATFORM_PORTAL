@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { Check, CheckCheck, FileText, ChevronDown } from 'lucide-react';
 import type { Message, User } from '../types';
 import { cn } from '../../../lib/utils';
@@ -49,6 +49,24 @@ export const MessageItem: React.FC<MessageItemProps> = ({
   const [showReactionDetails, setShowReactionDetails] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const reactionContainerRef = useRef<HTMLDivElement>(null);
+  const [optionsTriggerRect, setOptionsTriggerRect] = useState<DOMRect | null>(null);
+  const [reactionDetailsTriggerRect, setReactionDetailsTriggerRect] = useState<DOMRect | null>(null);
+
+  useLayoutEffect(() => {
+    if (showOptions && triggerRef.current) {
+      setOptionsTriggerRect(triggerRef.current.getBoundingClientRect());
+    } else {
+      setOptionsTriggerRect(null);
+    }
+  }, [showOptions]);
+
+  useLayoutEffect(() => {
+    if (showReactionDetails && reactionContainerRef.current) {
+      setReactionDetailsTriggerRect(reactionContainerRef.current.getBoundingClientRect());
+    } else {
+      setReactionDetailsTriggerRect(null);
+    }
+  }, [showReactionDetails]);
 
   const handleAction = (action: MessageAction, data?: string) => {
     if (action === 'reply') onReply?.();
@@ -143,12 +161,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({
         <MessageOptions 
           isOpen={showOptions} 
           onClose={() => onToggleOptions?.(false)}
-          onAction={handleAction as any}
+          onAction={handleAction}
           isMe={isMe}
-            isDeleted={message.isDeleted}
-            triggerRect={triggerRef.current?.getBoundingClientRect()}
-            createdAt={message.createdAt}
-          />
+          isDeleted={message.isDeleted}
+          triggerRect={optionsTriggerRect}
+          createdAt={message.createdAt}
+        />
         {message.type === 'image' ? (
           <div 
             className="overflow-hidden rounded-xl mb-1 cursor-pointer hover:opacity-95 transition-opacity bg-black/5"
@@ -268,7 +286,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({
                 onReact?.(emoji);
                 setShowReactionDetails(false);
               }}
-              triggerRect={reactionContainerRef.current?.getBoundingClientRect()}
+              triggerRect={reactionDetailsTriggerRect}
             />
           )}
         </div>

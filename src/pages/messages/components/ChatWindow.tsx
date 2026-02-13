@@ -74,19 +74,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       const element = document.getElementById(`msg-${scrollToMessageId}`);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setHighlightedId(scrollToMessageId);
-        
+        // Defer setState to avoid synchronous setState in effect (cascading renders)
+        const id = scrollToMessageId;
+        queueMicrotask(() => setHighlightedId(id));
+
         // Use a persistent timer that won't be cleared by onScrollComplete re-render
         const timer = setTimeout(() => {
           setHighlightedId(null);
           // Only notify completion AFTER we've cleared our local highlight state
           onScrollComplete?.();
         }, 800);
-        
+
         return () => clearTimeout(timer);
       }
     }
-  }, [scrollToMessageId]); // Remove onScrollComplete from deps to prevent immediate cleanup if parent changes it
+  }, [scrollToMessageId, onScrollComplete]);
 
   // Instant scroll to bottom on chat switch or initial load
   useLayoutEffect(() => {

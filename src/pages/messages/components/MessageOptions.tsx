@@ -11,7 +11,7 @@ import {
   Pencil
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import { EMOJI_LIST } from './EmojiPicker';
+import { EMOJI_LIST } from './emojiConstants';
 
 export type MessageAction = 'reply' | 'react' | 'forward' | 'delete' | 'copy' | 'select' | 'edit';
 
@@ -39,11 +39,17 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number; transformOrigin: string } | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [capturedTime, setCapturedTime] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      setShowEmojiPicker(false);
-      setCoords(null);
+      queueMicrotask(() => {
+        setShowEmojiPicker(false);
+        setCoords(null);
+        setCapturedTime(null);
+      });
+    } else {
+      queueMicrotask(() => setCapturedTime(Date.now()));
     }
   }, [isOpen]);
 
@@ -72,14 +78,14 @@ export const MessageOptions: React.FC<MessageOptionsProps> = ({
         left = 20;
       }
 
-      setCoords({ top, left, transformOrigin });
+      const nextCoords = { top, left, transformOrigin };
+      queueMicrotask(() => setCoords(nextCoords));
     }
   }, [isOpen, triggerRect, isMe]);
 
   if (!isOpen) return null;
 
-  const now = Date.now();
-  const isEditable = isMe && !isDeleted && createdAt && (now - createdAt < 15 * 60 * 1000);
+  const isEditable = isMe && !isDeleted && createdAt != null && capturedTime != null && (capturedTime - createdAt < 15 * 60 * 1000);
 
   const mainOptions = isDeleted ? [] : [
     { id: 'reply' as const, label: 'Reply', icon: Reply },
