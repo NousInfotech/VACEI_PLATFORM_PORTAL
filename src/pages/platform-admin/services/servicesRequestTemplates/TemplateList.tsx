@@ -92,7 +92,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
                     <FileText className="h-4 w-4" />
                   </div>
                   <span className="font-bold text-gray-900 leading-tight">
-                    {formatServiceLabel(template.service as string | null, (template as any).customServiceCycleId)}
+                    {formatServiceLabel(template.service as string | null, template.customServiceCycleId)}
                   </span>
                 </div>
               </TableCell>

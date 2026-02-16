@@ -9,7 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../../ui/Button';
 import Dropdown from '../../../common/Dropdown';
-import { Services, type ServiceRequestTemplate } from '../../../../types/service-request-template';
+import { Services, type ServiceRequestTemplate, type TemplateType } from '../../../../types/service-request-template';
 import AlertMessage from '../../../common/AlertMessage';
 import PageHeader from '../../../common/PageHeader';
 import { TemplateList } from './TemplateList';
@@ -57,7 +57,7 @@ const ServiceRequestTemplatesContent: React.FC = () => {
     const custom: ServiceRequestTemplate[] = [];
 
     filteredTemplates.forEach((t: ServiceRequestTemplate) => {
-      const isStandard = !t.service || (Object.values(Services).includes(t.service as any) && t.service !== 'CUSTOM');
+      const isStandard = !t.service || (Object.values(Services).includes(t.service as Services) && t.service !== 'CUSTOM');
       if (isStandard) standard.push(t);
       else custom.push(t);
     });
@@ -71,7 +71,7 @@ const ServiceRequestTemplatesContent: React.FC = () => {
       result.push({
         id: 'virtual-custom-group',
         service: 'CUSTOM_GROUP',
-        type: 'SERVICE' as any,
+        type: 'SERVICE' as TemplateType,
         isActive: true,
         updatedAt: custom[0].updatedAt,
         createdAt: custom[0].createdAt,

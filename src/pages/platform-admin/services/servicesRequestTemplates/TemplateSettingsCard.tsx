@@ -129,7 +129,7 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
                     ...opt,
                     onClick: () => onUpdate({ 
                       service: opt.id as string | null,
-                      customServiceCycleId: (opt as any).customServiceCycleId || null
+                      customServiceCycleId: (opt as DropdownItem & { customServiceCycleId?: string }).customServiceCycleId || null
                     })
                   }))}
                   trigger={

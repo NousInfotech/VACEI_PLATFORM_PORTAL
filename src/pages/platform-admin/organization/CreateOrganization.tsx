@@ -32,8 +32,8 @@ const CreateOrganization: React.FC = () => {
 
       setAlert({ message: 'Organization created successfully!', variant: 'success' });
       setTimeout(() => navigate('/dashboard/organizations'), 1500);
-    } catch (error: any) {
-      const errorMessage = error?.message || (typeof error === 'string' ? error : 'Failed to create organization');
+    } catch (error: unknown) {
+      const errorMessage = (error as Error)?.message || (typeof error === 'string' ? error : 'Failed to create organization');
       setAlert({ message: errorMessage, variant: 'danger' });
     } finally {
       setLoading(false);
