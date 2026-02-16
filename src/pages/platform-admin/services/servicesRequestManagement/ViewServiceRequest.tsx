@@ -8,7 +8,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
-  FileText
+  FileText,
+  Eye,
+  Download
 } from 'lucide-react';
 import { Button } from '../../../../ui/Button';
 import { ShadowCard } from '../../../../ui/ShadowCard';
@@ -259,6 +261,7 @@ const ViewServiceRequestContent: React.FC = () => {
     }
 
     if (request.status === 'APPROVED') {
+      const hasEngagement = request.engagements && request.engagements.length > 0;
       return (
         <div className="flex items-center gap-3">
           {isTop && (
@@ -266,13 +269,20 @@ const ViewServiceRequestContent: React.FC = () => {
               Approved
             </span>
           )}
-          <Button 
-            onClick={() => setIsEngagementModalOpen(true)}
-            size={isTop ? 'default' : 'lg'}
-            className={`${commonBtnClass} ${isTop ? 'rounded-xl' : 'rounded-2xl px-10'}`}
-          >
-            Create Engagement
-          </Button>
+          {hasEngagement ? (
+            <div className={`px-6 py-2.5 bg-green-50 text-green-600 ${isTop ? 'text-[10px]' : 'text-sm'} font-bold rounded-xl border border-green-100 uppercase flex items-center gap-2 shadow-sm`}>
+              <CheckCircle2 className="h-4 w-4" />
+              Engagement Created
+            </div>
+          ) : (
+            <Button 
+              onClick={() => setIsEngagementModalOpen(true)}
+              size={isTop ? 'default' : 'lg'}
+              className={`${commonBtnClass} ${isTop ? 'rounded-xl' : 'rounded-2xl px-10'}`}
+            >
+              Create Engagement
+            </Button>
+          )}
         </div>
       );
     }
@@ -471,23 +481,42 @@ const ViewServiceRequestContent: React.FC = () => {
                 <h4 className="text-lg font-bold text-gray-900">Supporting Documents</h4>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-3">
                 {(request.submittedDocuments ?? []).map((doc) => (
-                  <a 
+                  <div 
                     key={doc.id} 
-                    href={doc.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-4 p-4 rounded-3xl bg-gray-50 border border-gray-100 hover:border-primary/20 hover:bg-white transition-all group"
+                    className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:border-primary/20 hover:bg-white transition-all group"
                   >
-                    <div className="p-3 bg-white rounded-2xl text-primary shadow-sm group-hover:shadow-md transition-all">
-                      <FileText className="h-6 w-6" />
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="p-3 bg-white rounded-xl text-primary shadow-sm group-hover:shadow-md transition-all">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{doc.file_name}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Document Attachment</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{doc.file_name}</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Document Attachment</p>
+                    
+                    <div className="flex items-center gap-2">
+                      <a 
+                        href={doc.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-xs font-bold text-gray-600 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View
+                      </a>
+                      <a 
+                        href={`${doc.url}${doc.url.includes('?') ? '&' : '?'}download=`} 
+                        download={doc.file_name}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all shadow-md shadow-primary/10"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download
+                      </a>
                     </div>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>

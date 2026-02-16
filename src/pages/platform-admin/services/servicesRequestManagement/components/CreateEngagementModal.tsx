@@ -11,6 +11,7 @@ import {
 import { Button } from '../../../../../ui/Button';
 import { apiGet, apiPost } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
+import { StatusSuccessModal } from './StatusUpdateModals';
 
 interface CreateEngagementModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
 }) => {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: orgsData, isLoading: isLoadingOrgs } = useQuery<{ data: Organization[] }>({
     queryKey: ['organizations-list'],
@@ -48,7 +50,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
   });
 
   const organizations = orgsData?.data || [];
-  
+
   // Filter organizations that offer the required service
   const eligibleOrgs = organizations.filter(org => {
     if (serviceCategory === 'CUSTOM' && customServiceCycleId) {
@@ -69,13 +71,12 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
         companyId,
         organizationId: selectedOrgId,
         serviceCategory: serviceCategory,
-        customServiceCycleId: customServiceCycleId,
+        ...(customServiceCycleId && { customServiceCycleId }),
         ...(serviceRequestId?.trim() && { serviceRequestId }),
       });
-      alert('Engagement created successfully');
-      onClose();
-    } catch (error) {
-      console.error('Failed to create engagement:', error);
+      setShowSuccess(true);
+    } catch (err) {
+      console.error('Failed to create engagement:', err);
       alert('Failed to create engagement');
     } finally {
       setIsSubmitting(false);
@@ -86,8 +87,8 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-md animate-in fade-in duration-300">
-      <div 
-        className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300"
+      <div
+        className="bg-white w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[40px] shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-10 py-8 border-b border-gray-50 bg-gray-50/30">
@@ -100,7 +101,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
               <p className="text-sm text-gray-500 font-medium">Assign a professional firm to this service</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400"
           >
@@ -108,7 +109,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
           </button>
         </div>
 
-        <div className="p-10 space-y-8">
+        <div className="p-10 space-y-8 overflow-y-auto flex-1 custom-scrollbar">
           {/* Service Info */}
           <div className="p-6 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">
             <div className="flex items-center justify-between">
@@ -135,7 +136,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 gap-3 pr-2">
               {isLoadingOrgs ? (
                 Array(3).fill(0).map((_, i) => (
                   <div key={i} className="h-20 bg-gray-50 rounded-2xl animate-pulse" />
@@ -145,8 +146,8 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
                   key={org.id}
                   onClick={() => setSelectedOrgId(org.id)}
                   className={`group flex items-center justify-between p-5 rounded-3xl border-2 transition-all text-left ${
-                    selectedOrgId === org.id 
-                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5' 
+                    selectedOrgId === org.id
+                      ? 'border-primary bg-primary/5 shadow-lg shadow-primary/5'
                       : 'border-gray-100 hover:border-primary/30 hover:bg-gray-50'
                   }`}
                 >
@@ -178,14 +179,14 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
         </div>
 
         <div className="px-10 py-8 bg-gray-50/30 border-t border-gray-50 flex items-center justify-end gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl border-gray-200 text-gray-500 hover:bg-white"
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleCreate}
             disabled={isSubmitting || !selectedOrgId}
             className="px-10 py-2.5 rounded-xl bg-primary text-white shadow-xl shadow-primary/20 hover:bg-primary-dark transition-all disabled:opacity-50"
@@ -194,6 +195,16 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
           </Button>
         </div>
       </div>
+
+      <StatusSuccessModal
+        isOpen={showSuccess}
+        onClose={() => {
+          setShowSuccess(false);
+          onClose();
+        }}
+        title="Engagement Created Successfully"
+        message="The professional engagement has been successfully formalized and activated."
+      />
     </div>
   );
 };
