@@ -5,6 +5,7 @@ import { Button } from '../../../../ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/Table';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import type { ServiceRequestTemplate } from '../../../../types/service-request-template';
+import { useTemplates } from '../../context/ServicesContext';
 
 interface TemplateListProps {
   loading: boolean;
@@ -19,6 +20,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   onView,
   onToggleActive,
 }) => {
+  const { formatServiceLabel } = useTemplates();
+
   if (loading) {
     return (
       <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-3xl bg-white">
@@ -89,7 +92,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
                     <FileText className="h-4 w-4" />
                   </div>
                   <span className="font-bold text-gray-900 leading-tight">
-                    {template.service || 'General'}
+                    {formatServiceLabel(template.service as string | null, (template as any).customServiceCycleId)}
                   </span>
                 </div>
               </TableCell>
@@ -99,17 +102,21 @@ export const TemplateList: React.FC<TemplateListProps> = ({
                 </span>
               </TableCell>
               <TableCell>
-                <button
-                  onClick={() => onToggleActive(template)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                    template.isActive 
-                      ? 'bg-green-50 text-green-600 border-green-100 hover:bg-green-100' 
-                      : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
-                  }`}
-                >
-                  {template.isActive ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                  {template.isActive ? 'Active' : 'Inactive'}
-                </button>
+                {template.id === 'virtual-custom-group' ? (
+                  <span className="text-gray-300 font-bold ml-4">—</span>
+                ) : (
+                  <button
+                    onClick={() => onToggleActive(template)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
+                      template.isActive 
+                        ? 'bg-green-50 text-green-600 border-green-100 hover:bg-green-100' 
+                        : 'bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100'
+                    }`}
+                  >
+                    {template.isActive ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                    {template.isActive ? 'Active' : 'Inactive'}
+                  </button>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2 text-xs font-bold text-gray-400">

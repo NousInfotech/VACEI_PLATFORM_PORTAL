@@ -25,12 +25,14 @@ import type {
 import { StatusConfirmModal, StatusSuccessModal } from './components/StatusUpdateModals';
 import CreateEngagementModal from './components/CreateEngagementModal';
 import { mockRequests as mockServiceRequests } from './serviceMockData';
+import { TemplatesProvider, useTemplates } from '../../context/ServicesContext';
 
 const USE_MOCK_DATA = false;
 
-const ViewServiceRequest: React.FC = () => {
+const ViewServiceRequestContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { formatServiceLabel } = useTemplates();
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ 
     isOpen: boolean; 
@@ -69,6 +71,13 @@ const ViewServiceRequest: React.FC = () => {
     },
     enabled: !!id,
   });
+
+  useEffect(() => {
+    if (request) {
+      console.log('Service Request Data:', request);
+      console.log('Resolved Cycle ID:', request.customServiceCycleId || request.template?.customServiceCycleId);
+    }
+  }, [request]);
 
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -288,9 +297,9 @@ const ViewServiceRequest: React.FC = () => {
   return (
     <div className="space-y-6" ref={containerRef}>
       <PageHeader 
-        title="View Service Submission" 
+        title={`${formatServiceLabel(request?.service || '', request?.customServiceCycleId || request?.template?.customServiceCycleId)} Submission`} 
         icon={Inbox}
-        description={`Reviewing submission for ${request.company?.name || request.clientName || 'Unknown Entity'}`}
+        description={`Reviewing submission for ${request?.company?.name || request?.clientName || 'Unknown Entity'}`}
         showBack={true}
         backUrl="/dashboard/service-request-management"
       />
@@ -514,14 +523,21 @@ const ViewServiceRequest: React.FC = () => {
             setIsEngagementModalOpen(false);
             refetch();
           }}
-          companyId={request.companyId}
-          serviceCategory={request.service}
-          companyName={request.company?.name || request.clientName || 'Unknown Entity'}
-          serviceRequestId={request.id}
+          companyId={request?.companyId || ''}
+          serviceCategory={request?.service || ''}
+          customServiceCycleId={request?.customServiceCycleId || request?.template?.customServiceCycleId}
+          companyName={request?.company?.name || request?.clientName || 'Unknown Entity'}
+          serviceRequestId={request?.id || ''}
         />
       )}
     </div>
   );
 };
+
+const ViewServiceRequest: React.FC = () => (
+  <TemplatesProvider>
+    <ViewServiceRequestContent />
+  </TemplatesProvider>
+);
 
 export default ViewServiceRequest;

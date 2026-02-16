@@ -3,12 +3,13 @@ import {
   Plus, 
   Search, 
   FileText,
-  Filter
+  Filter,
+  ArrowLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../../../ui/Button';
 import Dropdown from '../../../common/Dropdown';
-import type { ServiceRequestTemplate } from '../../../../types/service-request-template';
+import { Services, type ServiceRequestTemplate } from '../../../../types/service-request-template';
 import AlertMessage from '../../../common/AlertMessage';
 import PageHeader from '../../../common/PageHeader';
 import { TemplateList } from './TemplateList';
@@ -26,6 +27,7 @@ const ServiceRequestTemplatesContent: React.FC = () => {
     setSelectedService
   } = useTemplates();
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
+  const [viewLevel, setViewLevel] = useState<'all' | 'custom'>('all');
 
   const services = useMemo(() => {
     const uniqueServices = Array.from(new Set(templates.map(t => t.service || 'General')));
@@ -50,12 +52,50 @@ const ServiceRequestTemplatesContent: React.FC = () => {
       });
   }, [templates, search, selectedService]);
 
+  const displayTemplates = useMemo(() => {
+    const standard: ServiceRequestTemplate[] = [];
+    const custom: ServiceRequestTemplate[] = [];
+
+    filteredTemplates.forEach((t: ServiceRequestTemplate) => {
+      const isStandard = !t.service || (Object.values(Services).includes(t.service as any) && t.service !== 'CUSTOM');
+      if (isStandard) standard.push(t);
+      else custom.push(t);
+    });
+
+    if (viewLevel === 'custom') {
+      return custom;
+    }
+
+    const result = [...standard];
+    if (custom.length > 0) {
+      result.push({
+        id: 'virtual-custom-group',
+        service: 'CUSTOM_GROUP',
+        type: 'SERVICE' as any,
+        isActive: true,
+        updatedAt: custom[0].updatedAt,
+        createdAt: custom[0].createdAt,
+        version: 1,
+        createdBy: 'system',
+        formFields: []
+      });
+    }
+
+    return result;
+  }, [filteredTemplates, viewLevel]);
+
   const handleCreateClick = () => {
     navigate('/dashboard/service-request-templates/create');
   };
 
 
   const handleViewClick = (template: ServiceRequestTemplate) => {
+    if (template.id === 'virtual-custom-group') {
+      setViewLevel('custom');
+      setSearch(''); 
+      setSelectedService('All Services'); // Reset service filter to show all custom templates
+      return;
+    }
     navigate(`/dashboard/service-request-templates/${template.id}/view`, { state: { template } });
   };
 
@@ -99,41 +139,59 @@ const ServiceRequestTemplatesContent: React.FC = () => {
       )}
 
       <div className="flex flex-col md:flex-row gap-4">
+        {viewLevel === 'custom' && (
+          <Button 
+            variant="secondary" 
+            onClick={() => setViewLevel('all')}
+            className="rounded-2xl border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-3"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        )}
         <div className="relative flex-1 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" />
           <input
             type="text"
-            placeholder="Search templates by type or name..."
+            placeholder={viewLevel === 'custom' ? "Search custom templates..." : "Search templates by type or name..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-12 pr-6 py-3 bg-gray-50 border border-gray-300 focus:border-primary/10 rounded-2xl focus:ring-4 focus:ring-primary/5 outline-none transition-all font-medium text-gray-700"
           />
         </div>
 
-        <Dropdown
-          label={selectedService}
-          trigger={
-            <Button variant="secondary" className="h-full px-6 py-3 rounded-2xl flex items-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700">
-              <Filter className="h-4 w-4" />
-              <span className="font-semibold">{selectedService}</span>
-            </Button>
-          }
-          items={services.map((service: string) => ({
-            id: service,
-            label: service,
-            onClick: () => setSelectedService(service),
-            className: selectedService === service ? "bg-primary/5 text-primary font-bold" : ""
-          }))}
-          align="right"
-        />
+        {viewLevel === 'all' && (
+          <Dropdown
+            label={selectedService}
+            trigger={
+              <Button variant="secondary" className="h-full px-6 py-3 rounded-2xl flex items-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700">
+                <Filter className="h-4 w-4" />
+                <span className="font-semibold">{selectedService}</span>
+              </Button>
+            }
+            items={services.map((service: string) => ({
+              id: service,
+              label: service,
+              onClick: () => setSelectedService(service),
+              className: selectedService === service ? "bg-primary/5 text-primary font-bold" : ""
+            }))}
+            align="right"
+          />
+        )}
       </div>
 
-      <TemplateList
-        loading={isLoading}
-        templates={filteredTemplates}
-        onView={handleViewClick}
-        onToggleActive={handleToggle}
-      />
+      <div className="space-y-12">
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest px-2">
+            {viewLevel === 'custom' ? 'Custom Service Templates' : 'Service Templates'}
+          </h3>
+          <TemplateList
+            loading={isLoading}
+            templates={displayTemplates}
+            onView={handleViewClick}
+            onToggleActive={handleToggle}
+          />
+        </div>
+      </div>
     </div>
   );
 };

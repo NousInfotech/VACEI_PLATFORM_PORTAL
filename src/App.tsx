@@ -14,6 +14,7 @@ import CreateTemplate from './pages/platform-admin/services/servicesRequestTempl
 import ViewTemplate from './pages/platform-admin/services/servicesRequestTemplates/ViewTemplate'
 import ServiceRequestManagement from './pages/platform-admin/services/servicesRequestManagement/ServiceRequestManagement'
 import ViewServiceRequest from './pages/platform-admin/services/servicesRequestManagement/ViewServiceRequest'
+import ServicesManagement from './pages/platform-admin/services/servicesManagement/ServicesManagement'
 import TemplatePreview from './pages/platform-admin/services/servicesRequestTemplates/TemplatePreview'
 import Clients from './pages/platform-admin/clients/Clients'
 import ViewClient from './pages/platform-admin/clients/ViewClient'
@@ -41,6 +42,7 @@ const App = () => {
           <Route path="/dashboard/service-request-templates" element={<ServiceRequestTemplates />} />
           <Route path="/dashboard/service-request-templates/create" element={<CreateTemplate />} />
           <Route path="/dashboard/service-request-templates/:id/view" element={<ViewTemplate />} />
+          <Route path="/dashboard/services-management" element={<ServicesManagement />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/companies" element={<Dashboard activeSection="Companies" />} />
           <Route path="/dashboard/engagements" element={<EngagementsList />} />

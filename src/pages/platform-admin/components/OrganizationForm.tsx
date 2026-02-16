@@ -1,7 +1,12 @@
+
 import React, { useState } from 'react';
-import { Mail, User, Building, Lock, Eye, EyeOff, LayoutGrid, Check } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Mail, User, Building, Lock, Eye, EyeOff, LayoutGrid, Check, Settings } from 'lucide-react';
 import { Button } from '../../../ui/Button';
+import { Skeleton } from '../../../ui/Skeleton';
 import type { CreateOrganizationDto } from '../../../types/organization';
+import { apiGet } from '../../../config/base';
+import { endPoints } from '../../../config/endPoint';
 
 interface OrganizationFormProps {
   onSubmit: (data: CreateOrganizationDto) => void;
@@ -23,6 +28,13 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
     adminFirstName: initialData?.adminFirstName || '',
     adminLastName: initialData?.adminLastName || '',
     adminPassword: '',
+    customServiceCycleIds: initialData?.customServiceCycleIds || [],
+  });
+
+  const { data: activeCustomServices = [], isLoading: isLoadingCustomServices } = useQuery({
+    queryKey: ['activeCustomServices'],
+    queryFn: () => apiGet<{ data: { id: string; title: string }[] }>(endPoints.CUSTOM_SERVICE.GET_ACTIVE).then(res => res.data),
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
 
@@ -64,7 +76,9 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
       else if (formData.adminPassword.length < 6) newErrors.adminPassword = 'Password must be at least 6 characters';
     }
 
-    if (formData.availableServices.length === 0) newErrors.availableServices = 'At least one service must be selected';
+    if (formData.availableServices.length === 0 && (formData.customServiceCycleIds?.length || 0) === 0) {
+      newErrors.availableServices = 'At least one service must be selected';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -76,6 +90,15 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
       availableServices: prev.availableServices.includes(service)
         ? prev.availableServices.filter(s => s !== service)
         : [...prev.availableServices, service]
+    }));
+  };
+
+  const toggleCustomService = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      customServiceCycleIds: prev.customServiceCycleIds?.includes(id)
+        ? prev.customServiceCycleIds.filter(s => s !== id)
+        : [...(prev.customServiceCycleIds || []), id]
     }));
   };
 
@@ -177,6 +200,54 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
           <p className="text-red-500 text-xs font-bold mt-2 ml-1">{errors.availableServices}</p>
         )}
       </div>
+
+      {(isLoadingCustomServices || activeCustomServices.length > 0) && (
+        <div className="space-y-6 pt-4">
+          <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <Settings className="h-5 w-5 text-purple-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Custom Services</h3>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {isLoadingCustomServices ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="p-4 rounded-2xl border-2 border-gray-50 bg-gray-50 flex items-center justify-between">
+                  <Skeleton className="h-4 w-24 rounded-lg" />
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                </div>
+              ))
+            ) : (
+              activeCustomServices.map((service) => (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => toggleCustomService(service.id)}
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left group ${
+                    formData.customServiceCycleIds?.includes(service.id)
+                      ? 'border-purple-600 bg-purple-50 text-purple-600'
+                      : 'border-gray-50 bg-gray-50 text-gray-500 hover:border-gray-100'
+                  }`}
+                >
+                  <span className="text-xs font-bold uppercase tracking-wider leading-tight">
+                    {service.title}
+                  </span>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                    formData.customServiceCycleIds?.includes(service.id)
+                      ? 'bg-purple-600 border-purple-600'
+                      : 'bg-white border-gray-200'
+                  }`}>
+                    {formData.customServiceCycleIds?.includes(service.id) && (
+                      <Check className="h-3 w-3 text-white stroke-[4px]" />
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {!isEdit && (
         <div className="space-y-6 pt-4">

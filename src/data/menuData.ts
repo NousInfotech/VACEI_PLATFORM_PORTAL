@@ -68,6 +68,14 @@ export const menuData: MenuItem[] = [
         description: "Configure form fields",
     },
     {
+        slug: "services-management",
+        icon: Settings02Icon,
+        label: "Services Management",
+        href: "/dashboard/services-management",
+        section: "primary",
+        description: "Manage bespoke services",
+    },
+    {
         slug: "messages",
         icon: BubbleChatIcon,
         label: "Messages",

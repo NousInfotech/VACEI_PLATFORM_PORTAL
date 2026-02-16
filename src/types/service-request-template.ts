@@ -45,6 +45,7 @@ export const Services = {
   TECHNOLOGY: 'TECHNOLOGY',
   GRANTS_AND_INCENTIVES: 'GRANTS_AND_INCENTIVES',
   INCORPORATION: 'INCORPORATION',
+  CUSTOM: 'CUSTOM',
 } as const;
 
 export type Services = typeof Services[keyof typeof Services];
@@ -52,6 +53,7 @@ export type Services = typeof Services[keyof typeof Services];
 export interface ServiceRequestTemplate {
   id: string;
   service: string | null;
+  customServiceCycleId?: string | null;
   type: TemplateType;
   formFields: FormField[];
   version: number;
@@ -68,6 +70,7 @@ export interface ServiceRequestTemplate {
 
 export interface CreateTemplateDto {
   service: string | null;
+  customServiceCycleId?: string | null;
   type: TemplateType;
   formFields: FormField[];
   isActive?: boolean;
@@ -75,6 +78,7 @@ export interface CreateTemplateDto {
 
 export interface UpdateTemplateDto {
   service?: string | null;
+  customServiceCycleId?: string | null;
   type?: TemplateType;
   formFields?: FormField[];
   isActive?: boolean;
@@ -88,6 +92,31 @@ export interface DetailEntry {
   attachedFiles?: string[];
 }
 
+export interface CustomService {
+  id: string;
+  title: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  creator?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface CreateCustomServiceDto {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateCustomServiceDto {
+  title?: string;
+  description?: string | null;
+}
+
 export interface ServiceRequest {
   id: string;
   companyId: string;
@@ -95,6 +124,7 @@ export interface ServiceRequest {
   service: string;
   status: ServiceRequestStatus;
   templateId: string;
+  customServiceCycleId?: string | null;
   generalDetails?: DetailEntry[];
   serviceDetails?: DetailEntry[];
   statusHistory: unknown;
@@ -113,6 +143,7 @@ export interface ServiceRequest {
   template?: {
     id: string;
     type: string;
+    customServiceCycleId?: string | null;
     formFields: FormField[];
   };
   submittedDocuments?: { id: string; file_name: string; url: string }[];

@@ -6,7 +6,7 @@ import { ShadowCard } from '../../../ui/ShadowCard';
 import { OrganizationForm } from '../components/OrganizationForm';
 import { apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
-import type { CreateOrganizationDto } from '../../../types/organization';
+import type { CreateOrganizationDto, Organization } from '../../../types/organization';
 import AlertMessage from '../../common/AlertMessage';
 import { PageHeader } from '../../common/PageHeader';
 
@@ -19,16 +19,25 @@ const CreateOrganization: React.FC = () => {
     setLoading(true);
     setAlert(null);
     try {
-      await apiPost(endPoints.ORGANIZATION.CREATE, data as unknown as Record<string, unknown>);
+      // 1. Create Organization (including custom services)
+      await apiPost<{ data: Organization }>(endPoints.ORGANIZATION.CREATE, {
+        name: data.name,
+        availableServices: data.availableServices,
+        adminEmail: data.adminEmail,
+        adminFirstName: data.adminFirstName,
+        adminLastName: data.adminLastName,
+        adminPassword: data.adminPassword,
+        customServiceCycleIds: data.customServiceCycleIds
+      });
+
       setAlert({ message: 'Organization created successfully!', variant: 'success' });
       setTimeout(() => navigate('/dashboard/organizations'), 1500);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create organization';
+    } catch (error: any) {
+      const errorMessage = error?.message || (typeof error === 'string' ? error : 'Failed to create organization');
       setAlert({ message: errorMessage, variant: 'danger' });
     } finally {
       setLoading(false);
     }
-    console.log(data);
   };
 
   return (

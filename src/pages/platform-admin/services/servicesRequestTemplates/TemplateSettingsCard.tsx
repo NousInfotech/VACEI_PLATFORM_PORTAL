@@ -3,7 +3,7 @@ import { ChevronDown, Settings2 } from 'lucide-react';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import Badge from '../../../common/Badge';
 import { Dropdown } from '../../../common/Dropdown';
-import type { CreateTemplateDto, ServiceRequestTemplate } from '../../../../types/service-request-template';
+import type { CreateTemplateDto, ServiceRequestTemplate, CustomService } from '../../../../types/service-request-template';
 import type { DropdownItem } from '../../../common/Dropdown';
 
 interface TemplateSettingsCardProps {
@@ -12,6 +12,7 @@ interface TemplateSettingsCardProps {
   isEdit: boolean;
   onUpdate: (updates: Partial<CreateTemplateDto>) => void;
   serviceOptions: DropdownItem[];
+  customServices?: CustomService[];
   hideMetadata?: boolean;
 }
 
@@ -21,8 +22,17 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
   isEdit,
   onUpdate,
   serviceOptions,
+  customServices = [],
   hideMetadata = false,
 }) => {
+  const getServiceLabel = () => {
+    if (!formData.service) return 'Select Service...';
+    if (formData.service === 'CUSTOM' && formData.customServiceCycleId) {
+      const custom = customServices.find(cs => cs.id === formData.customServiceCycleId);
+      return custom ? custom.title : 'Custom Service';
+    }
+    return formData.service.replace(/_/g, ' ');
+  };
   const renderMetadata = () => {
     if (!template || hideMetadata) return null;
     return (
@@ -69,7 +79,7 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
             <div className="flex justify-between items-center py-3">
               <span className="text-sm font-medium text-gray-500">Service</span>
               <span className="font-bold text-gray-900 uppercase">
-                {formData.service.replace(/_/g, ' ')}
+                {getServiceLabel()}
               </span>
             </div>
           )}
@@ -117,14 +127,17 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
                   className="w-full"
                   items={serviceOptions.map(opt => ({
                     ...opt,
-                    onClick: () => onUpdate({ service: opt.id as string | null })
+                    onClick: () => onUpdate({ 
+                      service: opt.id as string | null,
+                      customServiceCycleId: (opt as any).customServiceCycleId || null
+                    })
                   }))}
                   trigger={
                     <button
                       type="button"
                       className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between text-sm font-medium text-gray-700 hover:border-primary/20 transition-all focus:ring-4 focus:ring-primary/5 outline-none"
                     >
-                      <span className="truncate">{formData.service ? formData.service.replace(/_/g, ' ') : 'Select Service...'}</span>
+                      <span className="truncate">{getServiceLabel()}</span>
                       <ChevronDown className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
                     </button>
                   }

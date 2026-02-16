@@ -9,6 +9,7 @@ export interface Organization {
   createdAt: string;
   updatedAt: string;
   members?: OrganizationMember[];
+  customServiceCycles?: { id: string; title: string; isActive: boolean }[];
 }
 
 export interface OrganizationMember {
@@ -31,6 +32,7 @@ export interface CreateOrganizationDto {
   adminFirstName: string;
   adminLastName: string;
   adminPassword?: string;
+  customServiceCycleIds?: string[];
 }
 
 export interface UpdateOrganizationDto {

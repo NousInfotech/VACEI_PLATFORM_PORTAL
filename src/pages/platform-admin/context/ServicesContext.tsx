@@ -11,19 +11,25 @@ import {
   CalendarDays,
   type LucideIcon,
 } from 'lucide-react';
-import { apiGet, apiPut, apiPost } from '../../../config/base';
+import { apiGet, apiPut, apiPost, apiPatch, apiDelete } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
-import { Services, type ServiceRequestTemplate, type CreateTemplateDto, type InputType } from '../../../types/service-request-template';
+import { Services, type ServiceRequestTemplate, type CreateTemplateDto, type InputType, type CustomService, type CreateCustomServiceDto, type UpdateCustomServiceDto } from '../../../types/service-request-template';
 
 interface TemplatesContextType {
   templates: ServiceRequestTemplate[];
   isLoading: boolean;
   isError: boolean;
   refetch: () => void;
-  formatServiceLabel: (service: string | null) => string;
+  formatServiceLabel: (service: string | null, customServiceCycleId?: string | null) => string;
   toggleActiveMutation: UseMutationResult<unknown, Error, ServiceRequestTemplate, unknown>;
   createMutation: UseMutationResult<unknown, Error, CreateTemplateDto, unknown>;
   updateMutation: UseMutationResult<unknown, Error, { id: string; data: CreateTemplateDto }, unknown>;
+  customServices: CustomService[];
+  isLoadingCustomServices: boolean;
+  createCustomServiceMutation: UseMutationResult<unknown, Error, CreateCustomServiceDto, unknown>;
+  updateCustomServiceMutation: UseMutationResult<unknown, Error, { id: string; data: UpdateCustomServiceDto }, unknown>;
+  deleteCustomServiceMutation: UseMutationResult<unknown, Error, string, unknown>;
+  patchCustomServiceStatusMutation: UseMutationResult<unknown, Error, { id: string; isActive: boolean }, unknown>;
   queryClient: ReturnType<typeof useQueryClient>;
   // Form Configuration
   serviceOptions: { id: string; label: string }[];
@@ -46,6 +52,14 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     queryKey: ['service-request-templates'],
     queryFn: async () => {
       const response = await apiGet<{ data: ServiceRequestTemplate[] }>(endPoints.SERVICE_REQUEST_TEMPLATE.GET_ALL);
+      return response.data;
+    }
+  });
+
+  const { data: customServices = [], isLoading: isLoadingCustomServices } = useQuery({
+    queryKey: ['custom-services'],
+    queryFn: async () => {
+      const response = await apiGet<{ data: CustomService[] }>(endPoints.CUSTOM_SERVICE.LIST);
       return response.data;
     }
   });
@@ -86,21 +100,79 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   });
 
-  const formatServiceLabel = useCallback((service: string | null) => {
+  const createCustomServiceMutation = useMutation({
+    mutationFn: async (data: CreateCustomServiceDto) => {
+      return apiPost<unknown>(endPoints.CUSTOM_SERVICE.CREATE, data as unknown as Record<string, unknown>);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['custom-services'] });
+    }
+  });
+
+  const updateCustomServiceMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateCustomServiceDto }) => {
+      return apiPut<unknown>(endPoints.CUSTOM_SERVICE.UPDATE(id), data as unknown as Record<string, unknown>);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['custom-services'] });
+    }
+  });
+
+  const deleteCustomServiceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiDelete<unknown>(endPoints.CUSTOM_SERVICE.DELETE(id));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['custom-services'] });
+    }
+  });
+
+  const patchCustomServiceStatusMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return apiPatch<unknown>(endPoints.CUSTOM_SERVICE.PATCH_STATUS(id), { isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['custom-services'] });
+    }
+  });
+
+  const formatServiceLabel = useCallback((service: string | null, customServiceCycleId?: string | null) => {
+    if (service === 'CUSTOM_GROUP') return 'Custom';
     if (!service) return 'General Section';
+    
+    // Check if it's a 'CUSTOM' service with an ID
+    if (service === 'CUSTOM' && customServiceCycleId) {
+      const custom = customServices.find(cs => cs.id === customServiceCycleId);
+      if (custom) return custom.title;
+    }
+
+    // Fallback for legacy custom titles (backward compatibility if any)
+    const customByName = customServices.find(cs => cs.title.toUpperCase().replace(/\s+/g, '_') === service || cs.title === service);
+    if (customByName) return customByName.title;
+
     return service
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ')
       .replace('And', '&');
-  }, []);
+  }, [customServices]);
 
   const serviceOptions = useMemo(() => {
-    return Object.values(Services).map(s => ({
+    const staticOptions = Object.values(Services).map(s => ({
       id: s,
       label: s.replace(/_/g, ' '),
     }));
-  }, []);
+
+    const dynamicOptions = customServices
+      .filter(cs => cs.isActive)
+      .map(cs => ({
+        id: 'CUSTOM',
+        label: cs.title,
+        customServiceCycleId: cs.id,
+      }));
+
+    return [...staticOptions, ...dynamicOptions];
+  }, [customServices]);
 
   const inputTypeIcons: Record<InputType, LucideIcon> = useMemo(() => ({
     text: Type,
@@ -136,10 +208,16 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     isLoading,
     isError,
     refetch,
+    customServices,
+    isLoadingCustomServices,
     formatServiceLabel,
     toggleActiveMutation,
     createMutation,
     updateMutation,
+    createCustomServiceMutation,
+    updateCustomServiceMutation,
+    deleteCustomServiceMutation,
+    patchCustomServiceStatusMutation,
     queryClient,
     serviceOptions,
     inputTypeIcons,
@@ -149,7 +227,7 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setSearch,
     selectedService,
     setSelectedService,
-  }), [templates, isLoading, isError, refetch, formatServiceLabel, toggleActiveMutation, createMutation, updateMutation, queryClient, serviceOptions, inputTypeIcons, inputTypeItems, requiredTabs, search, selectedService]);
+  }), [templates, isLoading, isError, refetch, customServices, isLoadingCustomServices, formatServiceLabel, toggleActiveMutation, createMutation, updateMutation, createCustomServiceMutation, updateCustomServiceMutation, deleteCustomServiceMutation, patchCustomServiceStatusMutation, queryClient, serviceOptions, inputTypeIcons, inputTypeItems, requiredTabs, search, selectedService]);
 
   return (
     <TemplatesContext.Provider value={value}>

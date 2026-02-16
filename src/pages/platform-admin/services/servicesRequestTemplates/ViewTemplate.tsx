@@ -36,7 +36,8 @@ const ViewTemplateContent: React.FC = () => {
     inputTypeIcons, 
     inputTypeItems, 
     requiredTabs,
-    serviceOptions 
+    serviceOptions,
+    customServices
   } = useTemplates();
   
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
@@ -265,7 +266,7 @@ const ViewTemplateContent: React.FC = () => {
       <PageHeader 
         title={isGlobalEdit ? "Edit Template" : "View Template"} 
         icon={FileText}
-        description={isGlobalEdit ? `Modifying configuration for ${formatServiceLabel(template.service)}` : `View configuration for ${formatServiceLabel(template.service)}`}
+        description={isGlobalEdit ? `Modifying configuration for ${formatServiceLabel(template.service, template.customServiceCycleId)}` : `View configuration for ${formatServiceLabel(template.service, template.customServiceCycleId)}`}
         showBack={!isGlobalEdit}
         backUrl="/dashboard/service-request-templates"
         actions={
@@ -342,6 +343,7 @@ const ViewTemplateContent: React.FC = () => {
               isEdit={isGlobalEdit}
               onUpdate={updateEditedTemplate}
               serviceOptions={serviceOptions}
+              customServices={customServices}
               hideMetadata={true}
             />
           )}
@@ -396,7 +398,7 @@ const ViewTemplateContent: React.FC = () => {
                             <div className="flex justify-between items-center">
                               <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Target Service</span>
                               <span className="text-xs font-bold text-primary uppercase truncate ml-4 max-w-[140px]">
-                                {template.service.replace(/_/g, ' ')}
+                                {formatServiceLabel(template.service, template.customServiceCycleId)}
                               </span>
                             </div>
                           )}

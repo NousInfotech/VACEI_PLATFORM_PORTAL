@@ -45,11 +45,21 @@ const EditOrganization: React.FC = () => {
     if (!id) return;
     setUpdateLoading(true);
     setAlert(null);
+    setUpdateLoading(true);
+    setAlert(null);
     try {
+      // 1. Update Organization details
       await apiPut(endPoints.ORGANIZATION.UPDATE(id), {
         name: data.name,
         availableServices: data.availableServices
       });
+
+      // 2. Update Custom Services
+      // We always send this, even if empty, to ensure sync (backend should handle empty array as clearing)
+      await apiPut(endPoints.ORGANIZATION.ASSIGN_CUSTOM_SERVICES(id), {
+        customServiceCycleIds: data.customServiceCycleIds || []
+      });
+
       setAlert({ message: 'Organization updated successfully!', variant: 'success' });
       setTimeout(() => navigate('/dashboard/organizations'), 1500);
     } catch (error: unknown) {
@@ -108,7 +118,8 @@ const EditOrganization: React.FC = () => {
             loading={updateLoading} 
             initialData={organization ? {
                 name: organization.name,
-                availableServices: organization.availableServices
+                availableServices: organization.availableServices,
+                customServiceCycleIds: organization.customServiceCycles?.map(c => c.id) || []
             } : undefined}
           />
         )}

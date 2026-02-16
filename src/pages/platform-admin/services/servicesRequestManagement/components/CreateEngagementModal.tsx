@@ -19,12 +19,14 @@ interface CreateEngagementModalProps {
   serviceCategory: string;
   companyName: string;
   serviceRequestId?: string;
+  customServiceCycleId?: string | null;
 }
 
 interface Organization {
   id: string;
   name: string;
   availableServices: string[];
+  customServiceCycles?: { id: string; isActive: boolean }[];
 }
 
 const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
@@ -34,6 +36,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
   serviceCategory,
   companyName,
   serviceRequestId,
+  customServiceCycleId,
 }) => {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,9 +50,12 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
   const organizations = orgsData?.data || [];
   
   // Filter organizations that offer the required service
-  const eligibleOrgs = organizations.filter(org => 
-    org.availableServices?.includes(serviceCategory)
-  );
+  const eligibleOrgs = organizations.filter(org => {
+    if (serviceCategory === 'CUSTOM' && customServiceCycleId) {
+      return org.customServiceCycles?.some(cycle => cycle.id === customServiceCycleId && cycle.isActive);
+    }
+    return org.availableServices?.includes(serviceCategory);
+  });
 
   const handleCreate = async () => {
     if (!selectedOrgId) {
@@ -63,7 +69,8 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
         companyId,
         organizationId: selectedOrgId,
         serviceCategory: serviceCategory,
-        serviceRequestId: serviceRequestId,
+        customServiceCycleId: customServiceCycleId,
+        ...(serviceRequestId?.trim() && { serviceRequestId }),
       });
       alert('Engagement created successfully');
       onClose();

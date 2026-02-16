@@ -92,6 +92,14 @@ const Organizations: React.FC = () => {
     }
   };
 
+  const formatServiceLabel = (service: string) => {
+    return service
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+      .replace('And', '&');
+  };
+
   return (
     <div className="space-y-6">
       {/* <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -190,9 +198,17 @@ const Organizations: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg">
-                      {org.availableServices?.length || 0} Services
-                    </span>
+                    <div 
+                      className="group/tooltip relative"
+                      title={[
+                        ...(org.availableServices || []).map(s => formatServiceLabel(s)),
+                        ...(org.customServiceCycles || []).map(s => s.title)
+                      ].join(', ')}
+                    >
+                      <span className="text-xs font-bold text-primary bg-primary/5 px-2.5 py-1 rounded-lg cursor-help">
+                        {(org.availableServices?.length || 0) + (org.customServiceCycles?.length || 0)} Services
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="text-gray-500 font-medium text-xs">
                     {new Date(org.createdAt).toLocaleDateString()}

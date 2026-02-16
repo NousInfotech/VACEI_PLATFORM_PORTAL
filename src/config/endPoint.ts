@@ -16,6 +16,7 @@ export const endPoints = {
     UPDATE: (id: string) => `/organizations/${id}`,
     DELETE: (id: string) => `/organizations/${id}`,
     HARD_DELETE: (id: string) => `/organizations/${id}/hard`,
+    ASSIGN_CUSTOM_SERVICES: (id: string) => `/organizations/${id}/custom-services`,
   },
   SERVICE_REQUEST_TEMPLATE: {
     BASE: '/service-request-templates',
@@ -50,6 +51,16 @@ export const endPoints = {
     GET_ALL: '/service-requests',
     GET_BY_ID: (id: string) => `/service-requests/${id}`,
     UPDATE_STATUS: (id: string) => `/service-requests/${id}/status`,
+  },
+  CUSTOM_SERVICE: {
+    BASE: '/custom-services',
+    LIST: '/custom-services',
+    GET_ACTIVE: '/custom-services/active',
+    GET_BY_ID: (id: string) => `/custom-services/${id}`,
+    CREATE: '/custom-services',
+    UPDATE: (id: string) => `/custom-services/${id}`,
+    PATCH_STATUS: (id: string) => `/custom-services/${id}/status`,
+    DELETE: (id: string) => `/custom-services/${id}`,
   },
   ENGAGEMENT: {
     BASE: '/engagements',

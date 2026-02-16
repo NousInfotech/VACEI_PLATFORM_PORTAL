@@ -132,8 +132,8 @@ const ViewOrganization: React.FC = () => {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody className="[&_tr:last-child]:border-0 text-nowrap whitespace-nowrap">
-                                        {organization.availableServices && organization.availableServices.length > 0 ? (
-                                            organization.availableServices.map((service: string, index: number) => (
+                                            {/* Standard Services */}
+                                            {organization.availableServices?.map((service: string, index: number) => (
                                                 <TableRow key={service} className="hover:bg-gray-50/50 transition-colors group border-gray-100">
                                                     <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
                                                         {(index + 1).toString().padStart(2, '0')}
@@ -147,17 +147,40 @@ const ViewOrganization: React.FC = () => {
                                                         </span>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={3} className="py-20 text-center">
-                                                    <div className="flex flex-col items-center justify-center text-gray-400">
-                                                        <ClipboardList className="h-12 w-12 mb-4 opacity-20" />
-                                                        <p className="text-lg font-medium opacity-40 italic">No services configured for this organization.</p>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
+                                            ))}
+
+                                            {/* Custom Services */}
+                                            {organization.customServiceCycles?.map((service, index: number) => (
+                                                <TableRow key={service.id} className="hover:bg-gray-50/50 transition-colors group border-gray-100">
+                                                    <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
+                                                        {((organization.availableServices?.length || 0) + index + 1).toString().padStart(2, '0')}
+                                                    </TableCell>
+                                                    <TableCell className="font-semibold text-gray-900 group-hover:text-primary transition-colors py-5 flex items-center gap-2">
+                                                        {service.title}
+                                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full border border-gray-200">CUSTOM</span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                                            service.isActive 
+                                                                ? 'bg-green-50 text-green-600 border border-green-100' 
+                                                                : 'bg-gray-50 text-gray-500 border border-gray-100'
+                                                        }`}>
+                                                            {service.isActive ? 'ACTIVE' : 'INACTIVE'}
+                                                        </span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+
+                                            {(!organization.availableServices?.length && !organization.customServiceCycles?.length) && (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="py-20 text-center">
+                                                        <div className="flex flex-col items-center justify-center text-gray-400">
+                                                            <ClipboardList className="h-12 w-12 mb-4 opacity-20" />
+                                                            <p className="text-lg font-medium opacity-40 italic">No services configured for this organization.</p>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
                                     </TableBody>
                                 </Table>
                             </div>

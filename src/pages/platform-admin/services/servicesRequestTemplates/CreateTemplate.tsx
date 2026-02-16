@@ -23,7 +23,8 @@ const CreateTemplateContent: React.FC = () => {
     inputTypeIcons, 
     inputTypeItems, 
     requiredTabs,
-    serviceOptions 
+    serviceOptions,
+    customServices
   } = useTemplates();
   
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
@@ -126,6 +127,7 @@ const CreateTemplateContent: React.FC = () => {
           isEdit={true}
           onUpdate={handleUpdateTemplate}
           serviceOptions={serviceOptions}
+          customServices={customServices}
           hideMetadata={true}
         />
 
