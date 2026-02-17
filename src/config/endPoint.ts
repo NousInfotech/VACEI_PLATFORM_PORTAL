@@ -80,4 +80,14 @@ export const endPoints = {
     FILE_BY_ID: (id: string) => `/library/files/${id}`,
     FOLDER_DOWNLOAD: (id: string) => `/library/folders/${id}/download`,
   },
+  NOTICE: {
+    BASE: '/notices',
+    GET_ALL: '/notices',
+    GET_BY_ID: (id: string) => `/notices/${id}`,
+    CREATE: '/notices',
+    UPDATE: (id: string) => `/notices/${id}`,
+    PATCH_STATUS: (id: string) => `/notices/${id}/status`,
+    DELETE: (id: string) => `/notices/${id}`,
+    GET_TODAY: '/notices/today',
+  },
 };

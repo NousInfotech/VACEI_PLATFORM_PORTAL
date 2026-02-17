@@ -27,6 +27,9 @@ import Messages from './pages/messages/Messages'
 
 import EngagementsList from './pages/platform-admin/engagements/EngagementsList'
 import CreateEngagementPage from './pages/platform-admin/services/servicesRequestManagement/CreateEngagementPage'
+import NoticeManagement from './pages/platform-admin/notice-management/NoticeManagement'
+import CreateNotice from './pages/platform-admin/notice-management/CreateNotice'
+import EditNotice from './pages/platform-admin/notice-management/EditNotice'
 
 const App = () => {
   return (
@@ -62,6 +65,9 @@ const App = () => {
           <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/dashboard/messages" element={<Messages />} />
+          <Route path="/dashboard/notice-management" element={<NoticeManagement />} />
+          <Route path="/dashboard/notice-management/create" element={<CreateNotice />} />
+          <Route path="/dashboard/notice-management/:id/edit" element={<EditNotice />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/dashboard/service-request-templates/:id/preview" element={<TemplatePreview />} />

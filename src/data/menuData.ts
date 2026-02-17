@@ -6,7 +6,8 @@ import {
   ArchiveIcon,
   Settings02Icon,
   UserGroupIcon as UsersIcon,
-  BubbleChatIcon
+  BubbleChatIcon,
+  Notification01Icon
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -82,6 +83,14 @@ export const menuData: MenuItem[] = [
         href: "/dashboard/messages",
         section: "primary",
         description: "Chat with your team",
+    },
+    {
+        slug: "notice-management",
+        icon: Notification01Icon,
+        label: "Notice Management",
+        href: "/dashboard/notice-management",
+        section: "primary",
+        description: "Manage system notices",
     },
     {
         slug: "settings",
