@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
     Building2, 
     MapPin, 
@@ -6,16 +6,27 @@ import {
     Clock, 
     FileText, 
     PieChart, 
-    BarChart3 
+    BarChart3,
+    Edit3
 } from 'lucide-react';
 import { ShadowCard } from '../../../../../ui/ShadowCard';
+import { Button } from '../../../../../ui/Button';
 import type { Company } from '../../../../../types/company';
+import EditCompanyModal from './EditCompanyModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CompanyDetailsTabProps {
     company: Company;
 }
 
 const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const queryClient = useQueryClient();
+
+    const handleSuccess = () => {
+        queryClient.invalidateQueries({ queryKey: ['company', company.id] });
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header Section */}
@@ -33,8 +44,24 @@ const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
                             </div>
                         </div>
                     </div>
+                    <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 transition-all flex items-center gap-2"
+                    >
+                        <Edit3 size={16} />
+                        Edit Details
+                    </Button>
                 </div>
             </ShadowCard>
+
+            <EditCompanyModal 
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSuccess={handleSuccess}
+                company={company}
+            />
 
             {/* Share Information Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

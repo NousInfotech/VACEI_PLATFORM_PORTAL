@@ -1,8 +1,13 @@
-import React from 'react';
-import { Users, ShieldCheck, MapPin, Globe } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, ShieldCheck, MapPin, Globe, Plus, Trash2, Edit2, Building2 } from 'lucide-react';
 import { ShadowCard } from '../../../../../ui/ShadowCard';
+import { Button } from '../../../../../ui/Button';
 import PillTab from '../../../../common/PillTab';
-import type { Company } from '../../../../../types/company';
+import type { Company, CompanyInvolvement } from '../../../../../types/company';
+import InvolvementModal from './InvolvementModal';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiDelete } from '../../../../../config/base';
+import { endPoints } from '../../../../../config/endPoint';
 
 interface InvolvementsTabProps {
     company: Company;
@@ -15,16 +20,59 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
     activeInvolvementSubTab, 
     onSubTabChange 
 }) => {
+    const [isInvolvementModalOpen, setIsInvolvementModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+    const [selectedInvolvement, setSelectedInvolvement] = useState<CompanyInvolvement | null>(null);
+    const queryClient = useQueryClient();
+
+    const handleSuccess = () => {
+        queryClient.invalidateQueries({ queryKey: ['company', company.id] });
+    };
+
+    const handleAdd = () => {
+        setModalMode('add');
+        setSelectedInvolvement(null);
+        setIsInvolvementModalOpen(true);
+    };
+
+    const handleEdit = (inv: CompanyInvolvement) => {
+        setModalMode('edit');
+        setSelectedInvolvement(inv);
+        setIsInvolvementModalOpen(true);
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('Are you sure you want to remove this involvement?')) return;
+        
+        try {
+            await apiDelete(endPoints.INVOLVEMENT.DELETE(id));
+            handleSuccess();
+        } catch (err) {
+            console.error('Failed to delete involvement:', err);
+            alert('Failed to remove involvement');
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <PillTab 
-                tabs={[
-                    { id: 'shareholders', label: 'Shareholders', icon: Users },
-                    { id: 'representatives', label: 'Representatives', icon: ShieldCheck },
-                ]} 
-                activeTab={activeInvolvementSubTab} 
-                onTabChange={(id) => onSubTabChange(id as 'shareholders' | 'representatives')} 
-            />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <PillTab 
+                    tabs={[
+                        { id: 'shareholders', label: 'Shareholders', icon: Users },
+                        { id: 'representatives', label: 'Representatives', icon: ShieldCheck },
+                    ]} 
+                    activeTab={activeInvolvementSubTab} 
+                    onTabChange={(id) => onSubTabChange(id as 'shareholders' | 'representatives')} 
+                />
+                
+                <Button 
+                    onClick={handleAdd}
+                    className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex items-center gap-2 px-6"
+                >
+                    <Plus size={18} />
+                    Add {activeInvolvementSubTab === 'shareholders' ? 'Shareholder' : 'Representative'}
+                </Button>
+            </div>
 
             <div className="mt-4">
                 {activeInvolvementSubTab === 'shareholders' ? (
@@ -52,16 +100,16 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                     {shareholders.map((inv, idx) => {
                                         const totalShares = (inv.classA || 0) + (inv.classB || 0) + (inv.classC || 0) + (inv.ordinary || 0);
                                         return (
-                                            <ShadowCard key={inv.id || idx} className="bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                            <ShadowCard key={inv.id || idx} className="bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
                                                 <div className="p-6">
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-3 mb-3">
-                                                                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                                                                    <Users size={20} />
+                                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${inv.holderCompany ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                                                                    {inv.holderCompany ? <Building2 size={20} /> : <Users size={20} />}
                                                                 </div>
                                                                 <h4 className="text-lg font-semibold text-gray-900">
-                                                                    {inv.person?.name}
+                                                                    {inv.person?.name || inv.holderCompany?.name}
                                                                 </h4>
                                                             </div>
                                                             
@@ -82,13 +130,37 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                                             <div className="flex flex-col gap-1">
                                                                 <div className="flex items-center gap-2 text-xs text-gray-500">
                                                                     <MapPin className="h-3 w-3" />
-                                                                    <span>{inv.person?.address}</span>
+                                                                    <span>{inv.person?.address || inv.holderCompany?.address}</span>
                                                                 </div>
-                                                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                                    <Globe className="h-3 w-3" />
-                                                                    <span>{inv.person?.nationality}</span>
-                                                                </div>
+                                                                {inv.person?.nationality && (
+                                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                        <Globe className="h-3 w-3" />
+                                                                        <span>{inv.person?.nationality}</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
+                                                            {inv.holderCompany?.registrationNumber && (
+                                                                <div className="mt-1 text-[10px] text-gray-400 font-medium">
+                                                                    Reg: {inv.holderCompany.registrationNumber}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button 
+                                                                onClick={() => handleEdit(inv)}
+                                                                className="p-2 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+                                                                title="Edit Involvement"
+                                                            >
+                                                                <Edit2 size={16} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDelete(inv.id)}
+                                                                className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                title="Remove Involvement"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -119,16 +191,16 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                             return (
                                 <div className="grid grid-cols-1 gap-4">
                                     {representatives.map((inv, idx) => (
-                                        <ShadowCard key={inv.id || idx} className="bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                        <ShadowCard key={inv.id || idx} className="bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
                                             <div className="p-6">
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-3 mb-3">
-                                                            <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600">
-                                                                <ShieldCheck size={20} />
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${inv.holderCompany ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                                {inv.holderCompany ? <Building2 size={20} /> : <ShieldCheck size={20} />}
                                                             </div>
                                                             <h4 className="text-lg font-semibold text-gray-900">
-                                                                {inv.person?.name}
+                                                                {inv.person?.name || inv.holderCompany?.name}
                                                             </h4>
                                                         </div>
                                                         
@@ -142,12 +214,36 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
 
                                                         <div className="flex items-center gap-2 text-xs text-gray-500">
                                                             <MapPin className="h-3 w-3" />
-                                                            <span>{inv.person?.address}</span>
+                                                            <span>{inv.person?.address || inv.holderCompany?.address}</span>
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                            <Globe className="h-3 w-3" />
-                                                            <span>{inv.person?.nationality}</span>
-                                                        </div>
+                                                        {inv.person?.nationality && (
+                                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                <Globe className="h-3 w-3" />
+                                                                <span>{inv.person?.nationality}</span>
+                                                            </div>
+                                                        )}
+                                                        {inv.holderCompany?.registrationNumber && (
+                                                            <div className="mt-1 text-[10px] text-gray-400 font-medium font-mono">
+                                                                Reg: {inv.holderCompany.registrationNumber}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button 
+                                                            onClick={() => handleEdit(inv)}
+                                                            className="p-2 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+                                                            title="Edit Involvement"
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDelete(inv.id)}
+                                                            className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                            title="Remove Involvement"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -159,6 +255,15 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                     </>
                 )}
             </div>
+
+            <InvolvementModal 
+                isOpen={isInvolvementModalOpen}
+                onClose={() => setIsInvolvementModalOpen(false)}
+                onSuccess={handleSuccess}
+                companyId={company.id}
+                involvement={selectedInvolvement}
+                mode={modalMode}
+            />
         </div>
     );
 };

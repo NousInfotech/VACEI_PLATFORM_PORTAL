@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, User, Mail, Calendar, FileText, ArrowRight, Eye } from 'lucide-react';
+import { Building2, User, Mail, Calendar, FileText, ArrowRight, Eye, Plus } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
@@ -17,6 +17,8 @@ import ViewClientSkeleton from './components/skeletons/ViewClientSkeleton';
 import PillTab from '../../common/PillTab';
 import Messages from '../../messages/Messages';
 import { MessageSquare, type LucideIcon } from 'lucide-react';
+import CreateCompanyModal from './view-company/components/CreateCompanyModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Tab {
     id: string;
@@ -28,6 +30,8 @@ const ViewClient: React.FC = () => {
     const { clientId } = useParams<{ clientId: string }>();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = React.useState('info');
+    const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
+    const queryClient = useQueryClient();
 
     const { data: realClient, isLoading: isRealClientLoading } = useQuery<Client>({
         queryKey: ['client', clientId],
@@ -123,6 +127,13 @@ const ViewClient: React.FC = () => {
                         <Building2 className="h-4 w-4 text-primary" />
                         Associated Companies
                     </h3>
+                    <Button 
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all flex items-center gap-2 px-6 h-10"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Create Company
+                    </Button>
                 </div>
 
                 <Table>
@@ -171,6 +182,13 @@ const ViewClient: React.FC = () => {
                     <Messages isSingleChat={true} contextualChatId="8" />
                 </div>
             )}
+
+            <CreateCompanyModal 
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['client-companies', clientId] })}
+                clientId={clientId!}
+            />
         </div>
     );
 };

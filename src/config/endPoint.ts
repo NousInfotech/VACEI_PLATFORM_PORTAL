@@ -90,4 +90,16 @@ export const endPoints = {
     DELETE: (id: string) => `/notices/${id}`,
     GET_TODAY: '/notices/today',
   },
+  INVOLVEMENT: {
+    BASE: '/involvements',
+    CREATE: '/involvements',
+    UPDATE: (id: string) => `/involvements/${id}`,
+    DELETE: (id: string) => `/involvements/${id}`,
+    GET_BY_COMPANY: (companyId: string) => `/involvements/company/${companyId}`,
+  },
+  PERSON: {
+    BASE: '/persons',
+    GET_ALL: '/persons',
+    CREATE: '/persons',
+  },
 };

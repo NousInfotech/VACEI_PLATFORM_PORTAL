@@ -9,6 +9,8 @@ import {
     ClipboardList,
     Briefcase,
     Eye,
+    PieChart,
+    Network,
     type LucideIcon
 } from 'lucide-react';
 import { 
@@ -36,6 +38,8 @@ import KycSection from './kyc-components/KycSection';
 import CompanyDetailsTab from './components/CompanyDetailsTab';
 import InvolvementsTab from './components/InvolvementsTab';
 import IncorporationTab from './components/IncorporationTab';
+import DistributionTab from './components/DistributionTab';
+import HierarchyTab from './components/HierarchyTab';
 
 // Skeletons
 import CompanyDetailsSkeleton from './components/skeletons/CompanyDetailsSkeleton';
@@ -130,6 +134,8 @@ const ViewCompany: React.FC = () => {
         { id: 'kyc', label: 'KYC', icon: ShieldCheck },
         { id: 'service-requests', label: 'Service Requests', icon: ClipboardList },
         { id: 'engagements', label: 'Engagements', icon: Briefcase },
+        { id: 'distribution', label: 'Distribution', icon: PieChart },
+        { id: 'hierarchy', label: 'Hierarchy', icon: Network },
         ...(!company.incorporationStatus ? [{ id: 'incorporation', label: 'Incorporation', icon: Building2 }] : []),
     ];
 
@@ -325,6 +331,14 @@ const ViewCompany: React.FC = () => {
                             )}
                         </div>
                     </ShadowCard>
+                )}
+
+                {activeTab === 'distribution' && (
+                    <DistributionTab company={company} />
+                )}
+
+                {activeTab === 'hierarchy' && (
+                    <HierarchyTab company={company} />
                 )}
             </div>
         </div>

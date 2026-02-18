@@ -11,17 +11,24 @@ export interface CompanyShareClass {
 
 export interface CompanyInvolvement {
   id: string;
+  partyType?: 'PERSON' | 'COMPANY';
   role: RepresentationRole[];
   classA: number;
   classB: number;
   classC: number;
   ordinary: number;
-  person: {
+  person?: {
     id: string;
     name: string;
     address: string;
     nationality: string;
-  };
+  } | null;
+  holderCompany?: {
+    id: string;
+    name: string;
+    address: string;
+    registrationNumber: string;
+  } | null;
 }
 
 export interface Company {
