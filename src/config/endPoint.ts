@@ -45,6 +45,7 @@ export const endPoints = {
     GET_BY_CLIENT: (clientId: string) => `/companies?clientId=${clientId}`,
     INCORPORATION: (companyId: string) => `/companies/${companyId}/incorporation`,
     KYC: (companyId: string) => `/companies/${companyId}/kyc`,
+    KYC_DOCUMENT_REQUEST: (kycId: string) => `/kyc/${kycId}/document-request`,
   },
   SERVICE_REQUEST: {
     BASE: '/service-requests',
@@ -101,5 +102,21 @@ export const endPoints = {
     BASE: '/persons',
     GET_ALL: '/persons',
     CREATE: '/persons',
+  },
+  DOCUMENT_REQUESTS: {
+    BASE: '/document-requests',
+    DOCUMENTS: (requestId: string) => `/document-requests/${requestId}/documents`,
+    DOCUMENT_BY_ID: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}`,
+    UPLOAD: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}/upload`,
+    UPLOAD_TEMPLATE: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}/upload-template`,
+    CLEAR: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}/clear`,
+    UPDATE: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}`,
+    DELETE: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}`,
+  },
+  INCORPORATION: {
+    BASE: '/incorporation',
+    GET_BY_COMPANY: (companyId: string) => `/incorporation/company/${companyId}`,
+    UPDATE_STATUS: (id: string) => `/incorporation/${id}/status`,
+    CREATE_DOCUMENT_REQUEST: (id: string) => `/incorporation/${id}/document-requests`,
   },
 };

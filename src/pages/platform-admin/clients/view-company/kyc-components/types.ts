@@ -1,3 +1,69 @@
+export interface DocumentFile {
+  id: string;
+  file_name: string;
+  url: string;
+}
+
+export interface RequestedDocument {
+  id: string;
+  title: string;
+  documentName?: string;
+  description?: string;
+  address?: string | null;
+  type: 'DIRECT' | 'TEMPLATE';
+  count: 'SINGLE' | 'MULTIPLE';
+  status: 'PENDING' | 'SUBMITTED' | 'VERIFIED' | 'REJECTED';
+  file?: DocumentFile;
+  templateFile?: DocumentFile;
+  children?: RequestedDocument[];
+  parentId?: string;
+}
+
+export interface BackendDocumentRequest {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  requestedDocuments: RequestedDocument[];
+}
+
+export interface Involvement {
+  id: string;
+  partyType: 'PERSON' | 'COMPANY';
+  role?: string[];
+  person?: {
+    id: string;
+    name: string;
+    address: string | null;
+  };
+  holderCompany?: {
+    id: string;
+    name: string;
+    address: string | null;
+  };
+}
+
+export interface InvolvementKyc {
+  id: string;
+  involvementId: string;
+  kycId: string;
+  status: string;
+  documentRequest: BackendDocumentRequest;
+  involvement: Involvement;
+}
+
+export interface KycBackendResponse {
+  id: string;
+  companyId: string;
+  status: string;
+  startedAt: string;
+  verifiedAt?: string | null;
+  company: { id: string; name: string; address: string | null };
+  documentRequest?: BackendDocumentRequest;
+  involvementKycs: InvolvementKyc[];
+}
+
+// Frontend compatible types (adapted from existing ones)
 export interface DocumentRequestDocumentSingle {
   _id?: string;
   name: string;
@@ -13,6 +79,7 @@ export interface DocumentRequestDocumentSingle {
 }
 
 export interface MultipleDocumentItem {
+  _id?: string;
   label: string;
   status?: string;
   url?: string;
@@ -43,6 +110,8 @@ export interface KycPerson {
 export interface DocumentRequest {
   _id: string;
   category: string;
+  entityName?: string;
+  address: string | null;
   status: string;
   documents: DocumentRequestDocumentSingle[];
   multipleDocuments: DocumentRequestDocumentMultiple[];
@@ -61,3 +130,4 @@ export interface KycWorkflow {
   documentRequests: KycRequestFull[];
   status: string;
 }
+

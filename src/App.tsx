@@ -60,7 +60,7 @@ const App = () => {
           <Route path="/dashboard/clients" element={<Clients />} />
           <Route path="/dashboard/clients/:clientId" element={<ViewClient />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId" element={<ViewCompany />} />
-          <Route path="/dashboard/clients/:clientId/company/:companyId/incoporation-cycle" element={<IncorpCycle />} />
+          <Route path="/dashboard/clients/:clientId/company/:companyId/incorporation-cycle" element={<IncorpCycle />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId/kyc" element={<KycPage />} />
           <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
           <Route path="/dashboard/settings" element={<Settings />} />

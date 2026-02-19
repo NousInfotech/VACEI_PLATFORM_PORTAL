@@ -3,7 +3,7 @@ import React from 'react';
 interface BadgeProps {
   children: React.ReactNode;
   className?: string;
-  variant?: 'primary' | 'label' | 'danger' | 'success' | 'gray';
+  variant?: 'primary' | 'label' | 'danger' | 'success' | 'gray' | 'outline';
 }
 
 export const Badge: React.FC<BadgeProps> = ({ 
@@ -16,7 +16,8 @@ export const Badge: React.FC<BadgeProps> = ({
     label: 'text-gray-400 p-0',
     danger: 'bg-red-50 text-red-600 py-1.5 px-3 rounded-lg border border-red-100',
     success: 'bg-green-50 text-green-600 py-1.5 px-3 rounded-lg border border-green-100',
-    gray: 'bg-gray-50 text-gray-600 py-1.5 px-3 rounded-lg border border-gray-100'
+    gray: 'bg-gray-50 text-gray-600 py-1.5 px-3 rounded-lg border border-gray-100',
+    outline: 'bg-transparent text-gray-600 border border-gray-300'
   };
 
   return (

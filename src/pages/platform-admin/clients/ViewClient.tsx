@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { apiGet } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Client } from '../../../types/client';
-import type { Company } from '../../../types/company';
+import type { Company, IncorporationCycle } from '../../../types/company';
 import type { ServiceRequest } from '../../../types/service-request-template';
 import { USE_MOCK_DATA, getMockClientById, getMockCompaniesByClientId } from '../../../data/mockCompanyData';
 import PageHeader from '../../common/PageHeader';
@@ -209,7 +209,15 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
         enabled: !USE_MOCK_DATA,
     });
 
-    const isSrvLoading = !USE_MOCK_DATA && isRealSrvLoading;
+    const { data: incCycle, isLoading: isIncLoading } = useQuery<IncorporationCycle | null>({
+        queryKey: ['incorporation-cycle', company.id],
+        queryFn: () => apiGet<{ data: IncorporationCycle }>(endPoints.INCORPORATION.GET_BY_COMPANY(company.id))
+            .then(res => res.data)
+            .catch(() => null),
+        enabled: !USE_MOCK_DATA && !company.incorporationStatus,
+    });
+
+    const isSrvLoading = !USE_MOCK_DATA && (isRealSrvLoading || isIncLoading);
 
     const serviceRequests: ServiceRequest[] = useMemo(() => {
         if (!requestsData) return [];
@@ -218,14 +226,16 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
         return [];
     }, [requestsData]);
 
-    const approvedRequest = serviceRequests?.find(r => r.status === 'APPROVED');
+    const approvedIncorpRequest = serviceRequests?.find(r => r.status === 'APPROVED' && r.service === 'INCORPORATION');
     const hasServiceRequest = serviceRequests && serviceRequests.length > 0;
 
     const handleAction = () => {
         if (company.incorporationStatus) {
             navigate(`/dashboard/clients/${clientId}/company/${company.id}`);
-        } else if (approvedRequest) {
-            navigate(`/dashboard/clients/${clientId}/company/${company.id}/incoporation-cycle`);
+        } else if (incCycle) {
+            navigate(`/dashboard/clients/${clientId}/company/${company.id}/incorporation-cycle`);
+        } else if (approvedIncorpRequest) {
+            navigate(`/dashboard/clients/${clientId}/company/${company.id}/incorporation-cycle`);
         } else if (hasServiceRequest) {
              navigate(`/dashboard/service-request-management/${serviceRequests[0].id}`);
         }
@@ -282,7 +292,12 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
                             >
                                 {company.incorporationStatus ? (
                                     <Eye className="h-4 w-4" />
-                                ) : approvedRequest ? (
+                                ) : incCycle ? (
+                                    <>
+                                        View Incorp Cycle
+                                        <ArrowRight className="h-3.5 w-3.5 ml-2 group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                ) : approvedIncorpRequest ? (
                                     <>
                                         Setup Incorp
                                         <FileText className="h-3.5 w-3.5 ml-2" />

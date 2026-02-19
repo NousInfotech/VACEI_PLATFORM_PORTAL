@@ -17,6 +17,18 @@ export const apiPost = async <T>(url: string, data?: Record<string, unknown>): P
 };
 
 /**
+ * Generic POST method with FormData
+ */
+export const apiPostFormData = async <T>(url: string, data: FormData): Promise<T> => {
+  const response = await axiosInstance.post<T>(url, data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+/**
  * Generic PUT method
  */
 export const apiPut = async <T>(url: string, data?: Record<string, unknown>): Promise<T> => {
@@ -35,7 +47,7 @@ export const apiPatch = async <T>(url: string, data?: Record<string, unknown>): 
 /**
  * Generic DELETE method
  */
-export const apiDelete = async <T>(url: string): Promise<T> => {
-  const response = await axiosInstance.delete<T>(url);
+export const apiDelete = async <T>(url: string, data?: Record<string, unknown>): Promise<T> => {
+  const response = await axiosInstance.delete<T>(url, { data });
   return response.data;
 };
