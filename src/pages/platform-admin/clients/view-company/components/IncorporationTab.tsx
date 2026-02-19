@@ -51,7 +51,7 @@ const IncorporationTab: React.FC<IncorporationTabProps> = ({ incCycle }) => {
                         <span className="text-[10px] font-black uppercase tracking-widest">Verification</span>
                     </div>
                     <p className="text-lg font-bold text-gray-900">
-                        {incCycle?.status === 'APPROVED' ? 'Verified' : 'Pending'}
+                        {incCycle?.status === 'COMPLETED' ? 'Verified' : 'Pending'}
                     </p>
                 </ShadowCard>
             </div>

@@ -12,6 +12,7 @@ export const MOCK_KYC_DATA: KycWorkflow[] = [
         documentRequest: {
           _id: 'dr-company-1',
           category: 'Company KYC',
+          address: '123 Valletta Street, Malta',
           status: 'PENDING',
           documents: [
             {
@@ -51,6 +52,7 @@ export const MOCK_KYC_DATA: KycWorkflow[] = [
         documentRequest: {
           _id: 'dr-sh-1',
           category: 'Shareholder KYC',
+          address: '123, Valletta Street, Malta',
           status: 'PENDING',
           documents: [
             {
@@ -95,6 +97,7 @@ export const MOCK_KYC_DATA: KycWorkflow[] = [
         documentRequest: {
           _id: 'dr-rep-1',
           category: 'Representative KYC',
+          address: '45, London Road, UK',
           status: 'PENDING',
           documents: [
             {

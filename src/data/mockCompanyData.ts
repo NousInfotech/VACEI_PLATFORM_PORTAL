@@ -151,7 +151,7 @@ export const mockKycCycle: KycCycle = {
 export const mockIncorporationCycle: IncorporationCycle = {
   id: 'mock-inc-cycle-1',
   companyId: 'mock-company-1',
-  status: 'APPROVED',
+  status: 'COMPLETED',
   startedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
   completedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
 };
