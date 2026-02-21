@@ -119,4 +119,12 @@ export const endPoints = {
     UPDATE_STATUS: (id: string) => `/incorporation/${id}/status`,
     CREATE_DOCUMENT_REQUEST: (id: string) => `/incorporation/${id}/document-requests`,
   },
+  COMPLIANCE_CALENDAR: {
+    BASE: '/compliance-calendar',
+    LIST: '/compliance-calendar',
+    GET_BY_ID: (id: string) => `/compliance-calendar/${id}`,
+    CREATE: '/compliance-calendar',
+    UPDATE: (id: string) => `/compliance-calendar/${id}`,
+    DELETE: (id: string) => `/compliance-calendar/${id}`,
+  },
 };
