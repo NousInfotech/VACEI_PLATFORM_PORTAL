@@ -119,4 +119,12 @@ export const endPoints = {
     UPDATE_STATUS: (id: string) => `/incorporation/${id}/status`,
     CREATE_DOCUMENT_REQUEST: (id: string) => `/incorporation/${id}/document-requests`,
   },
+  PROCEDURE_PROMPT: {
+    BASE: '/procedure-prompts',
+    GET_ALL: '/procedure-prompts',
+    GET_BY_ID: (id: string) => `/procedure-prompts/${id}`,
+    CREATE: '/procedure-prompts',
+    UPDATE: (id: string) => `/procedure-prompts/${id}`,
+    DELETE: (id: string) => `/procedure-prompts/${id}`,
+  },
 };

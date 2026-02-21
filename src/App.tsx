@@ -30,6 +30,9 @@ import CreateEngagementPage from './pages/platform-admin/services/servicesReques
 import NoticeManagement from './pages/platform-admin/notice-management/NoticeManagement'
 import CreateNotice from './pages/platform-admin/notice-management/CreateNotice'
 import EditNotice from './pages/platform-admin/notice-management/EditNotice'
+import ProcedurePromptList from './pages/platform-admin/procedure-prompt/ProcedurePromptList'
+import CreateProcedurePrompt from './pages/platform-admin/procedure-prompt/CreateProcedurePrompt'
+import EditProcedurePrompt from './pages/platform-admin/procedure-prompt/EditProcedurePrompt'
 
 const App = () => {
   return (
@@ -68,6 +71,9 @@ const App = () => {
           <Route path="/dashboard/notice-management" element={<NoticeManagement />} />
           <Route path="/dashboard/notice-management/create" element={<CreateNotice />} />
           <Route path="/dashboard/notice-management/:id/edit" element={<EditNotice />} />
+          <Route path="/dashboard/procedure-prompts" element={<ProcedurePromptList />} />
+          <Route path="/dashboard/procedure-prompts/create" element={<CreateProcedurePrompt />} />
+          <Route path="/dashboard/procedure-prompts/:id/edit" element={<EditProcedurePrompt />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/dashboard/service-request-templates/:id/preview" element={<TemplatePreview />} />
