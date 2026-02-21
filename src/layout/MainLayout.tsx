@@ -31,6 +31,10 @@ export default function MainLayout() {
         if (item.slug === 'organizations') {
             return user?.role === "PLATFORM_ADMIN";
         }
+        // Compliance Calendar: only for platform roles (read-only for employee, full for admin)
+        if (item.slug === 'compliance-calendar') {
+            return user?.role === "PLATFORM_ADMIN" || user?.role === "PLATFORM_EMPLOYEE";
+        }
         return true;
     });
 

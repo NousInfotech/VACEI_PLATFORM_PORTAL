@@ -102,6 +102,14 @@ export const menuData: MenuItem[] = [
         description: "Manage AI procedure prompts",
     },
     {
+        slug: "compliance-calendar",
+        icon: ArchiveIcon,
+        label: "Compliance Calendar",
+        href: "/dashboard/compliance",
+        section: "primary",
+        description: "Platform-wide compliance deadlines",
+    },
+    {
         slug: "settings",
         icon: Settings02Icon,
         label: "Settings",
