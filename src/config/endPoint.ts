@@ -126,6 +126,7 @@ export const endPoints = {
     CREATE: '/procedure-prompts',
     UPDATE: (id: string) => `/procedure-prompts/${id}`,
     DELETE: (id: string) => `/procedure-prompts/${id}`,
+  },
   COMPLIANCE_CALENDAR: {
     BASE: '/compliance-calendar',
     LIST: '/compliance-calendar',
@@ -135,3 +136,4 @@ export const endPoints = {
     DELETE: (id: string) => `/compliance-calendar/${id}`,
   },
 };
+
