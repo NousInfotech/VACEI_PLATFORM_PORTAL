@@ -135,5 +135,12 @@ export const endPoints = {
     UPDATE: (id: string) => `/compliance-calendar/${id}`,
     DELETE: (id: string) => `/compliance-calendar/${id}`,
   },
+  NOTIFICATION: {
+    BASE: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
+    MARK_READ: (id: string) => `/notifications/read/${id}`,
+    MARK_ALL_READ: '/notifications/read-all',
+    PREFERENCES: '/notifications/preferences',
+  },
 };
 

@@ -22,8 +22,9 @@ import ViewCompany from './pages/platform-admin/clients/view-company/ViewCompany
 import IncorpCycle from './pages/platform-admin/clients/IncorpCycle'
 import KycPage from './pages/platform-admin/clients/KycPage'
 import GlobalLibrary from './pages/platform-admin/global-library/GlobalLibrary'
-import Settings from './pages/platform-admin/settings/Settings'
+import Settings from './pages/common/Settings'
 import Messages from './pages/messages/Messages'
+import Notifications from './pages/common/Notifications'
 
 import EngagementsList from './pages/platform-admin/engagements/EngagementsList'
 import CreateEngagementPage from './pages/platform-admin/services/servicesRequestManagement/CreateEngagementPage'
@@ -33,10 +34,12 @@ import EditNotice from './pages/platform-admin/notice-management/EditNotice'
 import ProcedurePromptList from './pages/platform-admin/procedure-prompt/ProcedurePromptList'
 import CreateProcedurePrompt from './pages/platform-admin/procedure-prompt/CreateProcedurePrompt'
 import EditProcedurePrompt from './pages/platform-admin/procedure-prompt/EditProcedurePrompt'
+import { Toaster } from 'sonner'
 
 const App = () => {
   return (
     <AuthProvider>
+      <Toaster position="top-right" expand={true} richColors={true} />
       <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
@@ -68,6 +71,7 @@ const App = () => {
           <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/dashboard/messages" element={<Messages />} />
+          <Route path="/dashboard/notifications" element={<Notifications />} />
           <Route path="/dashboard/notice-management" element={<NoticeManagement />} />
           <Route path="/dashboard/notice-management/create" element={<CreateNotice />} />
           <Route path="/dashboard/notice-management/:id/edit" element={<EditNotice />} />
