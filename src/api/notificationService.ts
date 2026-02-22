@@ -1,6 +1,28 @@
 import { apiGet, apiPatch } from '../config/base';
 import { endPoints } from '../config/endPoint';
 
+export function getPortalRedirectUrl(url?: string | null): string | null {
+    if (!url) return null;
+    try {
+        const dummyBase = 'http://localhost';
+        const parsedUrl = new URL(url, dummyBase);
+        const path = parsedUrl.pathname;
+
+        if (path === '/library') {
+            return url.replace('/library', '/dashboard/global-library');
+        }
+
+        if (path.startsWith('/dashboard')) return url;
+
+        if (path.startsWith('/')) {
+            return `/dashboard${url}`;
+        }
+    } catch (e) {
+        return url;
+    }
+    return url;
+}
+
 export interface Notification {
     id: string;
     userId: string;
@@ -37,8 +59,17 @@ export const notificationService = {
     fetchNotifications: async (filters?: { page?: number; limit?: number; isRead?: boolean }) => {
         try {
             const response = await apiGet<any>(endPoints.NOTIFICATION.BASE, filters);
+
+            let mappedItems = response.data;
+            if (Array.isArray(mappedItems)) {
+                mappedItems = mappedItems.map(notif => ({
+                    ...notif,
+                    redirectUrl: getPortalRedirectUrl(notif.redirectUrl)
+                }));
+            }
+
             return {
-                items: response.data,
+                items: mappedItems,
                 meta: response.meta
             } as FetchNotificationsResponse;
         } catch (error) {
