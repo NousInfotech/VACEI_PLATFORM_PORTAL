@@ -70,6 +70,7 @@ export const endPoints = {
     CREATE: '/engagements',
     UPDATE: (id: string) => `/engagements/${id}`,
     UPDATE_STATUS: (id: string) => `/engagements/${id}/status`,
+    UPDATE_ORGANIZATION: (id: string) => `/engagements/${id}/organization`,
   },
   LIBRARY: {
     FOLDERS: '/library/folders',
