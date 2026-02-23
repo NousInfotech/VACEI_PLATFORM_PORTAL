@@ -91,11 +91,12 @@ export const EngagementStatusModal: React.FC<EngagementStatusModalProps> = ({
                   <button
                     key={status}
                     onClick={() => setSelectedStatus(status)}
+                    disabled={currentStatus === status}
                     className={`px-4 py-2 text-xs font-bold rounded-xl border-2 transition-all ${
                       selectedStatus === status 
                         ? 'bg-primary/5 border-primary text-primary' 
                         : 'border-gray-50 text-gray-400 hover:border-gray-100'
-                    }`}
+                    } ${currentStatus === status ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {status}
                   </button>

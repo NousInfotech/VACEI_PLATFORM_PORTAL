@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+ 
 import { 
   ShieldCheck, 
   Search, 
   Building2, 
-  Eye,
   Briefcase
 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
@@ -12,21 +11,22 @@ import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
 import { PageHeader } from '../../common/PageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/Table';
-import { apiGet } from '../../../config/base';
+import { apiPatch, apiGet } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Engagement } from '../../../data/engagementMockData';
 import { mockEngagements } from '../../../data/engagementMockData';
 import { EngagementStatusModal, type EngagementStatus } from './components/EngagementStatusModal';
-import { apiPatch } from '../../../config/base';
+import { ChangeOrganizationModal } from './components/ChangeOrganizationModal';
 
 const USE_MOCK_DATA = false;
 
 const EngagementsList: React.FC = () => {
-  const navigate = useNavigate();
+ 
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusModal, setStatusModal] = useState<{ isOpen: boolean; engagementId: string; currentStatus: EngagementStatus } | null>(null);
+  const [changeOrgModal, setChangeOrgModal] = useState<{ isOpen: boolean; engagementId: string; rejectedOrgIds: string[]; serviceCategory: string } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const userRole = localStorage.getItem('userRole') || 'PLATFORM_ADMIN';
 
@@ -158,6 +158,38 @@ const EngagementsList: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-right px-6">
                     <div className="flex justify-end gap-2">
+                      {eng.status === 'REJECTED' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            // Find ALL organizations that have EVER rejected this company-service combination
+                            // We look across ALL engagements in the fetched list
+                            const rejectedIds = engagements
+                              .filter(e => {
+                                // Match by serviceRequestId (tightest link)
+                                const matchesRequestId = e.serviceRequestId && eng.serviceRequestId && e.serviceRequestId === eng.serviceRequestId;
+                                
+                                // Match by company + service (broader link)
+                                const matchesRequirement = e.companyId === eng.companyId && e.serviceCategory === eng.serviceCategory;
+                                
+                                return (matchesRequestId || matchesRequirement) && e.status === 'REJECTED';
+                              })
+                              .map(e => e.organizationId)
+                              .filter(id => !!id); // Filter out any empty IDs
+                            
+                            setChangeOrgModal({ 
+                              isOpen: true, 
+                              engagementId: eng.id, 
+                              rejectedOrgIds: Array.from(new Set(rejectedIds)), // Ensure unique list
+                              serviceCategory: eng.serviceCategory
+                            });
+                          }}
+                          className="rounded-xl bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100 transition-all text-[10px] font-bold uppercase"
+                        >
+                          Change Org
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -166,14 +198,14 @@ const EngagementsList: React.FC = () => {
                       >
                         Status
                       </Button>
-                      <Button 
+                      {/* <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => navigate(`/dashboard/engagements/${eng.id}`)}
                         className="rounded-xl hover:bg-primary/5 hover:text-primary transition-all border-gray-200 shadow-none"
                       >
                         <Eye className="h-4 w-4" />
-                      </Button>
+                      </Button> */}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -201,6 +233,21 @@ const EngagementsList: React.FC = () => {
           currentStatus={statusModal.currentStatus}
           userRole={userRole}
           loading={isUpdating}
+        />
+      )}
+
+      {changeOrgModal && (
+        <ChangeOrganizationModal 
+          isOpen={changeOrgModal.isOpen}
+          onClose={() => setChangeOrgModal(null)}
+          engagementId={changeOrgModal.engagementId}
+          rejectedOrgIds={changeOrgModal.rejectedOrgIds}
+          serviceCategory={changeOrgModal.serviceCategory}
+          onSuccess={async () => {
+             const res = await apiGet<{ data: Engagement[] }>(endPoints.ENGAGEMENT.GET_ALL);
+             setEngagements(res.data);
+             alert('Organization updated successfully');
+          }}
         />
       )}
     </div>
