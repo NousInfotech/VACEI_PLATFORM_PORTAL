@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Building2, 
   Users, 
@@ -14,23 +15,32 @@ import { Button } from "../../../ui/Button";
 import { ShadowCard } from "../../../ui/ShadowCard";
 import { Skeleton } from "../../../ui/Skeleton";
 import { PageHeader } from "../../common/PageHeader";
+import { apiGet } from "../../../config/base";
+import { endPoints } from "../../../config/endPoint";
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = React.useState(true);
+  const { data: overviewRes, isLoading } = useQuery<{
+    success: boolean;
+    data: {
+      totalOrganizations: number;
+      activeClients: number;
+      activeEngagements: number;
+      serviceRequestsPending: number;
+      serviceRequestsTotal: number;
+    };
+  }>({
+    queryKey: ["platform-analytics-overview"],
+    queryFn: () => apiGet(endPoints.PLATFORM_ANALYTICS.OVERVIEW),
+  });
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, []);
+  const overview = overviewRes?.data;
 
   const stats = [
-    { label: "Total Organizations", value: "24", icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Active Clients", value: "156", icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Active Engagements", value: "40", icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50" },
-    { label: "Service requests", value: "12", icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Total Organizations", value: String(overview?.totalOrganizations ?? 0), icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Active Clients", value: String(overview?.activeClients ?? 0), icon: Users, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Active Engagements", value: String(overview?.activeEngagements ?? 0), icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50" },
+    { label: "Service requests", value: String(overview?.serviceRequestsPending ?? 0), icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
   ];
 
   const quickActions = [
@@ -43,10 +53,17 @@ const AdminDashboard: React.FC = () => {
     },
     { 
       title: "Manage Clients", 
-      description: "View and edit platform administrators", 
+      description: "View and manage client accounts", 
       icon: Users, 
       path: "/dashboard/clients",
       color: "bg-indigo-600"
+    },
+    { 
+      title: "Manage Employees", 
+      description: "View and manage platform employees", 
+      icon: Users, 
+      path: "/dashboard/employees",
+      color: "bg-emerald-600"
     },
     { 
       title: "Global Settings", 
@@ -66,7 +83,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {loading ? (
+        {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <ShadowCard key={i} className="p-6 flex items-center gap-4 border-none shadow-sm">
               <Skeleton className="h-16 w-16 rounded-2xl shrink-0" />
@@ -101,7 +118,7 @@ const AdminDashboard: React.FC = () => {
             </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {loading ? (
+            {isLoading ? (
               Array.from({ length: 2 }).map((_, i) => (
                 <ShadowCard key={i} className="p-8 border-none shadow-sm space-y-6">
                   <Skeleton className="w-14 h-14 rounded-2xl" />
@@ -146,7 +163,7 @@ const AdminDashboard: React.FC = () => {
             System Health
           </h2>
           <ShadowCard className="p-8 flex flex-col items-center justify-center text-center space-y-6 border-none shadow-sm">
-            {loading ? (
+            {isLoading ? (
               <div className="w-full space-y-6">
                 <div className="flex flex-col items-center space-y-4">
                   <Skeleton className="w-24 h-24 rounded-full" />
