@@ -24,6 +24,7 @@ import KycPage from './pages/platform-admin/clients/KycPage'
 import GlobalLibrary from './pages/platform-admin/global-library/GlobalLibrary'
 import Settings from './pages/platform-admin/settings/Settings'
 import Messages from './pages/messages/Messages'
+import Employees from './pages/platform-admin/employees/Employees'
 
 import EngagementsList from './pages/platform-admin/engagements/EngagementsList'
 import CreateEngagementPage from './pages/platform-admin/services/servicesRequestManagement/CreateEngagementPage'
@@ -62,6 +63,7 @@ const App = () => {
           <Route path="/dashboard/clients/:clientId/company/:companyId" element={<ViewCompany />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId/incorporation-cycle" element={<IncorpCycle />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId/kyc" element={<KycPage />} />
+          <Route path="/dashboard/employees" element={<Employees />} />
           <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/dashboard/messages" element={<Messages />} />

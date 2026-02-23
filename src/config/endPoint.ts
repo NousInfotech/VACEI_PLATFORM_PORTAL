@@ -35,6 +35,22 @@ export const endPoints = {
     UPDATE: (id: string) => `/clients/${id}`,
     DELETE: (id: string) => `/clients/${id}`,
   },
+  EMPLOYEES: {
+    BASE: '/organization-members',
+    GET_ALL: '/organization-members',
+    GET_BY_ID: (id: string) => `/organization-members/${id}`,
+    CREATE: '/organization-members',
+    UPDATE: (id: string) => `/organization-members/${id}`,
+    DELETE: (id: string) => `/organization-members/${id}`,
+  },
+  PLATFORM_EMPLOYEES: {
+    BASE: '/platform/employees',
+    GET_ALL: '/platform/employees',
+    GET_BY_ID: (id: string) => `/platform/employees/${id}`,
+    CREATE: '/platform/employees',
+    UPDATE: (id: string) => `/platform/employees/${id}`,
+    DELETE: (id: string) => `/platform/employees/${id}`,
+  },
   COMPANY: {
     BASE: '/companies',
     GET_ALL: '/companies',
@@ -126,5 +142,8 @@ export const endPoints = {
     CREATE: '/compliance-calendar',
     UPDATE: (id: string) => `/compliance-calendar/${id}`,
     DELETE: (id: string) => `/compliance-calendar/${id}`,
+  },
+  PLATFORM_ANALYTICS: {
+    OVERVIEW: '/platform/analytics/overview',
   },
 };
