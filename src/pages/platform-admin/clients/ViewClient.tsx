@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { useParams, useNavigate, type NavigateFunction } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Building2, User, Mail, Calendar, FileText, ArrowRight, Eye, Plus } from 'lucide-react';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { Building2, User, Mail, Calendar, FileText, ArrowRight, Eye, Plus, ExternalLink } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/Table';
-import { apiGet } from '../../../config/base';
+import { apiGet, apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Client } from '../../../types/client';
 import type { Company, IncorporationCycle } from '../../../types/company';
@@ -18,7 +18,6 @@ import PillTab from '../../common/PillTab';
 import Messages from '../../messages/Messages';
 import { MessageSquare, type LucideIcon } from 'lucide-react';
 import CreateCompanyModal from './view-company/components/CreateCompanyModal';
-import { useQueryClient } from '@tanstack/react-query';
 
 interface Tab {
     id: string;
@@ -46,6 +45,7 @@ const ViewClient: React.FC = () => {
         queryKey: ['client-companies', clientId],
         queryFn: () => apiGet<{ data: Company[] }>(endPoints.COMPANY.GET_BY_CLIENT(clientId!)).then(res => res.data),
         enabled: !!clientId && !USE_MOCK_DATA,
+        refetchOnWindowFocus: true,
     });
 
     const companies = USE_MOCK_DATA ? getMockCompaniesByClientId(clientId!) : realCompanies;
@@ -157,16 +157,17 @@ const ViewClient: React.FC = () => {
                                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                                     <TableCell className="text-right px-6"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                                 </TableRow>
                             ))
                         ) : (companies && companies.length > 0) ? (
                             companies.map((company, index) => (
-                                <CompanyRow key={company.id} company={company} index={index} clientId={clientId!} navigate={navigate} />
+                                <CompanyRow key={company.id} company={company} index={index} clientId={clientId!} navigate={navigate} queryClient={queryClient} />
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-48 text-center text-gray-400">
+                                <TableCell colSpan={7} className="h-48 text-center text-gray-400">
                                     <div className="flex flex-col items-center justify-center space-y-2 opacity-30">
                                         <Building2 className="h-10 w-10" />
                                         <p className="text-sm font-bold uppercase tracking-widest">No companies found</p>
@@ -199,11 +200,14 @@ interface CompanyRowProps {
     index: number;
     clientId: string;
     navigate: NavigateFunction;
+    queryClient: QueryClient;
 }
 
 type ServiceRequestResponse = ServiceRequest[] | { data: ServiceRequest[] };
 
-const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navigate }) => {
+const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navigate, queryClient }) => {
+    const [isIntegrating, setIsIntegrating] = React.useState(false);
+    const [isRevoking, setIsRevoking] = React.useState(false);
     const { data: requestsData, isLoading: isRealSrvLoading } = useQuery<ServiceRequestResponse>({
         queryKey: ['company-service-requests', company.id],
         queryFn: () => apiGet<ServiceRequestResponse>(`${endPoints.SERVICE_REQUEST.GET_ALL}?companyId=${company.id}`),
@@ -242,6 +246,29 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
         }
     };
 
+    const handleIntegrateQuickBooks = async () => {
+        setIsIntegrating(true);
+        try {
+            const res = await apiGet<{ success: boolean; data: { redirectUrl: string } }>(
+                endPoints.QUICKBOOK.CONNECT_URL(company.id, clientId)
+            );
+            const url = res?.data?.redirectUrl;
+            if (url) window.location.href = url;
+        } catch {
+            setIsIntegrating(false);
+        }
+    };
+
+    const handleRevokeQuickBooks = async () => {
+        setIsRevoking(true);
+        try {
+            await apiPost(endPoints.QUICKBOOK.REVOKE(company.id), {});
+            queryClient.invalidateQueries({ queryKey: ['client-companies', clientId] });
+        } finally {
+            setIsRevoking(false);
+        }
+    };
+
     return (
         <TableRow className="hover:bg-gray-50/50 transition-colors group">
             <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs text-nowrap">
@@ -277,13 +304,37 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
             </TableCell>
             <TableCell>
                 {company.quickBookStatus ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-green-50 text-green-600 border-green-100">
-                        Integrated
+                    <span className="inline-flex items-center gap-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-green-50 text-green-600 border-green-100">
+                            Integrated
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRevokeQuickBooks}
+                            disabled={isRevoking}
+                            className="text-[10px] text-gray-500 hover:text-red-600 h-6 px-1"
+                        >
+                            {isRevoking ? '…' : 'Disconnect'}
+                        </Button>
                     </span>
                 ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-50 text-amber-600 border-amber-100">
-                        Not Integrated
-                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleIntegrateQuickBooks}
+                        disabled={isIntegrating}
+                        className="inline-flex items-center gap-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-0.5 h-7"
+                    >
+                        {isIntegrating ? (
+                            'Redirecting…'
+                        ) : (
+                            <>
+                                Integrate
+                                <ExternalLink className="h-3 w-3" />
+                            </>
+                        )}
+                    </Button>
                 )}
             </TableCell>
             <TableCell className="text-right px-6">

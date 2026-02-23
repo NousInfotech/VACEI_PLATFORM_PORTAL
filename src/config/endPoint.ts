@@ -165,7 +165,9 @@ export const endPoints = {
   },
 
   QUICKBOOK: {
-    CONNECT: "/accounting/quickbooks/connect",
-    REVOKE: (companyId: string) => `companies/${companyId}/accounting/quickbooks`
+    CONNECT: '/accounting/quickbooks/connect',
+    CONNECT_URL: (companyId: string, clientId?: string) =>
+      `/accounting/quickbooks/connect?companyId=${encodeURIComponent(companyId)}${clientId ? `&clientId=${encodeURIComponent(clientId)}` : ''}`,
+    REVOKE: (companyId: string) => `/companies/${companyId}/accounting/quickbooks/revoke`,
   }
 };
