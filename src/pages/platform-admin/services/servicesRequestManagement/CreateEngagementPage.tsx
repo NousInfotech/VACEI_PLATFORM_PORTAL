@@ -113,7 +113,8 @@ const CreateEngagementPage: React.FC = () => {
           kycStatus: true,
           clientId: '',
           createdAt: '',
-          updatedAt: ''
+          updatedAt: '',
+          quickBookStatus: null
         } as Company,
         {
           id: 'comp_2',
@@ -130,7 +131,8 @@ const CreateEngagementPage: React.FC = () => {
           kycStatus: true,
           clientId: '',
           createdAt: '',
-          updatedAt: ''
+          updatedAt: '',
+          quickBookStatus: null
         } as Company
       ]);
     }

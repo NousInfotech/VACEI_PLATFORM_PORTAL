@@ -23,6 +23,7 @@ const generateCompanies = (clientId: string, count: number): Company[] => {
     clientId: clientId,
     createdAt: new Date(Date.now() - (i + 1) * 10 * 24 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date().toISOString(),
+    quickBookStatus: null,
     shareClasses: [
       { id: `sc-${clientId}-${i}-1`, class: 'CLASS_A', issued: 100000 },
       { id: `sc-${clientId}-${i}-2`, class: 'CLASS_B', issued: 80000 },
