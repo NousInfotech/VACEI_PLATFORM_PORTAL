@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+ 
 import { 
   ShieldCheck, 
   Search, 
   Building2, 
-  Eye,
   Briefcase
 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
@@ -22,7 +21,7 @@ import { ChangeOrganizationModal } from './components/ChangeOrganizationModal';
 const USE_MOCK_DATA = false;
 
 const EngagementsList: React.FC = () => {
-  const navigate = useNavigate();
+ 
   const [engagements, setEngagements] = useState<Engagement[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
