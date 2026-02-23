@@ -135,6 +135,14 @@ export const endPoints = {
     UPDATE_STATUS: (id: string) => `/incorporation/${id}/status`,
     CREATE_DOCUMENT_REQUEST: (id: string) => `/incorporation/${id}/document-requests`,
   },
+  PROCEDURE_PROMPT: {
+    BASE: '/procedure-prompts',
+    GET_ALL: '/procedure-prompts',
+    GET_BY_ID: (id: string) => `/procedure-prompts/${id}`,
+    CREATE: '/procedure-prompts',
+    UPDATE: (id: string) => `/procedure-prompts/${id}`,
+    DELETE: (id: string) => `/procedure-prompts/${id}`,
+  },
   COMPLIANCE_CALENDAR: {
     BASE: '/compliance-calendar',
     LIST: '/compliance-calendar',
@@ -146,4 +154,12 @@ export const endPoints = {
   PLATFORM_ANALYTICS: {
     OVERVIEW: '/platform/analytics/overview',
   },
+  NOTIFICATION: {
+    BASE: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
+    MARK_READ: (id: string) => `/notifications/read/${id}`,
+    MARK_ALL_READ: '/notifications/read-all',
+    PREFERENCES: '/notifications/preferences',
+  },
 };
+

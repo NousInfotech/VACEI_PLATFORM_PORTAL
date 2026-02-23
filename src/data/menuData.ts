@@ -7,7 +7,8 @@ import {
   Settings02Icon,
   UserGroupIcon as UsersIcon,
   BubbleChatIcon,
-  Notification01Icon
+  Notification01Icon,
+  NoteEditIcon
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -91,6 +92,14 @@ export const menuData: MenuItem[] = [
         href: "/dashboard/notice-management",
         section: "primary",
         description: "Manage system notices",
+    },
+    {
+        slug: "procedure-prompts",
+        icon: NoteEditIcon,
+        label: "Procedure Prompt",
+        href: "/dashboard/procedure-prompts",
+        section: "primary",
+        description: "Manage AI procedure prompts",
     },
     {
         slug: "compliance-calendar",
