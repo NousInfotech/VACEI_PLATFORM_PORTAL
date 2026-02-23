@@ -144,6 +144,7 @@ const ViewClient: React.FC = () => {
                             <TableHead>Reg. Number</TableHead>
                             <TableHead>Incorporation</TableHead>
                             <TableHead>KYC</TableHead>
+                            <TableHead>Quickbook Integration</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -271,6 +272,17 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
                 ) : (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-50 text-amber-600 border-amber-100">
                         Incomplete
+                    </span>
+                )}
+            </TableCell>
+            <TableCell>
+                {company.quickBookStatus ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-green-50 text-green-600 border-green-100">
+                        Integrated
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-50 text-amber-600 border-amber-100">
+                        Not Integrated
                     </span>
                 )}
             </TableCell>

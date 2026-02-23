@@ -46,6 +46,7 @@ export const endPoints = {
     INCORPORATION: (companyId: string) => `/companies/${companyId}/incorporation`,
     KYC: (companyId: string) => `/companies/${companyId}/kyc`,
     KYC_DOCUMENT_REQUEST: (kycId: string) => `/kyc/${kycId}/document-request`,
+
   },
   SERVICE_REQUEST: {
     BASE: '/service-requests',
@@ -142,5 +143,9 @@ export const endPoints = {
     MARK_ALL_READ: '/notifications/read-all',
     PREFERENCES: '/notifications/preferences',
   },
-};
 
+  QUICKBOOK: {
+    CONNECT: "/accounting/quickbooks/connect",
+    REVOKE: (companyId: string) => `companies/${companyId}/accounting/quickbooks`
+  }
+};
