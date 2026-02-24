@@ -56,18 +56,20 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const { data: contentData, isLoading: isLoadingContent } = useQuery<{ data: LibraryContentResponse }>({
     queryKey: ['library-content', currentFolderId],
-    queryFn: () => currentFolderId 
+    queryFn: () => currentFolderId
       ? apiGet<{ data: LibraryContentResponse }>(endPoints.LIBRARY.FOLDER_CONTENT(currentFolderId))
       : Promise.resolve({
-          data: {
-            folder: null,
-            folders: (rootsData?.data ?? []).map(root => ({
+        data: {
+          folder: null,
+          folders: (rootsData?.data ?? [])
+            .filter(root => root.rootType === 'PLATFORM')
+            .map(root => ({
               ...root,
               parentId: null
             })),
-            files: []
-          }
-        }),
+          files: []
+        }
+      }),
     enabled: !!rootsData || currentFolderId !== null
   });
 
@@ -82,8 +84,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Mutations
   const createFolderMutation = useMutation({
-    mutationFn: (name: string) => apiPost(endPoints.LIBRARY.FOLDERS, { 
-      folder_name: name, 
+    mutationFn: (name: string) => apiPost(endPoints.LIBRARY.FOLDERS, {
+      folder_name: name,
       parentId: currentFolderId,
       rootType: contentData?.data?.folder?.rootType || 'PLATFORM'
     }),
@@ -100,7 +102,7 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         formData.append('file', file);
       });
       formData.append('folderId', currentFolderId || '');
-      
+
       const response = await axiosInstance.post(endPoints.LIBRARY.FILE_UPLOAD, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -113,8 +115,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const renameMutation = useMutation({
     mutationFn: ({ id, newName, type }: { id: string, newName: string, type: 'folder' | 'file' }) => {
-      const endpoint = type === 'folder' 
-        ? endPoints.LIBRARY.FOLDER_BY_ID(id) 
+      const endpoint = type === 'folder'
+        ? endPoints.LIBRARY.FOLDER_BY_ID(id)
         : endPoints.LIBRARY.FILE_BY_ID(id);
       const data: Record<string, unknown> = type === 'folder' ? { folder_name: newName } : { file_name: newName };
       return apiPatch(endpoint, data);
@@ -130,8 +132,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       for (const id of ids) {
         const item = currentItems.find(i => i.id === id);
         if (!item) continue;
-        const endpoint = item.type === 'folder' 
-          ? endPoints.LIBRARY.FOLDER_BY_ID(id) 
+        const endpoint = item.type === 'folder'
+          ? endPoints.LIBRARY.FOLDER_BY_ID(id)
           : endPoints.LIBRARY.FILE_BY_ID(id);
         await apiDelete(endpoint);
       }
@@ -182,7 +184,7 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const filtered = all.filter(item => {
       const itemName = item.name || '';
       const matchesSearch = searchQuery === '' || itemName.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       let matchesFilter = true;
       if (item.type === 'file' && filterType !== 'all') {
         if (filterType === 'pdf') {
@@ -218,13 +220,15 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return filtered as LibraryItem[];
   })();
 
-  const rootFolders = (rootsData?.data ?? []).map((f: LibraryRootApiItem) => ({
-    ...f,
-    id: f.id,
-    folder_name: f.name ?? f.folder_name ?? '',
-    name: f.name ?? f.folder_name ?? '',
-    type: 'folder' as const,
-  })) as LibraryItem[];
+  const rootFolders = (rootsData?.data ?? [])
+    .filter((f: LibraryRootApiItem) => f.rootType === 'PLATFORM')
+    .map((f: LibraryRootApiItem) => ({
+      ...f,
+      id: f.id,
+      folder_name: f.name ?? f.folder_name ?? '',
+      name: f.name ?? f.folder_name ?? '',
+      type: 'folder' as const,
+    })) as LibraryItem[];
 
   const handleFolderClick = (id: string | null, name?: string) => {
     if (id === null) {
@@ -315,7 +319,7 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       console.log(`Downloading ${itemName}...`);
-      
+
       // Use a simple hidden link approach for better browser compatibility without CORS issues
       const link = document.createElement('a');
       link.href = itemUrl;
@@ -324,7 +328,7 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       // Add a small delay between downloads to prevent browser from blocking them
       if (filesToDownload.length > 1) {
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -383,8 +387,8 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     handleDownload,
     createFolder: async (name: string) => { await createFolderMutation.mutateAsync(name); },
     uploadFiles: async (files: FileList) => { await uploadFilesMutation.mutateAsync(files); },
-    renameItem: async (id: string, newName: string, type: 'folder' | 'file') => { 
-      await renameMutation.mutateAsync({ id, newName, type }); 
+    renameItem: async (id: string, newName: string, type: 'folder' | 'file') => {
+      await renameMutation.mutateAsync({ id, newName, type });
     },
     deleteItems: async (ids: string[]) => { await deleteMutation.mutateAsync(ids); }
   };
