@@ -1,14 +1,14 @@
-import { 
-  DashboardSquare02Icon, 
-  Building01Icon, 
-  FileEditIcon,
-  InboxIcon,
-  ArchiveIcon,
-  Settings02Icon,
-  UserGroupIcon as UsersIcon,
-  BubbleChatIcon,
-  Notification01Icon,
-  NoteEditIcon
+import {
+    DashboardSquare02Icon,
+    Building01Icon,
+    FileEditIcon,
+    InboxIcon,
+    ArchiveIcon,
+    Settings02Icon,
+    UserGroupIcon as UsersIcon,
+    BubbleChatIcon,
+    Notification01Icon,
+    NoteEditIcon
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -36,6 +36,14 @@ export const menuData: MenuItem[] = [
         href: "/dashboard/clients",
         section: "primary",
         description: "Manage client accounts",
+    },
+    {
+        slug: "employees",
+        icon: UsersIcon,
+        label: "Employees",
+        href: "/dashboard/employees",
+        section: "primary",
+        description: "Manage platform employees",
     },
     {
         slug: "engagements",

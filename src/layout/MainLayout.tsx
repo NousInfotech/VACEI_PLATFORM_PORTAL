@@ -28,7 +28,7 @@ export default function MainLayout() {
     };
 
     const filteredMenu = menuData.filter(item => {
-        if (item.slug === 'organizations') {
+        if (item.slug === 'organizations' || item.slug === 'employees') {
             return user?.role === "PLATFORM_ADMIN";
         }
         // Compliance Calendar: only for platform roles (read-only for employee, full for admin)
@@ -42,9 +42,9 @@ export default function MainLayout() {
         <div className="flex h-screen bg-[#f5f7ff] relative overflow-hidden">
             {/* Sidebar for desktop */}
             <div className="hidden lg:block h-full">
-                <SideBar 
-                    menu={filteredMenu} 
-                    isCollapsed={isSidebarCollapsed} 
+                <SideBar
+                    menu={filteredMenu}
+                    isCollapsed={isSidebarCollapsed}
                     isOpen={true}
                     onExpand={() => setIsSidebarCollapsed(false)}
                 />
@@ -63,9 +63,9 @@ export default function MainLayout() {
                 "lg:hidden fixed inset-0 z-50 transition-transform duration-300",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                <SideBar 
-                    menu={filteredMenu} 
-                    isCollapsed={false} 
+                <SideBar
+                    menu={filteredMenu}
+                    isCollapsed={false}
                     isOpen={isSidebarOpen}
                     onClose={() => setIsSidebarOpen(false)}
                 />
