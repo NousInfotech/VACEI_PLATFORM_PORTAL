@@ -53,14 +53,14 @@ export const menuData: MenuItem[] = [
         section: "primary",
         description: "Manage engagements",
     },
-    {
-        slug: "global-library",
-        icon: ArchiveIcon,
-        label: "Global Library",
-        href: "/dashboard/global-library",
-        section: "primary",
-        description: "Shared document assets",
-    },
+    // {
+    //     slug: "global-library",
+    //     icon: ArchiveIcon,
+    //     label: "Global Library",
+    //     href: "/dashboard/global-library",
+    //     section: "primary",
+    //     description: "Shared document assets",
+    // },
     {
         slug: "service-request-management",
         icon: InboxIcon,
