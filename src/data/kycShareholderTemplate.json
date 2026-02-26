@@ -1,0 +1,154 @@
+{
+  "DOC_REQUEST": [
+    {
+      "name": "Individual Shareholder KYC",
+      "data": {
+        "title": "Shareholder ID & Address Verification",
+        "description": "Required identification documents for individual stakeholders holding shares.",
+        "requestedDocuments": [
+          {
+            "documentName": "Passport Copy",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "High-quality color scan of the valid passport biodata page."
+          },
+          {
+            "documentName": "National / Emirates ID",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Copy of the national identity card (front and back)."
+          },
+          {
+            "documentName": "Proof of Residence",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Recent utility bill (DEWA/Etisalat) or bank statement issued in the last 3 months."
+          },
+          {
+            "documentName": "Source of Wealth Declaration",
+            "isMandatory": false,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Standard declaration form regarding the origin of invested funds.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Shareholder KYC (Enhanced AML)",
+      "data": {
+        "title": "Enhanced Shareholder Due Diligence",
+        "description": "Extended document set for shareholders above 25% threshold or flagged as high-risk.",
+        "requestedDocuments": [
+          {
+            "documentName": "Passport Copy",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "High-quality color scan of the valid passport biodata page."
+          },
+          {
+            "documentName": "Secondary Government ID",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Driving license, national ID or any other government-issued photo ID."
+          },
+          {
+            "documentName": "Proof of Residence",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Two separate documents confirming residential address — utility bill and bank statement, both issued within 3 months."
+          },
+          {
+            "documentName": "Source of Wealth Declaration",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Standard declaration form regarding the origin of invested funds.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "PEP & Sanctions Self-Declaration",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Self-declaration confirming PEP status and that the individual is not subject to sanctions.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "Bank Account Statements",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Last 6 months of personal bank statements to evidence source of funds."
+          },
+          {
+            "documentName": "Tax Residency Certificate",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Certificate confirming tax residency jurisdiction for FATCA/CRS compliance."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Corporate Shareholder KYC",
+      "data": {
+        "title": "Corporate Shareholder Verification",
+        "description": "Documents required when the shareholder is a corporate entity rather than a natural person.",
+        "requestedDocuments": [
+          {
+            "documentName": "Certificate of Incorporation",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Official incorporation certificate of the shareholding company."
+          },
+          {
+            "documentName": "Memorandum & Articles of Association",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Latest constitutional documents of the shareholding entity."
+          },
+          {
+            "documentName": "Register of Directors & Shareholders",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Current registers for both directors and shareholders of the corporate shareholder — may be supplied as separate documents."
+          },
+          {
+            "documentName": "UBO Declaration",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Completed template declaring all Ultimate Beneficial Owners with ≥25% stake.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "Individual KYC of Each UBO",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Passport copy and proof of residence for each identified UBO of the corporate shareholder."
+          },
+          {
+            "documentName": "Audited Financials",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Last 2 years of audited financial statements of the corporate shareholder entity."
+          }
+        ]
+      }
+    }
+  ]
+}

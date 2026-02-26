@@ -17,14 +17,16 @@ import ViewServiceRequest from './pages/platform-admin/services/servicesRequestM
 import ServicesManagement from './pages/platform-admin/services/servicesManagement/ServicesManagement'
 import TemplatePreview from './pages/platform-admin/services/servicesRequestTemplates/TemplatePreview'
 import Clients from './pages/platform-admin/clients/Clients'
+import CreateClient from './pages/platform-admin/clients/CreateClient'
 import ViewClient from './pages/platform-admin/clients/ViewClient'
 import ViewCompany from './pages/platform-admin/clients/view-company/ViewCompany'
 import IncorpCycle from './pages/platform-admin/clients/IncorpCycle'
 import KycPage from './pages/platform-admin/clients/KycPage'
 import GlobalLibrary from './pages/platform-admin/global-library/GlobalLibrary'
-import Settings from './pages/common/Settings'
+import Settings from './pages/platform-admin/settings/Settings'
 import Messages from './pages/messages/Messages'
 import Employees from './pages/platform-admin/employees/Employees'
+import CreatePlatformEmployee from './pages/platform-admin/employees/CreatePlatformEmployee'
 import Notifications from './pages/common/Notifications'
 
 import EngagementsList from './pages/platform-admin/engagements/EngagementsList'
@@ -35,6 +37,9 @@ import EditNotice from './pages/platform-admin/notice-management/EditNotice'
 import ProcedurePromptList from './pages/platform-admin/procedure-prompt/ProcedurePromptList'
 import CreateProcedurePrompt from './pages/platform-admin/procedure-prompt/CreateProcedurePrompt'
 import EditProcedurePrompt from './pages/platform-admin/procedure-prompt/EditProcedurePrompt'
+import ViewProcedurePrompt from './pages/platform-admin/procedure-prompt/ViewProcedurePrompt'
+import CreateComplianceCalendarPage from './pages/platform-admin/compliance-calendar/CreateComplianceCalendarPage'
+import EditComplianceCalendarPage from './pages/platform-admin/compliance-calendar/EditComplianceCalendarPage'
 import { Toaster } from 'sonner'
 
 const App = () => {
@@ -58,18 +63,22 @@ const App = () => {
           <Route path="/dashboard/engagements" element={<EngagementsList />} />
           <Route path="/dashboard/engagements/create" element={<CreateEngagementPage />} />
           <Route path="/dashboard/compliance" element={<Dashboard activeSection="Compliance" />} />
+          <Route path="/dashboard/compliance/create" element={<CreateComplianceCalendarPage />} />
+          <Route path="/dashboard/compliance/:id/edit" element={<EditComplianceCalendarPage />} />
           <Route path="/dashboard/templates" element={<Dashboard activeSection="Document Request Templates" />} />
-          <Route path="/dashboard/settings" element={<Dashboard activeSection="Settings" />} />
+
           <Route path="/dashboard/organizations" element={<Organizations />} />
           <Route path="/dashboard/organizations/create" element={<CreateOrganization />} />
           <Route path="/dashboard/organizations/:id" element={<ViewOrganization />} />
           <Route path="/dashboard/organizations/:id/edit" element={<EditOrganization />} />
           <Route path="/dashboard/clients" element={<Clients />} />
+          <Route path="/dashboard/clients/create" element={<CreateClient />} />
           <Route path="/dashboard/clients/:clientId" element={<ViewClient />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId" element={<ViewCompany />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId/incorporation-cycle" element={<IncorpCycle />} />
           <Route path="/dashboard/clients/:clientId/company/:companyId/kyc" element={<KycPage />} />
           <Route path="/dashboard/employees" element={<Employees />} />
+          <Route path="/dashboard/employees/create" element={<CreatePlatformEmployee />} />
           <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
           <Route path="/dashboard/settings" element={<Settings />} />
           <Route path="/dashboard/messages" element={<Messages />} />
@@ -79,6 +88,7 @@ const App = () => {
           <Route path="/dashboard/notice-management/:id/edit" element={<EditNotice />} />
           <Route path="/dashboard/procedure-prompts" element={<ProcedurePromptList />} />
           <Route path="/dashboard/procedure-prompts/create" element={<CreateProcedurePrompt />} />
+          <Route path="/dashboard/procedure-prompts/:id" element={<ViewProcedurePrompt />} />
           <Route path="/dashboard/procedure-prompts/:id/edit" element={<EditProcedurePrompt />} />
           <Route path="*" element={<NotFound />} />
         </Route>

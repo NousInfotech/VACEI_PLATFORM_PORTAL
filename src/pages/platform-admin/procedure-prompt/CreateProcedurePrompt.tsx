@@ -4,8 +4,6 @@ import {
   MessageSquare, 
   ArrowLeft, 
   Save, 
-  Globe, 
-  Building, 
   Type, 
   FileText,
   Layers,
@@ -13,8 +11,8 @@ import {
 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import PageHeader from '../../common/PageHeader';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiGet, apiPost } from '../../../config/base';
+import { useMutation } from '@tanstack/react-query';
+import { apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import AlertMessage from '../../common/AlertMessage';
@@ -39,14 +37,6 @@ const CreateProcedurePrompt: React.FC = () => {
     organizationId: null,
   });
 
-  const { data: organizationsResponse } = useQuery({
-    queryKey: ['organizations'],
-    queryFn: () => apiGet<any>(endPoints.ORGANIZATION.GET_ALL),
-    enabled: formData.scopeType === ProcedurePromptScope.ORGANIZATIONAL,
-  });
-
-  const organizations = organizationsResponse?.data || [];
-
   const createMutation = useMutation({
     mutationFn: (data: CreateProcedurePromptData) => apiPost(endPoints.PROCEDURE_PROMPT.CREATE, data as any),
     onSuccess: () => {
@@ -63,10 +53,6 @@ const CreateProcedurePrompt: React.FC = () => {
     e.preventDefault();
     if (!formData.title || !formData.prompt) {
       setAlert({ message: 'Title and Prompt text are required', variant: 'danger' });
-      return;
-    }
-    if (formData.scopeType === ProcedurePromptScope.ORGANIZATIONAL && !formData.organizationId) {
-      setAlert({ message: 'Organization is required for ORGANIZATIONAL scope', variant: 'danger' });
       return;
     }
     createMutation.mutate(formData);
@@ -117,43 +103,6 @@ const CreateProcedurePrompt: React.FC = () => {
                 required
               />
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                <Globe className="h-4 w-4 text-primary" />
-                Scope Type
-              </label>
-              <select
-                name="scopeType"
-                value={formData.scopeType}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all font-medium appearance-none"
-              >
-                <option value={ProcedurePromptScope.GLOBAL}>GLOBAL</option>
-                <option value={ProcedurePromptScope.ORGANIZATIONAL}>ORGANIZATIONAL</option>
-              </select>
-            </div>
-
-            {formData.scopeType === ProcedurePromptScope.ORGANIZATIONAL && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                  <Building className="h-4 w-4 text-primary" />
-                  Organization
-                </label>
-                <select
-                  name="organizationId"
-                  value={formData.organizationId || ''}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all font-medium appearance-none"
-                  required
-                >
-                  <option value="">Select Organization</option>
-                  {organizations.map((org: any) => (
-                    <option key={org.id} value={org.id}>{org.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700 flex items-center gap-2">

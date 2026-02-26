@@ -1,3 +1,4 @@
+export type CompanyType = 'PRIMARY' | 'NON_PRIMARY';
 export type ShareClass = 'CLASS_A' | 'CLASS_B' | 'CLASS_C' | 'ORDINARY' | 'A' | 'B' | 'C' | string;
 export type RepresentationRole = 'DIRECTOR' | 'SHAREHOLDER' | 'LEGAL_REPRESENTATIVE' | 'SECRETARY';
 export type IncorporationStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
@@ -36,7 +37,7 @@ export interface Company {
   name: string;
   registrationNumber: string | null;
   address: string | null;
-  companyType: string | null;
+  companyType: CompanyType | null;
   legalType: string | null;
   summary: string | null;
   industry: string[];

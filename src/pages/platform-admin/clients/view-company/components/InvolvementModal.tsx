@@ -12,6 +12,7 @@ interface InvolvementModalProps {
   companyId: string;
   involvement?: CompanyInvolvement | null;
   mode: 'add' | 'edit';
+  existingInvolvements?: CompanyInvolvement[];
 }
 
 interface Person {
@@ -37,6 +38,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
   companyId,
   involvement,
   mode,
+  existingInvolvements = [],
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [persons, setPersons] = useState<Person[]>([]);
@@ -165,6 +167,8 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
           name: formData.companyName,
           registrationNumber: formData.companyRegNumber,
           address: formData.companyAddress,
+          companyType: 'NON_PRIMARY',
+          clientId: null,
           incorporationStatus: true,
         });
         holderCompanyId = companyResponse.data.id;
@@ -208,13 +212,16 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
     }
   };
 
-  const filteredPersons = persons.filter((p: Person) => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPersons = persons.filter((p: Person) => {
+    const isAlreadyInvolved = existingInvolvements.some(inv => inv.person?.id === p.id);
+    return !isAlreadyInvolved && p.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
-  const filteredCompanies = companies.filter((c: MiniCompany) =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCompanies = companies.filter((c: MiniCompany) => {
+    const isAlreadyInvolved = existingInvolvements.some(inv => inv.holderCompany?.id === c.id);
+    const isCurrentCompany = c.id === companyId;
+    return !isAlreadyInvolved && !isCurrentCompany && c.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (!isOpen) return null;
 

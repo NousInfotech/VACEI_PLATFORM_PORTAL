@@ -1,0 +1,140 @@
+{
+  "DOC_REQUEST": [
+    {
+      "name": "Company KYC (Full)",
+      "data": {
+        "title": "Corporate Constitutional Documents",
+        "description": "Standard set of documents required for corporate entity verification.",
+        "requestedDocuments": [
+          {
+            "documentName": "Trade License",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Copy of the most recent and valid trade license."
+          },
+          {
+            "documentName": "Certificate of Incorporation",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Official registry certificate of formation."
+          },
+          {
+            "documentName": "Memorandum & Articles of Association",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Latest signed and stamped version of the MOA/AOA."
+          },
+          {
+            "documentName": "Register of Directors",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Current extract showing the official list of directors."
+          },
+          {
+            "documentName": "Register of Shareholders",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Current register showing ownership structure and percentage."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Company KYC (Enhanced AML)",
+      "data": {
+        "title": "Enhanced Due Diligence – Corporate Entity",
+        "description": "Extended document set for high-risk or complex corporate structures requiring enhanced AML checks.",
+        "requestedDocuments": [
+          {
+            "documentName": "Trade License",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Copy of the most recent and valid trade license."
+          },
+          {
+            "documentName": "Certificate of Incorporation",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Official registry certificate of formation."
+          },
+          {
+            "documentName": "Board Resolution",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Signed board resolution authorizing the relationship and nominating the authorized signatory.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "Ultimate Beneficial Owner (UBO) Declaration",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Declaration identifying all UBOs with ≥25% ownership or control.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "Audited Financial Statements",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Last 2 years of audited financial statements signed by a licensed auditor."
+          },
+          {
+            "documentName": "Bank Reference Letter",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Official letter of good standing from primary banking institution."
+          },
+          {
+            "documentName": "Source of Funds Declaration",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Certified declaration outlining origin of corporate funds.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Company KYC (Lite)",
+      "data": {
+        "title": "Corporate Quick-Check Documents",
+        "description": "Minimal document set for low-risk, well-known corporate entities.",
+        "requestedDocuments": [
+          {
+            "documentName": "Trade License",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Copy of the most recent and valid trade license."
+          },
+          {
+            "documentName": "Certificate of Good Standing",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Official certificate confirming the company is in good standing."
+          },
+          {
+            "documentName": "Ownership Structure Chart",
+            "isMandatory": false,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Completed group/ownership structure diagram template.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          }
+        ]
+      }
+    }
+  ]
+}

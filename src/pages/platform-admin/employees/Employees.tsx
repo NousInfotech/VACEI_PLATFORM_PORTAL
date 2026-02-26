@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, Users, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Search, Users, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
@@ -9,16 +10,38 @@ import { apiGet, apiDelete } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { PlatformEmployee, PlatformEmployeeResponse } from '../../../types/platformEmployee';
 import PageHeader from '../../common/PageHeader';
-import CreatePlatformEmployeeModal from './CreatePlatformEmployeeModal';
-import EditPlatformEmployeeModal from './EditPlatformEmployeeModal';
+
+const formatString = (str: string) => {
+  if (!str) return 'N/A';
+  return str.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (s) => s.toUpperCase());
+};
+
+const getStatusBadge = (status: string) => {
+  const formatted = formatString(status);
+  let colorClass = 'bg-gray-50 text-gray-600 border-gray-200';
+
+  const s = status?.toUpperCase();
+  if (s === 'ACTIVE') {
+    colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
+  } else if (s === 'INACTIVE' || s === 'DELETED') {
+    colorClass = 'bg-rose-50 text-rose-700 border-rose-200/60';
+  } else if (s === 'PENDING') {
+    colorClass = 'bg-amber-50 text-amber-700 border-amber-200/60';
+  }
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${colorClass} uppercase tracking-wider whitespace-nowrap`}>
+      {formatted}
+    </span>
+  );
+};
 
 const Employees: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const limit = 10;
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<PlatformEmployee | null>(null);
 
   const { data, isLoading } = useQuery<PlatformEmployeeResponse>({
     queryKey: ['platform-employees', page],
@@ -58,9 +81,9 @@ const Employees: React.FC = () => {
         icon={Users}
         actions={
           <Button
-            onClick={() => setIsCreateOpen(true)}
-            className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
-          >
+            onClick={() => navigate('/dashboard/employees/create')}
+            variant='header'
+           >
             <Plus className="h-4 w-4 mr-2" />
             New platform employee
           </Button>
@@ -114,22 +137,17 @@ const Employees: React.FC = () => {
                     {emp.firstName} {emp.lastName}
                   </TableCell>
                   <TableCell className="text-gray-600">{emp.email || 'N/A'}</TableCell>
-                  <TableCell className="text-gray-600 text-xs font-semibold">{emp.role}</TableCell>
-                  <TableCell className="text-gray-600 text-xs">{emp.status}</TableCell>
+                  <TableCell className="text-gray-600 text-xs font-semibold">
+                    {formatString(emp.role)}
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(emp.status)}
+                  </TableCell>
                   <TableCell className="text-gray-500 font-medium text-xs">
                     {new Date(emp.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 p-0 rounded-full"
-                        onClick={() => setEditingEmployee(emp)}
-                        aria-label="Edit platform employee"
-                      >
-                        <Pencil className="h-5 w-5 text-gray-600" />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -186,24 +204,7 @@ const Employees: React.FC = () => {
         )}
       </ShadowCard>
 
-      <CreatePlatformEmployeeModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['platform-employees'] });
-          setIsCreateOpen(false);
-        }}
-      />
 
-      <EditPlatformEmployeeModal
-        isOpen={!!editingEmployee}
-        onClose={() => setEditingEmployee(null)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['platform-employees'] });
-          setEditingEmployee(null);
-        }}
-        employee={editingEmployee}
-      />
     </div>
   );
 };

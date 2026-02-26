@@ -5,7 +5,6 @@ import {
   Edit2,
   Trash2,
   ShieldCheck,
-  Eye,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../context/auth-context-core';
@@ -18,21 +17,18 @@ import AlertMessage from '../../common/AlertMessage';
 import { DeleteConfirmModal } from '../../platform-admin/components/DeleteConfirmModal';
 import {
   listComplianceCalendars,
-  createComplianceCalendar,
-  updateComplianceCalendar,
   deleteComplianceCalendar,
 } from './complianceCalendarApi';
 import type {
   ComplianceCalendar,
-  CreateComplianceCalendarBody,
   ServiceCategory,
   ComplianceCalendarFrequency,
 } from '../../../types/compliance-calendar';
 import { RoleEnum } from '../../../data/mockUserData';
-import { ComplianceCalendarFormModal } from './ComplianceCalendarFormModal';
+import { useNavigate } from 'react-router-dom';
 import { ComplianceCalendarDetailModal } from './ComplianceCalendarDetailModal';
 
-const SERVICE_CATEGORIES: { value: ServiceCategory; label: string }[] = [
+export const SERVICE_CATEGORIES: { value: ServiceCategory; label: string }[] = [
   { value: 'ACCOUNTING', label: 'Accounting' },
   { value: 'AUDITING', label: 'Auditing' },
   { value: 'VAT', label: 'VAT' },
@@ -49,7 +45,7 @@ const SERVICE_CATEGORIES: { value: ServiceCategory; label: string }[] = [
   { value: 'CUSTOM', label: 'Custom' },
 ];
 
-const FREQUENCIES: { value: ComplianceCalendarFrequency; label: string }[] = [
+export const FREQUENCIES: { value: ComplianceCalendarFrequency; label: string }[] = [
   { value: 'DAILY', label: 'Daily' },
   { value: 'WEEKLY', label: 'Weekly' },
   { value: 'MONTHLY', label: 'Monthly' },
@@ -80,10 +76,7 @@ export const ComplianceCalendarPage: React.FC = () => {
     title: '',
   });
   const [detailItem, setDetailItem] = useState<ComplianceCalendar | null>(null);
-  const [formModal, setFormModal] = useState<{ open: boolean; edit: ComplianceCalendar | null }>({
-    open: false,
-    edit: null,
-  });
+  const navigate = useNavigate();
 
   // Platform roles see only GLOBAL entries (API also filters; we pass type=GLOBAL for clarity)
   const listParams = isPlatformRole ? { type: 'GLOBAL' as const } : undefined;
@@ -94,30 +87,8 @@ export const ComplianceCalendarPage: React.FC = () => {
     enabled: isPlatformRole,
   });
 
-  const createMutation = useMutation({
-    mutationFn: (body: CreateComplianceCalendarBody) => createComplianceCalendar(body),
-    onSuccess: () => {
-      setAlert({ message: 'Compliance calendar created successfully', variant: 'success' });
-      setFormModal({ open: false, edit: null });
-      queryClient.invalidateQueries({ queryKey: ['compliance-calendar'] });
-    },
-    onError: (err: { message?: string }) => {
-      setAlert({ message: err?.message || 'Failed to create', variant: 'danger' });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof updateComplianceCalendar>[1] }) =>
-      updateComplianceCalendar(id, body),
-    onSuccess: () => {
-      setAlert({ message: 'Compliance calendar updated successfully', variant: 'success' });
-      setFormModal({ open: false, edit: null });
-      queryClient.invalidateQueries({ queryKey: ['compliance-calendar'] });
-    },
-    onError: (err: { message?: string }) => {
-      setAlert({ message: err?.message || 'Failed to update', variant: 'danger' });
-    },
-  });
+  // createMutation and updateMutation are no longer needed here as they are in the new pages
+  // We keep the state for alert and delete confirm
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteComplianceCalendar(id),
@@ -141,25 +112,15 @@ export const ComplianceCalendarPage: React.FC = () => {
   );
 
   const canCreate = isPlatformAdmin;
-  const canUpdate = (item: ComplianceCalendar) =>
-    isPlatformAdmin && item.createdBy?.user?.id === user?.id;
-  const canDelete = (item: ComplianceCalendar) =>
-    isPlatformAdmin && item.createdBy?.user?.id === user?.id;
+  const canUpdate = (_item: ComplianceCalendar) => isPlatformAdmin;
+  const canDelete = (_item: ComplianceCalendar) => isPlatformAdmin;
 
   const handleCreate = () => {
-    setFormModal({ open: true, edit: null });
+    navigate('/dashboard/compliance/create');
   };
 
   const handleEdit = (item: ComplianceCalendar) => {
-    setFormModal({ open: true, edit: item });
-  };
-
-  const handleSubmitForm = (values: CreateComplianceCalendarBody) => {
-    if (formModal.edit) {
-      updateMutation.mutate({ id: formModal.edit.id, body: values });
-    } else {
-      createMutation.mutate(values);
-    }
+    navigate(`/dashboard/compliance/${item.id}/edit`);
   };
 
   return (
@@ -224,8 +185,8 @@ export const ComplianceCalendarPage: React.FC = () => {
               <TableHead className="py-5 px-6">Title</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Frequency</TableHead>
-              <TableHead>Start / Due</TableHead>
-              {isPlatformAdmin && <TableHead>Created by</TableHead>}
+              <TableHead>Start Date</TableHead>
+              <TableHead>Due Date</TableHead>
               <TableHead className="text-right px-6">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -243,13 +204,11 @@ export const ComplianceCalendarPage: React.FC = () => {
                     <Skeleton className="h-6 w-24 rounded-full" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-6 w-32 rounded-lg" />
+                    <Skeleton className="h-6 w-24 rounded-lg" />
                   </TableCell>
-                  {isPlatformAdmin && (
-                    <TableCell>
-                      <Skeleton className="h-6 w-24" />
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <Skeleton className="h-6 w-24 rounded-lg" />
+                  </TableCell>
                   <TableCell className="px-6">
                     <Skeleton className="h-8 w-12 ml-auto rounded-lg" />
                   </TableCell>
@@ -271,40 +230,27 @@ export const ComplianceCalendarPage: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded uppercase tracking-wide">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-primary/5 text-primary border-primary/10">
                       {SERVICE_CATEGORIES.find((s) => s.value === item.serviceCategory)?.label ?? item.serviceCategory}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs text-gray-600">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-gray-50 text-gray-600 border-gray-200">
                       {FREQUENCIES.find((f) => f.value === item.frequency)?.label ?? item.frequency}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col text-xs text-gray-600">
-                      <span>{formatDate(item.startDate)}</span>
-                      <span className="text-primary font-medium">{formatDate(item.dueDate)}</span>
-                    </div>
+                    <span className="text-xs text-gray-600 font-medium">
+                      {formatDate(item.startDate)}
+                    </span>
                   </TableCell>
-                  {isPlatformAdmin && (
-                    <TableCell>
-                      <span className="text-xs text-gray-500">
-                        {item.createdBy?.user
-                          ? `${item.createdBy.user.firstName} ${item.createdBy.user.lastName}`
-                          : '—'}
-                      </span>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <span className="text-xs text-primary font-bold">
+                      {formatDate(item.dueDate)}
+                    </span>
+                  </TableCell>
                   <TableCell className="text-right px-6">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-xl border-gray-200 text-gray-600"
-                        onClick={() => setDetailItem(item)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
                       {canUpdate(item) && (
                         <Button
                           variant="outline"
@@ -332,7 +278,7 @@ export const ComplianceCalendarPage: React.FC = () => {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={isPlatformAdmin ? 6 : 5}
+                  colSpan={6}
                   className="py-32 text-center text-gray-500 font-medium"
                 >
                   {isPlatformRole
@@ -352,17 +298,6 @@ export const ComplianceCalendarPage: React.FC = () => {
           serviceCategories={SERVICE_CATEGORIES}
           frequencies={FREQUENCIES}
           formatDate={formatDate}
-        />
-      )}
-
-      {formModal.open && (
-        <ComplianceCalendarFormModal
-          initial={formModal.edit}
-          onClose={() => setFormModal({ open: false, edit: null })}
-          onSubmit={handleSubmitForm}
-          loading={createMutation.isPending || updateMutation.isPending}
-          serviceCategories={SERVICE_CATEGORIES}
-          frequencies={FREQUENCIES}
         />
       )}
     </div>

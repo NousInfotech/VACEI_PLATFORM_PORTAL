@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { Eye, Download, Upload, Trash2, Edit2, Check, X, Loader2, Plus, FileEdit, FileUp } from "lucide-react";
+import { saveAs } from 'file-saver';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from 'sonner';
 import type { DocumentRequestDocumentMultiple } from "./types";
 import Badge from "../../../../common/Badge";
 import { Button } from "../../../../../ui/Button";
 import { apiPostFormData, apiDelete, apiPatch } from "../../../../../config/base";
 import { endPoints } from "../../../../../config/endPoint";
 import AddRequestedDocumentModal from "./AddRequestedDocumentModal";
+import { ConfirmModal } from "../../../../messages/components/ConfirmModal";
 
 
 interface DocumentRequestMultipleProps {
@@ -25,6 +28,19 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
 
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'primary';
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
+
 
   if (!multipleDocuments || multipleDocuments.length === 0) return null;
 
@@ -37,9 +53,13 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-cycle"] });
       queryClient.invalidateQueries({ queryKey: ["incorporation-cycle"] });
+      toast.success('Document uploaded successfully!');
       setUploadingDocId(null);
     },
-    onError: () => setUploadingDocId(null),
+    onError: (error: any) => {
+      toast.error('Upload failed', { description: error?.response?.data?.message || error?.message });
+      setUploadingDocId(null);
+    },
   });
 
   const clearMutation = useMutation({
@@ -47,6 +67,10 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-cycle"] });
       queryClient.invalidateQueries({ queryKey: ["incorporation-cycle"] });
+      toast.success('Submission cleared.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to clear submission', { description: error?.response?.data?.message || error?.message });
     },
   });
 
@@ -55,6 +79,10 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-cycle"] });
       queryClient.invalidateQueries({ queryKey: ["incorporation-cycle"] });
+      toast.success('Document deleted.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to delete', { description: error?.response?.data?.message || error?.message });
     },
   });
 
@@ -64,9 +92,15 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["kyc-cycle"] });
       queryClient.invalidateQueries({ queryKey: ["incorporation-cycle"] });
+      toast.success('Name updated.');
       setEditingDocId(null);
     },
+    onError: (error: any) => {
+      toast.error('Failed to update name', { description: error?.response?.data?.message || error?.message });
+    },
   });
+
+  const isAnyActionLoading = uploadMutation.isPending || clearMutation.isPending || deleteMutation.isPending || updateMutation.isPending;
 
   const formatDateTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -81,13 +115,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
   };
 
   const handleDownload = (url: string, fileName: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveAs(url, fileName);
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, docId: string) => {
@@ -125,21 +153,34 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                           className="text-sm font-bold text-gray-900 border-b border-primary outline-none bg-transparent py-0.5 flex-1"
                           autoFocus
                         />
-                        <button onClick={() => updateMutation.mutate({ docId: groupId, name: editName })} className="text-green-500 p-1"><Check size={16} /></button>
-                        <button onClick={() => setEditingDocId(null)} className="text-red-500 p-1"><X size={16} /></button>
+                        <button 
+                          onClick={() => updateMutation.mutate({ docId: groupId, name: editName })} 
+                          disabled={isAnyActionLoading}
+                          className="text-green-500 p-1 disabled:opacity-50"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button 
+                          onClick={() => setEditingDocId(null)} 
+                          disabled={isAnyActionLoading}
+                          className="text-red-500 p-1 disabled:opacity-50"
+                        >
+                          <X size={16} />
+                        </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 group/title">
                         <p className="font-medium text-gray-900">{group.name}</p>
                         <button 
                           onClick={() => { setEditingDocId(groupId); setEditName(group.name); }} 
-                          className="opacity-0 group-hover/title:opacity-100 transition-opacity p-1 text-gray-400 hover:text-primary"
+                          disabled={isAnyActionLoading}
+                          className="opacity-0 group-hover/title:opacity-100 transition-opacity p-1 text-gray-400 hover:text-primary disabled:opacity-0"
                         >
                           <Edit2 size={14} />
                         </button>
                       </div>
                     )}
-                    <Badge variant="outline" className="text-gray-600 border-gray-300 bg-gray-50 capitalize text-[10px]">
+                    <Badge variant="outline" className="text-gray-600 p-2 rounded-[10px] border-gray-300 bg-gray-50 capitalize text-[10px]">
                       {isTemplate ? "Template" : "Direct"}
                     </Badge>
                   </div>
@@ -154,6 +195,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => handleDownload((group as any).template.url, `template_${group.name}`)}
+                    disabled={isAnyActionLoading}
                     className="border-amber-300 text-amber-700 hover:bg-amber-700/20 hover:text-amber-700 h-10 w-10 p-0"
                     title="Download Group Template"
                   >
@@ -178,7 +220,17 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => { if(window.confirm("Delete this entire document group?")) deleteMutation.mutate(groupId!); }}
+                  onClick={() => setConfirmConfig({
+                    isOpen: true,
+                    title: "Delete Group",
+                    message: `Are you sure you want to delete the entire document group "${group.name}"? This action cannot be undone.`,
+                    onConfirm: () => {
+                      deleteMutation.mutate(groupId!);
+                      setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                    },
+                    variant: 'danger'
+                  })}
+                  disabled={isAnyActionLoading}
                   className="h-10 w-10 p-0 rounded-xl text-red-500 hover:bg-red-50"
                   title="Delete Group"
                 >
@@ -204,15 +256,28 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                               className="text-sm font-bold text-gray-700 border-b border-primary outline-none bg-transparent py-0.5 flex-1"
                               autoFocus
                             />
-                            <button onClick={() => updateMutation.mutate({ docId: itemId, name: editName })} className="text-green-500 p-1"><Check size={16} /></button>
-                            <button onClick={() => setEditingDocId(null)} className="text-red-500 p-1"><X size={16} /></button>
+                            <button 
+                              onClick={() => updateMutation.mutate({ docId: itemId, name: editName })} 
+                              disabled={isAnyActionLoading}
+                              className="text-green-500 p-1 disabled:opacity-50"
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button 
+                              onClick={() => setEditingDocId(null)} 
+                              disabled={isAnyActionLoading}
+                              className="text-red-500 p-1 disabled:opacity-50"
+                            >
+                              <X size={16} />
+                            </button>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 group/item">
                             <p className="text-md font-medium text-gray-900">{item.label}</p>
                             <button 
                               onClick={() => { setEditingDocId(itemId); setEditName(item.label); }} 
-                              className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-gray-400 hover:text-primary"
+                              disabled={isAnyActionLoading}
+                              className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-gray-400 hover:text-primary disabled:opacity-0"
                               title="Edit Label"
                             >
                               <Edit2 size={16} />
@@ -220,13 +285,21 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                          <Badge variant="outline" className="text-gray-600 border-gray-300 text-[10px]">
+                          <Badge variant="outline" className="text-gray-600 border-gray-300 text-[10px] p-2 rounded-[10px]">
                             {item.status?.toLowerCase() === 'verified' ? 'Approved' : item.url ? 'Submitted' : 'Pending'}
                           </Badge>
                           {item.url && item.uploadedAt && (
-                            <span className="text-xs text-gray-500">
-                              Uploaded: {formatDateTime(item.uploadedAt)}
-                            </span>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-gray-500">
+                                Uploaded: {formatDateTime(item.uploadedAt)}
+                              </span>
+                              {item.uploadedFileName && (
+                                <span className="text-[10px] font-medium text-primary mt-0.5 flex items-center gap-1">
+                                  <FileEdit size={12} />
+                                  {item.uploadedFileName}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -237,6 +310,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownload(item.template!.url!, `template_${item.label}`)}
+                            disabled={isAnyActionLoading}
                             className="border-amber-300 text-amber-700 hover:bg-amber-700/20 hover:text-amber-700 h-10 w-10 p-0"
                             title="Download Template"
                           >
@@ -254,7 +328,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                               input.onchange = (e) => onFileChange(e as any, itemId);
                               input.click();
                             }}
-                            disabled={uploadingDocId === itemId}
+                            disabled={isAnyActionLoading || uploadingDocId === itemId}
                             className="border-blue-300 hover:bg-blue-50 hover:text-blue-800 text-blue-700 h-10 px-4"
                             title="Upload Document"
                           >
@@ -275,6 +349,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                               size="sm"
                               variant="outline"
                               onClick={() => window.open(item.url!, "_blank")}
+                              disabled={isAnyActionLoading}
                               className="border-blue-300 hover:bg-blue-50 hover:text-blue-800 text-blue-700 h-10 w-10 p-0"
                               title="View Submitted"
                             >
@@ -284,6 +359,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                               size="sm"
                               variant="outline"
                               onClick={() => handleDownload(item.url!, item.label || 'document')}
+                              disabled={isAnyActionLoading}
                               className="border-green-300 hover:bg-green-50 hover:text-green-800 text-green-700 h-10 w-10 p-0"
                               title="Download Submitted"
                             >
@@ -292,7 +368,17 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => { if(window.confirm("Clear this submission?")) clearMutation.mutate(itemId); }}
+                              onClick={() => setConfirmConfig({
+                                isOpen: true,
+                                title: "Clear Submission",
+                                message: `Are you sure you want to clear the submission for "${item.label}"? This action cannot be undone.`,
+                                onConfirm: () => {
+                                  clearMutation.mutate(itemId);
+                                  setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                                },
+                                variant: 'primary'
+                              })}
+                              disabled={isAnyActionLoading}
                               className="border-yellow-300 hover:bg-yellow-50 hover:text-yellow-800 text-yellow-700 h-10 px-3 text-[10px] font-bold uppercase tracking-wider"
                               title="Clear Submission"
                             >
@@ -304,7 +390,17 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => { if(window.confirm("Delete this label?")) deleteMutation.mutate(itemId); }}
+                          onClick={() => setConfirmConfig({
+                            isOpen: true,
+                            title: "Delete Label",
+                            message: `Are you sure you want to delete the document label "${item.label}"? This action cannot be undone.`,
+                            onConfirm: () => {
+                              deleteMutation.mutate(itemId);
+                              setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                            },
+                            variant: 'danger'
+                          })}
+                          disabled={isAnyActionLoading}
                           className="h-10 w-10 p-0 rounded-xl text-red-500 hover:bg-red-50 ml-1"
                           title="Delete Label"
                         >
@@ -328,6 +424,16 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
         }}
         documentRequestId={requestId}
         parentId={selectedParentId}
+      />
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        variant={confirmConfig.variant}
+        confirmLabel="Proceed"
       />
     </div>
   );

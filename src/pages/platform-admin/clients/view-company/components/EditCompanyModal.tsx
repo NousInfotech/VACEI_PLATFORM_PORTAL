@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash } from 'lucide-react';
 import { Button } from '../../../../../ui/Button';
+import NumericInput from '../../../../../ui/NumericInput';
 import { apiPut } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import type { Company } from '../../../../../types/company';
@@ -161,11 +162,11 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <PieChart size={14} /> Authorized Shares
               </label>
-              <input
-                type="number"
+              <NumericInput
                 value={formData.authorizedShares}
-                onChange={(e) => setFormData({ ...formData, authorizedShares: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                onChange={(val) => setFormData({ ...formData, authorizedShares: val })}
+                step={1}
+                min={0}
               />
             </div>
 
@@ -173,11 +174,11 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <BarChart3 size={14} /> Issued Shares
               </label>
-              <input
-                type="number"
+              <NumericInput
                 value={formData.issuedShares}
-                onChange={(e) => setFormData({ ...formData, issuedShares: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                onChange={(val) => setFormData({ ...formData, issuedShares: val })}
+                step={1}
+                min={0}
               />
             </div>
 
@@ -187,38 +188,38 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class A</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.A}
-                    onChange={(e) => setShareClasses({ ...shareClasses, A: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, A: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class B</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.B}
-                    onChange={(e) => setShareClasses({ ...shareClasses, B: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, B: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class C</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.C}
-                    onChange={(e) => setShareClasses({ ...shareClasses, C: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, C: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ordinary</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.ORDINARY}
-                    onChange={(e) => setShareClasses({ ...shareClasses, ORDINARY: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, ORDINARY: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
               </div>

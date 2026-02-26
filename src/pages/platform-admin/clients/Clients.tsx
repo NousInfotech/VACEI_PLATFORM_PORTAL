@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Search, Users, Eye, Calendar, Plus } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
@@ -11,7 +11,6 @@ import { endPoints } from '../../../config/endPoint';
 import type { Client, ClientResponse } from '../../../types/client';
 import { USE_MOCK_DATA, mockClients } from '../../../data/mockCompanyData';
 import PageHeader from '../../common/PageHeader';
-import CreateClientModal from './CreateClientModal';
 import Dropdown from '../../common/Dropdown';
 
 const Clients: React.FC = () => {
@@ -20,8 +19,6 @@ const Clients: React.FC = () => {
     const [selectedDateRange, setSelectedDateRange] = useState('All time');
     const [page, setPage] = useState(1);
     const limit = 10;
-    const queryClient = useQueryClient();
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     const { data: realData, isLoading: isRealLoading } = useQuery<ClientResponse>({
         queryKey: ['clients', page],
@@ -91,8 +88,8 @@ const Clients: React.FC = () => {
                 icon={Users}
                 actions={
                     <Button
-                        onClick={() => setIsCreateOpen(true)}
-                        className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                        onClick={() => navigate('/dashboard/clients/create')}
+                        variant='header'
                     >
                         <Plus className="h-4 w-4 mr-2" />
                         New client
@@ -224,14 +221,6 @@ const Clients: React.FC = () => {
                     </div>
                 )}
             </ShadowCard>
-            <CreateClientModal
-                isOpen={isCreateOpen}
-                onClose={() => setIsCreateOpen(false)}
-                onSuccess={() => {
-                    queryClient.invalidateQueries({ queryKey: ['clients'] });
-                    setIsCreateOpen(false);
-                }}
-            />
         </div>
     );
 };

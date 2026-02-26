@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Globe, ChevronDown, ChevronUp, Clock, CheckCircle2, Trash2, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { Globe, ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react';
 import Badge from '../../../../common/Badge';
 import { Button } from '../../../../../ui/Button';
 import type { KycRequestFull } from './types';
@@ -10,6 +11,7 @@ import { apiPatch, apiDelete } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import InvolvementKycModal from './InvolvementKycModal';
 import AddRequestedDocumentModal from './AddRequestedDocumentModal';
+import { ConfirmModal } from '../../../../messages/components/ConfirmModal';
 
 
 interface PersonKycCardProps {
@@ -17,12 +19,26 @@ interface PersonKycCardProps {
   companyId: string;
   kycId?: string;
   workflowId: string;
+  workflowStatus: string;
 }
 
-const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kycId, workflowId }) => {
+const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kycId, workflowId, workflowStatus }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
+
+  const [confirmConfig, setConfirmConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant?: 'danger' | 'primary';
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+  });
 
   const queryClient = useQueryClient();
   const { person, documentRequest: request } = personKyc;
@@ -32,6 +48,12 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
       apiPatch(endPoints.COMPANY.KYC(companyId) + `/${kycId}/involvement-kyc/${workflowId}`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      toast.success('Status updated.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update status', {
+        description: error?.response?.data?.message || error?.message || 'Unexpected error'
+      });
     }
   });
 
@@ -42,6 +64,8 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
     }
   });
 
+  const isAnyActionLoading = patchInvolvementStatusMutation.isPending || deleteInvolvementMutation.isPending;
+
   if (!person) return null;
 
   const totalDocuments = (request.documents?.length || 0) + 
@@ -51,7 +75,10 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
     (request.multipleDocuments?.reduce((acc, md) => acc + (md.multiple?.filter(item => item.url).length || 0), 0) || 0);
 
   return (
-    <div className="bg-white/80 border border-gray-300 rounded-xl shadow-sm hover:bg-white/70 transition-all overflow-hidden mb-4">
+    <div 
+      id={`kyc-card-${personKyc.person?._id}`}
+      className="bg-white/80 border border-gray-300 rounded-xl shadow-sm hover:bg-white/70 transition-all overflow-hidden mb-4"
+    >
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
@@ -67,50 +94,45 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                 <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 rounded-lg px-2 py-0.5 text-[11px] font-semibold">
                    {uploadedCount}/{totalDocuments} Documents
                 </Badge>
-                <Badge variant="outline" className={`${
-                  request.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'
-                } rounded-lg px-2 py-0.5 text-[11px] font-semibold`}>
-                  {request.status === 'VERIFIED' ? 'COMPLETED' : request.status}
-                </Badge>
+                <select
+                  value={workflowStatus}
+                  disabled={isAnyActionLoading}
+                  onChange={e => patchInvolvementStatusMutation.mutate(e.target.value)}
+                  className={`rounded-lg px-2 py-0.5 text-[11px] font-bold border outline-none cursor-pointer transition-all appearance-none pr-5 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    workflowStatus === 'VERIFIED'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : workflowStatus === 'IN_REVIEW'
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : workflowStatus === 'REJECTED'
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}
+                >
+                  <option value="PENDING">PENDING</option>
+                  <option value="IN_REVIEW">IN REVIEW</option>
+                  <option value="VERIFIED">VERIFIED</option>
+                  <option value="REJECTED">REJECTED</option>
+                </select>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-                {request.status === 'PENDING' && (
-                    <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:text-primary hover:bg-primary/5"
-                        onClick={() => patchInvolvementStatusMutation.mutate('IN_REVIEW')}
-                        disabled={patchInvolvementStatusMutation.isPending}
-                    >
-                        <Clock size={14} className="mr-1" />
-                        Status
-                    </Button>
-                )}
-                {request.status === 'IN_REVIEW' && (
-                    <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider text-green-600 hover:bg-green-50"
-                        onClick={() => patchInvolvementStatusMutation.mutate('VERIFIED')}
-                        disabled={patchInvolvementStatusMutation.isPending}
-                    >
-                        <CheckCircle2 size={14} className="mr-1" />
-                        Verify
-                    </Button>
-                )}
                 <Button 
                     size="sm" 
                     variant="ghost"
                     className="rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => {
-                        if (window.confirm('Remove this person from the KYC cycle?')) {
+                    onClick={() => setConfirmConfig({
+                        isOpen: true,
+                        title: "Remove Person",
+                        message: `Are you sure you want to remove "${person.name}" from the KYC cycle? This action cannot be undone.`,
+                        onConfirm: () => {
                             deleteInvolvementMutation.mutate();
-                        }
-                    }}
-                    disabled={deleteInvolvementMutation.isPending}
+                            setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                        },
+                        variant: 'danger'
+                    })}
+                    disabled={isAnyActionLoading}
                 >
                     <Trash2 size={14} />
                 </Button>
@@ -140,13 +162,27 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
             )}
           </div>
         )}
+
+        {totalDocuments > 0 && (
+          <div className="mt-4 space-y-1">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Document Progress</span>
+              <span className={`text-[10px] font-black ${
+                uploadedCount === totalDocuments ? 'text-emerald-600' : 'text-amber-500'
+              }`}>{Math.round((uploadedCount / totalDocuments) * 100)}%</span>
+            </div>
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out bg-emerald-500"
+                style={{ width: `${Math.round((uploadedCount / totalDocuments) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {isExpanded && (
         <div className="bg-gray-50/50 border-t border-gray-100 p-6 animate-in slide-in-from-top-2 duration-300 space-y-4">
-           <div className="flex items-center justify-between mb-2">
-             <h5 className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Requested Documentation</h5>
-           </div>
            
            {(request.documents?.length || 0) + (request.multipleDocuments?.length || 0) > 0 ? (
              <>
@@ -211,6 +247,15 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
         documentRequestId={request._id}
       />
 
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={confirmConfig.onConfirm}
+        onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+        variant={confirmConfig.variant}
+        confirmLabel="Proceed"
+      />
     </div>
   );
 };

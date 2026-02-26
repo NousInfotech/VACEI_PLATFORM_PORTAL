@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Building2, Trash2, Edit2, Eye } from 'lucide-react';
+import { Plus, Search, Building2, Edit2, Eye } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
@@ -12,12 +12,11 @@ import {
   TableHeader, 
   TableRow 
 } from '../../../ui/Table';
-import { apiGet, apiDelete } from '../../../config/base';
+import { apiGet } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Organization } from '../../../types/organization';
 import AlertMessage from '../../common/AlertMessage';
 import PageHeader from '../../common/PageHeader';
-import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 
 const Organizations: React.FC = () => {
   const navigate = useNavigate();
@@ -25,10 +24,6 @@ const Organizations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteType, setDeleteType] = useState<'soft' | 'hard'>('soft');
-  const [orgToDelete, setOrgToDelete] = useState<Organization | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
 
   const fetchOrganizations = useCallback(async () => {
@@ -61,36 +56,6 @@ const Organizations: React.FC = () => {
   const filteredOrganizations = allOrganizations.filter(org =>
     org.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleDeleteClick = (org: Organization, type: 'soft' | 'hard' = 'soft') => {
-    setOrgToDelete(org);
-    setDeleteType(type);
-    setDeleteModalOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!orgToDelete) return;
-    
-    setDeleteLoading(true);
-    try {
-      const endpoint = deleteType === 'hard' 
-        ? endPoints.ORGANIZATION.HARD_DELETE(orgToDelete.id) 
-        : endPoints.ORGANIZATION.DELETE(orgToDelete.id);
-        
-      await apiDelete(endpoint);
-      setAlert({ 
-        message: `Organization ${deleteType === 'hard' ? 'permanently removed' : 'soft deleted'} successfully`, 
-        variant: 'success' 
-      });
-      setDeleteModalOpen(false);
-      fetchOrganizations();
-    } catch {
-      setAlert({ message: 'Failed to delete organization', variant: 'danger' });
-    } finally {
-      setDeleteLoading(false);
-      setOrgToDelete(null);
-    }
-  };
 
   const formatServiceLabel = (service: string) => {
     return service
@@ -231,14 +196,6 @@ const Organizations: React.FC = () => {
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteClick(org, 'soft')}
-                        className="rounded-xl border-gray-200 text-amber-600 hover:bg-amber-50 transition-all shadow-none"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -260,15 +217,6 @@ const Organizations: React.FC = () => {
         </Table>
       </ShadowCard>
 
-      <DeleteConfirmModal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={handleConfirmDelete}
-        title={deleteType === 'hard' ? "Hard Delete (Permanent)" : "Soft Delete (Archive)"}
-        itemName={orgToDelete?.name || ''}
-        loading={deleteLoading}
-        isHardDelete={deleteType === 'hard'}
-      />
     </div>
   );
 };

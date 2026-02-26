@@ -214,26 +214,11 @@ const ViewServiceRequestContent: React.FC = () => {
       return (
         <div className="flex items-center gap-3">
           <Button 
-            variant="outline"
-            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} border-gray-200 text-gray-600 hover:bg-gray-50`}
+            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-primary/20 bg-primary hover:bg-primary-dark`}
             onClick={() => openConfirmation('IN_REVIEW', 'Move to Review', 'Are you sure you want to move this request to the review stage?')}
             disabled={isUpdating}
           >
             In Review
-          </Button>
-          <Button 
-            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-red-500/20 bg-red-600 hover:bg-red-700 text-white border-none`}
-            onClick={() => openConfirmation('REJECTED', 'Reject Request', 'Please provide a reason for rejecting this request.', true)}
-            disabled={isUpdating}
-          >
-            Reject
-          </Button>
-          <Button 
-            className={`${commonBtnClass} ${isTop ? topBtnClass : bottomBtnClass} shadow-primary/20 bg-primary hover:bg-primary-dark`}
-            onClick={() => openConfirmation('APPROVED', 'Approve Request', 'Are you sure you want to approve this request?')}
-            disabled={isUpdating}
-          >
-            Approve
           </Button>
         </div>
       );

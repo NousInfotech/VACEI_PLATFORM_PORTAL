@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash } from 'lucide-react';
+import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash, Search } from 'lucide-react';
 import { Button } from '../../../../../ui/Button';
-import { apiPost } from '../../../../../config/base';
+import NumericInput from '../../../../../ui/NumericInput';
+import { apiGet, apiPost, apiPut } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
+import type { Company } from '../../../../../types/company';
 
 interface CreateCompanyModalProps {
   isOpen: boolean;
@@ -17,6 +19,9 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
   onSuccess,
   clientId,
 }) => {
+  const [mode, setMode] = useState<'new' | 'existing'>('new');
+  const [nonPrimaryCompanies, setNonPrimaryCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -36,6 +41,40 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  React.useEffect(() => {
+    if (isOpen && mode === 'existing') {
+        fetchNonPrimaryCompanies();
+    }
+  }, [isOpen, mode]);
+
+  const fetchNonPrimaryCompanies = async () => {
+    try {
+        const res = await apiGet<{ data: Company[] }>(endPoints.COMPANY.GET_ALL);
+        // Filter for NON_PRIMARY companies that are NOT already primary for this client (or just all non-primary)
+        const filtered = res.data.filter(c => c.companyType === 'NON_PRIMARY');
+        setNonPrimaryCompanies(filtered);
+    } catch (err) {
+        console.error('Failed to fetch non-primary companies:', err);
+    }
+  };
+
+  const handleSelectExisting = (companyId: string) => {
+    const company = nonPrimaryCompanies.find(c => c.id === companyId);
+    if (company) {
+        setSelectedCompanyId(companyId);
+        setFormData({
+            ...formData,
+            name: company.name || '',
+            registrationNumber: company.registrationNumber || '',
+            address: company.address || '',
+            industry: company.industry || [''],
+            summary: company.summary || '',
+            authorizedShares: company.authorizedShares || 0,
+            issuedShares: company.issuedShares || 0,
+        });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -47,13 +86,25 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         { class: 'ORDINARY', issued: shareClasses.ORDINARY },
       ].filter(s => s.issued > 0);
 
-      await apiPost(endPoints.COMPANY.CREATE, {
-        ...formData,
-        clientId,
-        incorporationStatus: true,
-        industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
-        shareDetails,
-      });
+      if (mode === 'new') {
+          await apiPost(endPoints.COMPANY.CREATE, {
+            ...formData,
+            clientId,
+            companyType: 'PRIMARY',
+            incorporationStatus: true,
+            industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
+            shareDetails,
+          });
+      } else {
+          await apiPut(endPoints.COMPANY.UPDATE(selectedCompanyId), {
+            ...formData,
+            clientId, // Associate with current client
+            companyType: 'PRIMARY', // Convert to primary
+            incorporationStatus: true,
+            industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
+            shareDetails,
+          });
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -78,8 +129,8 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               <Building2 size={22} />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Create New Company</h3>
-              <p className="text-xs text-gray-500 font-medium">Add a new managed company for this client</p>
+              <h3 className="text-xl font-bold text-gray-900">Add Company</h3>
+              <p className="text-xs text-gray-500 font-medium">Create a new company or onboard an existing one</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400">
@@ -87,7 +138,44 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           </button>
         </div>
 
+        <div className="flex border-b border-gray-100 bg-gray-50/50 px-8 py-2 gap-4">
+            <button
+                type="button"
+                onClick={() => { setMode('new'); setSelectedCompanyId(''); }}
+                className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${mode === 'new' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+                New Company
+            </button>
+            <button
+                type="button"
+                onClick={() => setMode('existing')}
+                className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${mode === 'existing' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+                Existing (Non-Primary)
+            </button>
+        </div>
+
         <form id="create-company-form" onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
+          {mode === 'existing' && (
+              <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <Search size={14} /> Select Non-Primary Company
+                  </label>
+                  <select
+                    value={selectedCompanyId}
+                    onChange={(e) => handleSelectExisting(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                    required={mode === 'existing'}
+                  >
+                    <option value="">-- Choose a company --</option>
+                    {nonPrimaryCompanies.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.registrationNumber || 'No Reg.'})</option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-gray-400 font-medium italic">Selecting a company will pre-fill its basic details.</p>
+              </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -97,8 +185,9 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium disabled:opacity-60 disabled:bg-gray-100"
                 required
+                disabled={mode === 'existing' && !!selectedCompanyId}
               />
             </div>
 
@@ -110,8 +199,9 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                 type="text"
                 value={formData.registrationNumber}
                 onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium disabled:opacity-60 disabled:bg-gray-100"
                 required
+                disabled={mode === 'existing' && !!selectedCompanyId}
               />
             </div>
 
@@ -123,8 +213,9 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                 type="text"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium disabled:opacity-60 disabled:bg-gray-100"
                 required
+                disabled={mode === 'existing' && !!selectedCompanyId}
               />
             </div>
 
@@ -144,11 +235,11 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <PieChart size={14} /> Authorized Shares
               </label>
-              <input
-                type="number"
+              <NumericInput
                 value={formData.authorizedShares}
-                onChange={(e) => setFormData({ ...formData, authorizedShares: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                onChange={(val) => setFormData({ ...formData, authorizedShares: val })}
+                step={1}
+                min={0}
               />
             </div>
 
@@ -156,11 +247,11 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <BarChart3 size={14} /> Issued Shares
               </label>
-              <input
-                type="number"
+              <NumericInput
                 value={formData.issuedShares}
-                onChange={(e) => setFormData({ ...formData, issuedShares: parseInt(e.target.value) || 0 })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                onChange={(val) => setFormData({ ...formData, issuedShares: val })}
+                step={1}
+                min={0}
               />
             </div>
 
@@ -170,38 +261,38 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class A</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.A}
-                    onChange={(e) => setShareClasses({ ...shareClasses, A: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, A: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class B</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.B}
-                    onChange={(e) => setShareClasses({ ...shareClasses, B: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, B: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class C</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.C}
-                    onChange={(e) => setShareClasses({ ...shareClasses, C: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, C: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ordinary</label>
-                  <input
-                    type="number"
+                  <NumericInput
                     value={shareClasses.ORDINARY}
-                    onChange={(e) => setShareClasses({ ...shareClasses, ORDINARY: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setShareClasses({ ...shareClasses, ORDINARY: val })}
+                    step={1}
+                    min={0}
                   />
                 </div>
               </div>
@@ -235,7 +326,7 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
             disabled={isSubmitting}
             className="px-8 py-2 rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all disabled:opacity-50"
           >
-            {isSubmitting ? 'Creating...' : 'Create Company'}
+            {isSubmitting ? 'Saving...' : mode === 'new' ? 'Create Company' : 'Onboard Company'}
           </Button>
         </div>
       </div>

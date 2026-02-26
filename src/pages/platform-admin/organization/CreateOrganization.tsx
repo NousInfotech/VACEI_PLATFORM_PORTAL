@@ -47,11 +47,11 @@ const CreateOrganization: React.FC = () => {
         icon={PlusCircle}
         actions={
           <Button
-            variant="outline"
+            variant="header"
             onClick={() => navigate('/dashboard/organizations')}
-            className="p-3 rounded-2xl h-12 w-12 flex items-center justify-center border-white/20 hover:bg-white/10 text-white"
-          >
-            <ArrowLeft className="h-6 w-6" />
+           >
+            <ArrowLeft className="h-4 w-4" />
+            Back
           </Button>
         }
       />

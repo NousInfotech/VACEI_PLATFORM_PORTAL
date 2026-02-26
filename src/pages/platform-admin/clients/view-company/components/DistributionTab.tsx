@@ -228,7 +228,7 @@ const SharePieChart: React.FC<SharePieChartProps> = ({
               }}
             >
               {chartData.normalizedData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.name === "Remaining Shares" ? "#f3f4f6" : COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={entry.name === "Remaining Shares" ? "#94a3b8" : COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip formatter={(val: number | undefined) => [`${(val || 0).toFixed(2)}%`, "Percentage"]} />
@@ -320,7 +320,7 @@ const DistributionTab: React.FC<DistributionTabProps> = ({ company }) => {
         title={company.name}
         companyTotalShares={company.issuedShares}
         companyTotalSharesArray={(company.shareClasses || []).map(sc => ({
-          class: sc.class.replace('CLASS_', ''),
+          class: sc.class === 'ORDINARY' ? 'Ordinary' : sc.class.replace('CLASS_', ''),
           totalShares: sc.issued,
           type: "Issued"
         }))}

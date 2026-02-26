@@ -91,7 +91,7 @@ const EditProcedurePrompt: React.FC = () => {
     return (
       <div className="space-y-6">
         <PageHeader title="Edit Procedure Prompt" icon={MessageSquare} />
-        <ShadowCard className="p-8 border border-gray-100 shadow-sm rounded-3xl bg-white max-w-4xl mx-auto space-y-6">
+        <ShadowCard className="p-8 border border-gray-100 shadow-sm rounded-3xl bg-white mx-auto space-y-6">
           <Skeleton className="h-12 w-full rounded-2xl" />
           <Skeleton className="h-12 w-full rounded-2xl" />
           <Skeleton className="h-32 w-full rounded-2xl" />

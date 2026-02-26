@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { PanelLeft, PanelLeftClose, Search, Bell, LogOut, Settings, MessageSquare, Calendar, AlertCircle, CheckCheck } from "lucide-react";
+import { PanelLeft, PanelLeftClose, ChevronLeft, Bell, LogOut, Settings, MessageSquare, Calendar, AlertCircle, CheckCheck } from "lucide-react";
 import { Button } from "../ui/Button";
 import { useAuth } from "../context/auth-context-core";
 import { Select } from "../ui/Select";
@@ -122,20 +122,14 @@ export default function TopHeader({
                     )}
                 </button>
 
-                <div className="flex items-center gap-2 w-64">
-                    <div className="relative flex w-full">
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            className="bg-gray-50 text-gray-900 border border-gray-200 border-r-0 placeholder-gray-500 rounded-l-lg focus:outline-none w-full h-[37px] ps-4 text-sm"
-                        />
-                        <Button
-                            className="h-[37px] rounded-l-none px-3"
-                        >
-                            <Search className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
+                <Button
+                     onClick={() => navigate(-1)}
+                    title="Go Back"
+                    variant="default"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                </Button>
 
                 {organizationMember && (
                     <div className="flex items-center gap-2 ml-4">
@@ -227,7 +221,12 @@ export default function TopHeader({
                     </div>
                 </Dropdown>
 
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 rounded-xl"
+                    onClick={() => navigate('/dashboard/settings')}
+                >
                     <Settings className="h-5 w-5 text-gray-700" />
                 </Button>
 

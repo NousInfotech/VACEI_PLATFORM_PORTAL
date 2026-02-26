@@ -1,0 +1,132 @@
+{
+  "DOC_REQUEST": [
+    {
+      "name": "Legal Representative KYC",
+      "data": {
+        "title": "Representative ID & Authority Docs",
+        "description": "Identification and authorization documents for individuals acting on behalf of the company.",
+        "requestedDocuments": [
+          {
+            "documentName": "Passport Copy",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "High-quality color scan of the valid passport biodata page."
+          },
+          {
+            "documentName": "National / Emirates ID",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Copy of the national identity card (front and back)."
+          },
+          {
+            "documentName": "Power of Attorney / Resolution",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Legal document or board resolution authorizing the representation."
+          },
+          {
+            "documentName": "Proof of Residence",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Recent utility bill or bank statement showing current residential address."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Representative KYC (Enhanced)",
+      "data": {
+        "title": "Enhanced Representative Verification",
+        "description": "Extended set for representatives of complex or high-risk entities requiring deep identity checks.",
+        "requestedDocuments": [
+          {
+            "documentName": "Passport Copy",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "High-quality color scan of the valid passport biodata page."
+          },
+          {
+            "documentName": "Secondary ID",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Any government-issued ID other than passport (driving license, national ID, etc.)."
+          },
+          {
+            "documentName": "Proof of Residence",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Two recent documents (utility bill + bank statement) confirming residential address, issued within 3 months."
+          },
+          {
+            "documentName": "Authorized Signatory Form",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Standard authorized signatory declaration form to be completed and notarized.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "PEP & Sanctions Self-Declaration",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Self-declaration form confirming Politically Exposed Person (PEP) status and sanctions screening.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "Previous KYC Documents",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Any prior KYC documents from other regulated institutions (optional, aids due diligence)."
+          }
+        ]
+      }
+    },
+    {
+      "name": "Representative KYC (Corporate Rep)",
+      "data": {
+        "title": "Corporate Representative Docs",
+        "description": "Documents for a corporate body acting as representative, rather than an individual.",
+        "requestedDocuments": [
+          {
+            "documentName": "Certificate of Incorporation (Rep Entity)",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Incorporation certificate of the corporate representative entity."
+          },
+          {
+            "documentName": "Board Resolution (Appointing Rep)",
+            "isMandatory": true,
+            "type": "TEMPLATE",
+            "count": "SINGLE",
+            "description": "Resolution from the represented entity's board appointing the corporate representative.",
+            "templateFileUrl": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/sample.pdf"
+          },
+          {
+            "documentName": "KYC of Authorized Individuals",
+            "isMandatory": true,
+            "type": "DIRECT",
+            "count": "MULTIPLE",
+            "description": "Passport copies and proof of residence of the individuals who will act on behalf of the corporate rep."
+          },
+          {
+            "documentName": "Representative Agreement",
+            "isMandatory": false,
+            "type": "DIRECT",
+            "count": "SINGLE",
+            "description": "Signed legal agreement between the company and its corporate representative."
+          }
+        ]
+      }
+    }
+  ]
+}

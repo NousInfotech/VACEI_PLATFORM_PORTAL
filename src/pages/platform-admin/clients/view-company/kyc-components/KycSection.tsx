@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Building2, Shield, ShieldCheck, UserCheck, Plus, Activity } from 'lucide-react';
+import { Building2, Shield, UserCheck, Plus, Activity, Download, Loader2 } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PillTab from '../../../../common/PillTab';
 import CompanyKyc from './CompanyKyc';
@@ -72,21 +74,24 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
     // 2. Involvements Workflows
     data.involvementKycs.forEach(invKyc => {
         const roles = invKyc.involvement.role || [];
-        const possibleTabs: ('Shareholder' | 'Representative')[] = [];
         
-        if (roles.includes('SHAREHOLDER')) possibleTabs.push('Shareholder');
-        if (roles.includes('LEGAL_REPRESENTATIVE')) possibleTabs.push('Representative');
+        // Determine the workflow type based on roles, prioritizing Shareholder
+        let workflowType: 'Shareholder' | 'Representative' | null = null;
+        if (roles.includes('SHAREHOLDER')) {
+            workflowType = 'Shareholder';
+        } else if (roles.includes('LEGAL_REPRESENTATIVE')) {
+            workflowType = 'Representative';
+        }
         
-        // If it has other roles but not these specific ones, we can default to Shareholder or skip
-        // but the requirement says "if they are a Shareholder, it should appear under the Shareholder tab. If they are a Representative, it should appear under the Representative tab".
-        
-        possibleTabs.forEach(workflowType => {
+        // If no specific role is found, we can skip or default. 
+        // Based on the bug report, we only care about these two for involvements tab.
+        if (workflowType) {
             const drId = invKyc.documentRequest.id;
             
             workflows.push({
                 _id: invKyc.id,
                 companyId: data.companyId,
-                workflowType: workflowType as any,
+                workflowType: workflowType,
                 status: invKyc.status,
                 documentRequests: [
                     {
@@ -108,7 +113,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
                     }
                 ]
             });
-        });
+        }
     });
 
     return workflows;
@@ -116,10 +121,57 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
 
   const kycData = USE_MOCK_DATA ? MOCK_KYC_DATA : transformData(realKycData || null);
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadAllZip = async () => {
+    if (!kycData.length) return;
+    setIsDownloading(true);
+    
+    try {
+      const zip = new JSZip();
+      const companyFolder = zip.folder(`${companyDetails?.name || 'Company'}_KYC`);
+      
+      const downloadPromises: Promise<any>[] = [];
+
+      kycData.forEach(workflow => {
+        workflow.documentRequests.forEach(req => {
+          // Flatten all documents (single and multiple)
+          const docs = [
+            ...(req.documentRequest.documents || []),
+            ...(req.documentRequest.multipleDocuments?.flatMap(m => m.multiple) || [])
+          ];
+
+          docs.forEach(doc => {
+            const docUrl = doc.url;
+            if (docUrl) {
+              const promise = fetch(docUrl)
+                .then(res => res.blob())
+                .then(blob => {
+                  const extension = docUrl.split('.').pop()?.split('?')[0] || 'pdf';
+                  const docName = ('name' in doc ? (doc as any).name : (doc as any).label) || 'document';
+                  const fileName = `${docName}.${extension}`;
+                   companyFolder?.file(fileName, blob);
+                })
+                .catch(err => console.error(`Failed to download ${'name' in doc ? (doc as any).name : (doc as any).label}`, err));
+              downloadPromises.push(promise);
+            }
+          });
+        });
+      });
+
+      await Promise.all(downloadPromises);
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${companyDetails?.name || 'Company'}_KYC.zip`);
+    } catch (error) {
+      console.error("Error creating ZIP:", error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const tabs = [
     { id: 'Company', label: 'COMPANY', icon: Building2 },
-    { id: 'Shareholder', label: 'SHAREHOLDERS', icon: UserCheck },
-    { id: 'Representative', label: 'REPRESENTATIVES', icon: ShieldCheck },
+    { id: 'Involvements', label: 'INVOLVEMENTS', icon: UserCheck },
   ];
 
   if (isLoading && !USE_MOCK_DATA) {
@@ -169,8 +221,21 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
           <h2 className="text-3xl font-semibold">KYC Verification {companyDetails?.name ? `- ${companyDetails.name}` : ''}</h2>
           <p className="text-sm text-gray-500 mt-1 font-medium">Monitor and audit compliance documentation across the entity or associated individuals</p>
         </div>
-        <div className="p-4 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-200">
-          <Shield size={32} />
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadAllZip}
+            disabled={isLoading || isDownloading || !kycData.length}
+            className="rounded-xl border-white/60 bg-white/40 text-gray-700 hover:bg-white/60 h-10 px-4 font-bold uppercase tracking-wider text-[10px]"
+            title="Download All Submitted as ZIP"
+          >
+            {isDownloading ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Download size={18} className="mr-2" />}
+            Download ZIP
+          </Button>
+          <div className="p-4 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-200">
+            <Shield size={32} />
+          </div>
         </div>
       </div>
 
@@ -193,10 +258,9 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
             />
           )}
 
-          {(activeTab === 'Shareholder' || activeTab === 'Representative') && (
+          {activeTab === 'Involvements' && (
             <InvolvementsKyc 
               workflows={kycData} 
-              type={activeTab as 'Shareholder' | 'Representative'}
               companyId={companyId}
               kycId={realKycData?.id}
             />

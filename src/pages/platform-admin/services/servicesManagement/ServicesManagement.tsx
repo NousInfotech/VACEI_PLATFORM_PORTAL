@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Plus, 
   Search, 
-  Trash2, 
   Edit2, 
   Settings,
   X,
@@ -34,7 +33,6 @@ const ServicesManagementContent: React.FC = () => {
     isLoadingCustomServices,
     createCustomServiceMutation,
     updateCustomServiceMutation,
-    deleteCustomServiceMutation,
     patchCustomServiceStatusMutation,
     search,
     setSearch
@@ -106,15 +104,6 @@ const ServicesManagementContent: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this service?')) return;
-    try {
-      await deleteCustomServiceMutation.mutateAsync(id);
-      setAlert({ message: 'Service deleted successfully', variant: 'success' });
-    } catch {
-      setAlert({ message: 'Failed to delete service', variant: 'danger' });
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -220,14 +209,6 @@ const ServicesManagementContent: React.FC = () => {
                         className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 transition-all shadow-none"
                       >
                         <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(service.id)}
-                        className="rounded-xl border-gray-200 text-red-600 hover:bg-red-50 transition-all shadow-none"
-                      >
-                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>

@@ -82,6 +82,8 @@ const CreateNotice: React.FC = () => {
         title="Create New Notice" 
         icon={Bell}
         description="Broadcast information to specific user roles across the platform."
+        showBack={true}
+        backUrl="/dashboard/notice-management"
       />
 
       <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">

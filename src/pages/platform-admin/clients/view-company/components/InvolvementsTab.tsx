@@ -263,6 +263,7 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                 companyId={company.id}
                 involvement={selectedInvolvement}
                 mode={modalMode}
+                existingInvolvements={company.involvements}
             />
         </div>
     );

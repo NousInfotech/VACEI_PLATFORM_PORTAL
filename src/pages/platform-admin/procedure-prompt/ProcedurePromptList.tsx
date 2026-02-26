@@ -5,6 +5,7 @@ import {
   Plus, 
   Trash2, 
   Edit2, 
+  Eye,
   Globe, 
   Building, 
   Layers, 
@@ -166,7 +167,15 @@ const ProcedurePromptList: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right px-6">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2 text-nowrap">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50"
+                          onClick={() => navigate(`/dashboard/procedure-prompts/${prompt.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button 
                           variant="outline" 
                           size="sm"

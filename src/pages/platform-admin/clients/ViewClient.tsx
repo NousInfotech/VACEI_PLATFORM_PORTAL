@@ -76,6 +76,20 @@ const ViewClient: React.FC = () => {
                 description="View client profile and associated managed companies"
                 showBack={true}
                 backUrl="/dashboard/clients"
+                badge={
+                    <div className="flex flex-wrap items-center gap-6 mt-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5">
+                        <div className="flex items-center gap-2.5 border-r border-white/10 pr-6 last:border-0 last:pr-0">
+                            <Mail size={16} className="text-white/30" />
+                            <span className="text-[11px] font-black uppercase tracking-widest text-white/40 mr-1">Email:</span>
+                            <span className="text-sm font-bold text-white/90">{client?.user?.email || 'N/A'}</span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                            <Calendar size={16} className="text-white/30" />
+                            <span className="text-[11px] font-black uppercase tracking-widest text-white/40 mr-1">Joined:</span>
+                            <span className="text-sm font-bold text-white/90">{client?.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}</span>
+                        </div>
+                    </div>
+                }
             />
 
             <PillTab 
@@ -85,41 +99,7 @@ const ViewClient: React.FC = () => {
             />
 
             {activeTab === 'info' ? (
-                <>
-                    <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-2xl bg-white space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="space-y-1">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                            <User className="h-4 w-4 text-primary" />
-                            Client Profile
-                        </h3>
-                        <p className="text-lg font-bold text-gray-900">
-                            {client?.user?.firstName} {client?.user?.lastName}
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="flex items-center gap-4 text-gray-700">
-                            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
-                                <Mail className="h-5 w-5" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Email Address</span>
-                                <span className="text-sm font-semibold">{client?.user?.email || 'N/A'}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-gray-700">
-                            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
-                                <Calendar className="h-5 w-5" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Member Since</span>
-                                <span className="text-sm font-semibold">{client?.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </ShadowCard>
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
             <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-2xl bg-white space-y-4">
                 <div className="flex items-center justify-between px-6 pt-6">
@@ -177,8 +157,8 @@ const ViewClient: React.FC = () => {
                         )}
                     </TableBody>
                 </Table>
-                </ShadowCard>
-                </>
+            </ShadowCard>
+        </div>
             ) : (
                 <div className="animate-in fade-in duration-500">
                     <Messages isSingleChat={true} contextualChatId="8" />
@@ -338,11 +318,11 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
                 )}
             </TableCell>
             <TableCell className="text-right px-6">
-                {isSrvLoading ? (
+                {(isSrvLoading && !company.incorporationStatus) ? (
                     <Skeleton className="h-8 w-24 ml-auto rounded-xl" />
                 ) : (
                     <div className="flex justify-end gap-2">
-                        {(!company.incorporationStatus && !hasServiceRequest) ? (
+                        {(!company.incorporationStatus && !hasServiceRequest && !isSrvLoading) ? (
                             <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-50/50 text-gray-400 text-[10px] font-bold rounded-xl border border-gray-100 uppercase">
                                 Pending Intake
                             </span>
