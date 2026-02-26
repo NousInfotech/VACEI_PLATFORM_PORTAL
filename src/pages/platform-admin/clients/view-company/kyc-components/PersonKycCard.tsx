@@ -26,6 +26,7 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
+  const [openDocStatus, setOpenDocStatus] = useState(false);
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -66,6 +67,27 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
 
   const isAnyActionLoading = patchInvolvementStatusMutation.isPending || deleteInvolvementMutation.isPending;
 
+  const updateDocRequestStatusMutation = useMutation({
+    mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
+      apiPatch(endPoints.DOCUMENT_REQUESTS.UPDATE_STATUS(requestId), { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      toast.success('Document status updated.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed', { description: error?.response?.data?.message || error?.message });
+    }
+  });
+
+  const docRequestStatuses = ['DRAFT', 'ACTIVE', 'COMPLETED'];
+  const docStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      default: return 'bg-gray-50 text-gray-500 border-gray-100';
+    }
+  };
+
   if (!person) return null;
 
   const totalDocuments = (request.documents?.length || 0) + 
@@ -94,6 +116,34 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                 <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-100 rounded-lg px-2 py-0.5 text-[11px] font-semibold">
                    {uploadedCount}/{totalDocuments} Documents
                 </Badge>
+                {/* Document Request Status Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDocStatus(!openDocStatus)}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${docStatusBadgeClass(request.status || 'DRAFT')}`}
+                  >
+                    <span>{request.status || 'DRAFT'}</span>
+                    <ChevronDown size={9} />
+                  </button>
+                  {openDocStatus && (
+                    <div className="absolute left-0 top-7 flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[120px] overflow-hidden">
+                      {docRequestStatuses.map(s => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            updateDocRequestStatusMutation.mutate({ requestId: request._id, status: s });
+                            setOpenDocStatus(false);
+                          }}
+                          className={`px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors ${
+                            (request.status || 'DRAFT') === s ? 'text-primary font-bold bg-primary/5' : 'text-gray-700'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <select
                   value={workflowStatus}
                   disabled={isAnyActionLoading}

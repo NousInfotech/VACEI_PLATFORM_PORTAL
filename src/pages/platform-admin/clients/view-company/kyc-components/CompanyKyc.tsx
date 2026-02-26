@@ -27,6 +27,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [expandedWorkflows, setExpandedWorkflows] = useState<Record<string, boolean>>({});
+  const [openDocStatusId, setOpenDocStatusId] = useState<string | null>(null);
 
   const toggleWorkflow = (id: string) => {
     setExpandedWorkflows(prev => ({ ...prev, [id]: !prev[id] }));
@@ -94,6 +95,30 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
   });
 
   const isAnyActionLoading = patchKycStatusMutation.isPending || deleteKycMutation.isPending || createDocumentRequestMutation.isPending;
+
+  const updateDocRequestStatusMutation = useMutation({
+    mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
+      apiPatch(endPoints.DOCUMENT_REQUESTS.UPDATE_STATUS(requestId), { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      toast.success('Document status updated.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update document status', {
+        description: error?.response?.data?.message || error?.message || 'Unexpected error'
+      });
+    }
+  });
+
+  const docRequestStatuses = ['DRAFT', 'ACTIVE', 'COMPLETED'];
+
+  const docStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      default: return 'bg-gray-50 text-gray-500 border-gray-100';
+    }
+  };
 
   const submitTemplateDocs = async (documentRequestId: string) => {
     const docRequestData = kycCompanyTemplate.DOC_REQUEST[0].data;
@@ -288,19 +313,49 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
                           {request.documentRequest.category || "General Requirements"}
                         </h4>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setActiveRequestId(request.documentRequest._id);
-                          setIsAddModalOpen(true);
-                        }}
-                        disabled={isAnyActionLoading}
-                        className="h-9 px-4 rounded-xl border-dashed border-gray-200 text-primary hover:bg-white hover:border-primary/50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all"
-                      >
-                        <Plus size={16} className="mr-1.5" />
-                        Add Requirement
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {/* Document Request Status Dropdown */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenDocStatusId(openDocStatusId === request._id ? null : request._id)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${docStatusBadgeClass(request.documentRequest.status || 'DRAFT')}`}
+                          >
+                            <span>{request.documentRequest.status || 'DRAFT'}</span>
+                            <ChevronDown size={10} />
+                          </button>
+                          {openDocStatusId === request._id && (
+                            <div className="absolute right-0 top-8 flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[130px] overflow-hidden">
+                              {docRequestStatuses.map(s => (
+                                <button
+                                  key={s}
+                                  onClick={() => {
+                                    updateDocRequestStatusMutation.mutate({ requestId: request.documentRequest._id, status: s });
+                                    setOpenDocStatusId(null);
+                                  }}
+                                  className={`px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors ${
+                                    (request.documentRequest.status || 'DRAFT') === s ? 'text-primary font-bold bg-primary/5' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setActiveRequestId(request.documentRequest._id);
+                            setIsAddModalOpen(true);
+                          }}
+                          disabled={isAnyActionLoading}
+                          className="h-9 px-4 rounded-xl border-dashed border-gray-200 text-primary hover:bg-white hover:border-primary/50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all"
+                        >
+                          <Plus size={16} className="mr-1.5" />
+                          Add Requirement
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="bg-white rounded-[24px] border border-indigo-50/50 p-6 shadow-sm">

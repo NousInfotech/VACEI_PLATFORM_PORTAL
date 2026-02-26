@@ -14,6 +14,7 @@ import CreateTemplate from './pages/platform-admin/services/servicesRequestTempl
 import ViewTemplate from './pages/platform-admin/services/servicesRequestTemplates/ViewTemplate'
 import ServiceRequestManagement from './pages/platform-admin/services/servicesRequestManagement/ServiceRequestManagement'
 import ViewServiceRequest from './pages/platform-admin/services/servicesRequestManagement/ViewServiceRequest'
+import IncorpCycleRedirector from './pages/platform-admin/services/servicesRequestManagement/components/IncorpCycleRedirector'
 import ServicesManagement from './pages/platform-admin/services/servicesManagement/ServicesManagement'
 import TemplatePreview from './pages/platform-admin/services/servicesRequestTemplates/TemplatePreview'
 import Clients from './pages/platform-admin/clients/Clients'
@@ -54,6 +55,7 @@ const App = () => {
         <Route element={<MainLayout />}>
           <Route path="/dashboard/service-request-management" element={<ServiceRequestManagement />} />
           <Route path="/dashboard/service-request-management/:id" element={<ViewServiceRequest />} />
+          <Route path="/dashboard/service-request-management/:id/incorporation-cycle" element={<IncorpCycleRedirector />} />
           <Route path="/dashboard/service-request-templates" element={<ServiceRequestTemplates />} />
           <Route path="/dashboard/service-request-templates/create" element={<CreateTemplate />} />
           <Route path="/dashboard/service-request-templates/:id/view" element={<ViewTemplate />} />

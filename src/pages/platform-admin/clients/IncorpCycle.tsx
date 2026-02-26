@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, History, FileText, CheckCircle2, Clock, PlayCircle, Loader2, ChevronDown } from 'lucide-react';
+import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { apiGet, apiPatch, apiPost } from '../../../config/base';
@@ -17,11 +17,19 @@ import AddRequestedDocumentModal from './view-company/kyc-components/AddRequeste
 import AddCategoryModal from './view-company/kyc-components/AddCategoryModal';
 import { Plus } from 'lucide-react';
 
-const IncorpCycle: React.FC = () => {
-    const { clientId, companyId } = useParams<{ clientId: string; companyId: string }>();
+interface IncorpCycleProps {
+    clientId?: string;
+    companyId?: string;
+}
+
+const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, companyId: propCompanyId }) => {
+    const params = useParams<{ clientId: string; companyId: string }>();
+    const clientId = propClientId || params.clientId;
+    const companyId = propCompanyId || params.companyId;
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
     const queryClient = useQueryClient();
     const { data: cycle, isLoading } = useQuery<IncorporationCycle>({
@@ -64,6 +72,24 @@ const IncorpCycle: React.FC = () => {
             }
         }
     });
+
+    const updateDocRequestStatusMutation = useMutation({
+        mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
+            apiPatch(endPoints.DOCUMENT_REQUESTS.UPDATE_STATUS(requestId), { status }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['incorporation-cycle', companyId] });
+        }
+    });
+
+    const docRequestStatuses = ['DRAFT', 'ACTIVE', 'COMPLETED'];
+
+    const statusBadgeClass = (status: string) => {
+        switch (status) {
+            case 'ACTIVE': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case 'COMPLETED': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            default: return 'bg-gray-50 text-gray-500 border-gray-100';
+        }
+    };
 
     const statusSteps: IncorporationStatus[] = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
     const currentStatusIndex = statusSteps.indexOf(cycle?.status || 'PENDING');
@@ -178,32 +204,7 @@ const IncorpCycle: React.FC = () => {
                 </div>
             </ShadowCard>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Status History */}
-                <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-2xl bg-white space-y-6">
-                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
-                        <History className="h-4 w-4 text-primary" />
-                        Status History
-                    </h3>
-                    <div className="space-y-6">
-                        <HistoryItem 
-                            status="PENDING" 
-                            date={cycle?.startedAt || ''} 
-                            description="Incorporation request submitted and pending review."
-                            active={true}
-                        />
-                        {cycle?.status !== 'PENDING' && (
-                            <HistoryItem 
-                                status={cycle?.status || ''} 
-                                date={cycle?.completedAt || cycle?.startedAt || ''} 
-                                description={`Process updated to ${cycle?.status}.`}
-                                active={true}
-                            />
-                        )}
-                    </div>
-                </ShadowCard>
-
-                {/* Document Requests */}
+            {/* Document Requests - Full Width */}
                 <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-2xl bg-white space-y-6">
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2">
@@ -225,11 +226,39 @@ const IncorpCycle: React.FC = () => {
                         {transformedDocs.length > 0 ? (
                             transformedDocs.map((dr, index) => (
                                 <div key={dr._id || index} className="space-y-4">
-                                    <div className="pb-2 border-b border-gray-50">
+                                    <div className="pb-2 border-b border-gray-50 flex items-center justify-between">
                                         <h4 className="font-bold text-gray-900 flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
                                             {dr.category}
                                         </h4>
+                                        {/* Status dropdown */}
+                                        <div className="relative">
+                                            <button
+                                                onClick={() => setOpenDropdownId(openDropdownId === (dr._id || String(index)) ? null : (dr._id || String(index)))}
+                                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${statusBadgeClass(dr.status || 'DRAFT')}`}
+                                            >
+                                                <span>{dr.status || 'DRAFT'}</span>
+                                                <ChevronDown size={10} />
+                                            </button>
+                                            {openDropdownId === (dr._id || String(index)) && (
+                                                <div className="absolute right-0 top-8 flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[130px] overflow-hidden">
+                                                    {docRequestStatuses.map(s => (
+                                                        <button
+                                                            key={s}
+                                                            onClick={() => {
+                                                                updateDocRequestStatusMutation.mutate({ requestId: dr._id, status: s });
+                                                                setOpenDropdownId(null);
+                                                            }}
+                                                            className={`px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors ${
+                                                                (dr.status || 'DRAFT') === s ? 'text-primary font-bold bg-primary/5' : 'text-gray-700'
+                                                            }`}
+                                                        >
+                                                            {s}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     {dr.documents && dr.documents.length > 0 && (
                                         <SingleDocumentRequest requestId={dr._id} documents={dr.documents} />
@@ -247,7 +276,6 @@ const IncorpCycle: React.FC = () => {
                         )}
                     </div>
                 </ShadowCard>
-            </div>
         </div>
         
         {activeRequestId && (
@@ -270,21 +298,5 @@ const IncorpCycle: React.FC = () => {
         </>
     );
 };
-
-const HistoryItem = ({ status, date, description, active }: { status: string; date: string; description: string; active: boolean }) => (
-    <div className="flex gap-4 relative">
-        <div className={`h-3 w-3 rounded-full mt-1.5 shrink-0 ${active ? 'bg-primary shadow-[0_0_0_4px_rgba(var(--primary-rgb),0.1)]' : 'bg-gray-200'}`}></div>
-        <div className="space-y-1">
-            <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-gray-900 uppercase tracking-tight">{status}</span>
-                <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {date ? new Date(date).toLocaleString() : 'Pending'}
-                </span>
-            </div>
-            <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
-        </div>
-    </div>
-);
 
 export default IncorpCycle;

@@ -130,6 +130,7 @@ export const endPoints = {
     CLEAR: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}/clear`,
     UPDATE: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}`,
     DELETE: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}`,
+    UPDATE_STATUS: (requestId: string) => `/document-requests/${requestId}/status`,
   },
   INCORPORATION: {
     BASE: '/incorporation',

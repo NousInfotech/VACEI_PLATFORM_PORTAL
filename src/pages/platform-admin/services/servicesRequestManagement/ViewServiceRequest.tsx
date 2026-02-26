@@ -247,6 +247,8 @@ const ViewServiceRequestContent: React.FC = () => {
 
     if (request.status === 'APPROVED') {
       const hasEngagement = request.engagements && request.engagements.length > 0;
+      const isIncorporation = request.service === 'INCORPORATION';
+
       return (
         <div className="flex items-center gap-3">
           {isTop && (
@@ -254,7 +256,15 @@ const ViewServiceRequestContent: React.FC = () => {
               Approved
             </span>
           )}
-          {hasEngagement ? (
+          {isIncorporation ? (
+            <Button 
+              onClick={() => navigate(`/dashboard/service-request-management/${request.id}/incorporation-cycle`)}
+              size={isTop ? 'default' : 'lg'}
+              className={`${commonBtnClass} ${isTop ? 'rounded-xl' : 'rounded-2xl px-10'}`}
+            >
+              Create Incorporation Cycle
+            </Button>
+          ) : hasEngagement ? (
             <div className={`px-6 py-2.5 bg-green-50 text-green-600 ${isTop ? 'text-[10px]' : 'text-sm'} font-bold rounded-xl border border-green-100 uppercase flex items-center gap-2 shadow-sm`}>
               <CheckCircle2 className="h-4 w-4" />
               Engagement Created
