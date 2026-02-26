@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/auth/Login'
+import VerifyMFA from './pages/auth/VerifyMFA'
 import ForgetPassword from './pages/auth/ForgetPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import Dashboard from './pages/common/Dashboard'
 import MainLayout from './layout/MainLayout'
 import NotFound from './pages/common/NotFound'
@@ -45,7 +47,9 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/verify-mfa" element={<VerifyMFA />} />
         <Route path="/forgot-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route element={<MainLayout />}>
           <Route path="/dashboard/service-request-management" element={<ServiceRequestManagement />} />
           <Route path="/dashboard/service-request-management/:id" element={<ViewServiceRequest />} />

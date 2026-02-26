@@ -7,6 +7,7 @@ export const endPoints = {
     CHANGE_PASSWORD: '/auth/change-password',
     ME: '/auth/me',
     REFRESH: '/auth/refresh',
+    VERIFY_MFA: '/auth/verify-mfa',
   },
   ORGANIZATION: {
     BASE: '/organizations',
