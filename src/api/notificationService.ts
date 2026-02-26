@@ -3,24 +3,25 @@ import { endPoints } from '../config/endPoint';
 
 export function getPortalRedirectUrl(url?: string | null): string | null {
     if (!url) return null;
+    const cleaned = url.replace(/^\/(partner|platform|client)/, '');
     try {
         const dummyBase = 'http://localhost';
-        const parsedUrl = new URL(url, dummyBase);
+        const parsedUrl = new URL(cleaned, dummyBase);
         const path = parsedUrl.pathname;
 
         if (path === '/library') {
-            return url.replace('/library', '/dashboard/global-library');
+            return cleaned.replace('/library', '/dashboard/global-library');
         }
 
-        if (path.startsWith('/dashboard')) return url;
+        if (path.startsWith('/dashboard')) return cleaned;
 
         if (path.startsWith('/')) {
-            return `/dashboard${url}`;
+            return `/dashboard${cleaned}`;
         }
     } catch (e) {
-        return url;
+        return cleaned;
     }
-    return url;
+    return cleaned;
 }
 
 export interface Notification {

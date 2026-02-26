@@ -31,6 +31,7 @@ export interface LoginResponse {
         organizationMember: OrganizationMember;
         token: string;
         refreshToken?: string;
+        mfaRequired?: boolean;
     };
     message?: string;
 }
