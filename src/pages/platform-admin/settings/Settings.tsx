@@ -2,7 +2,6 @@ import React from 'react';
 import PageHeader from '../../common/PageHeader';
 
 import { 
-    Settings as SettingsIcon,
     User, 
     Bell, 
     Lock, 
