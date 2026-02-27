@@ -116,22 +116,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const response = await apiPost<LoginResponse>(endPoints.AUTH.LOGIN, { email, password } as Record<string, unknown>);
             
             if (response.data) {
+                const userData = response.data.user;
                 if (response.data.mfaRequired) {
                     return {
                         success: true,
                         message: response.message || "MFA Required",
-                        mfaRequired: true
+                        mfaRequired: true,
+                        mfaMethod: response.data.mfaMethod || 'email',
                     };
                 }
 
-                const userData = response.data.user;
-                const memberData = response.data.organizationMember;
+                const memberData = response.data.organizationMember ?? null;
                 const token = response.data.token;
                 
                 setUser(userData);
                 setOrganizationMember(memberData);
                 
-                if (memberData?.allowedServices?.length > 0) {
+                if (memberData && memberData.allowedServices?.length > 0) {
                     setSelectedService(memberData.allowedServices[0]);
                 }
 
@@ -166,18 +167,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const verifyMfa = async (email: string, otp: string) => {
+    const verifyMfa = async (
+        email: string,
+        options: { otp?: string; webauthnResponse?: unknown; method?: 'email' | 'totp' | 'webauthn' }
+    ) => {
         try {
-            const response = await apiPost<LoginResponse>(endPoints.AUTH.VERIFY_MFA, { email, otp } as Record<string, unknown>);
+            const body: Record<string, unknown> = { email, method: options.method };
+            if (options.otp != null) body.otp = options.otp;
+            if (options.webauthnResponse != null) body.webauthnResponse = options.webauthnResponse;
+
+            const response = await apiPost<LoginResponse>(endPoints.AUTH.MFA_VERIFY, body);
             if (response.data) {
                 const userData = response.data.user;
-                const memberData = response.data.organizationMember;
+                const memberData = response.data.organizationMember ?? null;
                 const token = response.data.token;
 
                 setUser(userData);
-                setOrganizationMember(memberData);
+                setOrganizationMember(memberData ?? null);
                 
-                if (memberData?.allowedServices?.length > 0) {
+                if (memberData && memberData.allowedServices?.length > 0) {
                     setSelectedService(memberData.allowedServices[0]);
                 }
 
@@ -194,6 +202,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error("MFA verification failed:", error);
             return { success: false, message: (error as Error).message || "Verification failed" };
         }
+    };
+
+    const getWebAuthnLoginChallenge = async (email: string) => {
+        const response = await apiPost<{ data: { options: Record<string, unknown> } }>(
+            endPoints.AUTH.MFA_WEBAUTHN_LOGIN_CHALLENGE,
+            { email }
+        );
+        return response.data;
     };
 
     const logout = async () => {
@@ -215,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isAuthenticated: !!user, 
             login, 
             verifyMfa,
+            getWebAuthnLoginChallenge,
             logout, 
             isLoading, 
             checkAuth 

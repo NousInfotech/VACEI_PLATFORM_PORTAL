@@ -7,7 +7,14 @@ export const endPoints = {
     CHANGE_PASSWORD: '/auth/change-password',
     ME: '/auth/me',
     REFRESH: '/auth/refresh',
-    VERIFY_MFA: '/auth/verify-mfa',
+    VERIFY_MFA: '/auth/verify-mfa', // legacy
+    MFA_VERIFY: '/auth/mfa/verify',
+    MFA_PREFERENCES: '/auth/mfa/preferences',
+    MFA_SETUP_TOTP: '/auth/mfa/setup-totp',
+    MFA_VERIFY_TOTP_SETUP: '/auth/mfa/verify-totp-setup',
+    MFA_WEBAUTHN_REGISTER_CHALLENGE: '/auth/mfa/webauthn/register-challenge',
+    MFA_WEBAUTHN_REGISTER_VERIFY: '/auth/mfa/webauthn/register-verify',
+    MFA_WEBAUTHN_LOGIN_CHALLENGE: '/auth/mfa/webauthn/login-challenge',
   },
   ORGANIZATION: {
     BASE: '/organizations',
