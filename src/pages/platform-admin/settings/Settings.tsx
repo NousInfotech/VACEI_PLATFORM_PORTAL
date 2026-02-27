@@ -123,6 +123,7 @@ const Settings: React.FC = () => {
     const [totpOtpauthUrl, setTotpOtpauthUrl] = React.useState<string | null>(null);
     const [totpCode, setTotpCode] = React.useState('');
     const [totpVerifying, setTotpVerifying] = React.useState(false);
+    const [totpConfigured, setTotpConfigured] = React.useState(false);
     const [webauthnRegistering, setWebauthnRegistering] = React.useState(false);
 
     React.useEffect(() => {
@@ -136,12 +137,16 @@ const Settings: React.FC = () => {
                 const method = payload.mfaMethod as 'email' | 'totp' | 'webauthn' | null;
                 if (!enabled || !method) {
                     setMfaMethod('none');
+                    setTotpConfigured(false);
                 } else if (method === 'email') {
                     setMfaMethod('email');
+                    setTotpConfigured(false);
                 } else if (method === 'totp') {
                     setMfaMethod('totp');
+                    setTotpConfigured(true);
                 } else if (method === 'webauthn') {
                     setMfaMethod('webauthn');
+                    setTotpConfigured(false);
                 }
             } catch (err) {
                 console.error('Failed to load MFA preferences', err);
@@ -181,6 +186,7 @@ const Settings: React.FC = () => {
                 throw new Error('Missing otpauth URL from server');
             }
             setTotpOtpauthUrl(payload.otpauthUrl);
+            setTotpConfigured(false);
             setMfaMethod('totp');
             toast.success('Scan the QR code with your authenticator app and enter the 6-digit code to confirm.');
         } catch (error: any) {
@@ -200,6 +206,8 @@ const Settings: React.FC = () => {
         try {
             await apiPost(endPoints.AUTH.MFA_VERIFY_TOTP_SETUP, { otp: totpCode });
             setTotpCode('');
+            setTotpOtpauthUrl(null);
+            setTotpConfigured(true);
             toast.success('Authenticator app MFA enabled for your account');
             setMfaMethod('totp');
         } catch (error: any) {
@@ -506,7 +514,27 @@ const Settings: React.FC = () => {
                                 </div>
                                 {mfaMethod === 'totp' && (
                                     <div className="mt-2 space-y-3 rounded-2xl border border-dashed border-indigo-200 bg-white/70 p-4">
-                                        {!totpOtpauthUrl ? (
+                                        {totpConfigured && !totpOtpauthUrl ? (
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                <div className="space-y-1 text-xs text-gray-700">
+                                                    <p className="font-semibold text-gray-900">Authenticator app is enabled</p>
+                                                    <p>
+                                                        Platform admin sign-ins now require a code from your authenticator app.
+                                                        To move to a new device, you can reconfigure it – this will generate a new QR
+                                                        code and invalidate the old one.
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="bg-white text-indigo-700 border-indigo-200 text-[11px] font-black tracking-widest uppercase"
+                                                    onClick={startTotpSetup}
+                                                    disabled={mfaLoading}
+                                                >
+                                                    {mfaLoading ? 'Preparing…' : 'Reconfigure app'}
+                                                </Button>
+                                            </div>
+                                        ) : !totpOtpauthUrl ? (
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                                 <p className="text-[11px] text-gray-700">
                                                     Start authenticator-app setup to generate a QR code and secret for platform admins.
