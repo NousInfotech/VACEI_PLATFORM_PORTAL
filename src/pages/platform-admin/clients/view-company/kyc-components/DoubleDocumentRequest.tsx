@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Eye, Download, Upload, Trash2, Edit2, Check, X, Loader2, Plus, FileEdit, FileUp } from "lucide-react";
+import { Eye, Download, Upload, Trash2, Edit2, Check, X, Loader2, FileEdit, FileUp } from "lucide-react";
 import { downloadFile } from "../../../../../utils/downloadUtils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from 'sonner';
