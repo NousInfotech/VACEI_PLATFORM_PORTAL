@@ -84,6 +84,7 @@ export default function TopHeader({
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
             await fetchLatestNotifications();
+            await fetchUnreadCount();
         } catch (err) {
             console.error('Error marking as read:', err);
         }
@@ -95,6 +96,7 @@ export default function TopHeader({
             setLatestNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
             setUnreadCount(0);
             await fetchLatestNotifications();
+            await fetchUnreadCount();
         } catch (err) {
             console.error('Error marking all as read:', err);
         }
