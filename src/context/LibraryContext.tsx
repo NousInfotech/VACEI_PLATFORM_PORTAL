@@ -58,19 +58,22 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     queryKey: ['library-content', currentFolderId],
     queryFn: () => currentFolderId
       ? apiGet<{ data: LibraryContentResponse }>(endPoints.LIBRARY.FOLDER_CONTENT(currentFolderId))
-      : Promise.resolve({
-        data: {
-          folder: null,
-          folders: (rootsData?.data ?? [])
-            .filter(root => root.rootType === 'PLATFORM')
-            .map(root => ({
-              ...root,
-              parentId: null
-            })),
-          files: []
-        }
-      }),
-    enabled: !!rootsData || currentFolderId !== null
+      : apiGet<LibraryRootApiItem[] | { data: LibraryRootApiItem[] }>(endPoints.LIBRARY.ROOTS).then((res) => {
+          const list = Array.isArray(res) ? res : (res?.data ?? []);
+          return {
+            data: {
+              folder: null,
+              folders: list.map((root: LibraryRootApiItem) => ({
+                ...root,
+                parentId: null,
+                name: root.name ?? root.folder_name,
+                folder_name: root.name ?? root.folder_name
+              })),
+              files: []
+            }
+          };
+        }),
+    enabled: currentFolderId !== undefined
   });
 
   const isLoading = isLoadingRoots || isLoadingContent;
@@ -84,11 +87,17 @@ export const LibraryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Mutations
   const createFolderMutation = useMutation({
-    mutationFn: (name: string) => apiPost(endPoints.LIBRARY.FOLDERS, {
-      folder_name: name,
-      parentId: currentFolderId,
-      rootType: contentData?.data?.folder?.rootType || 'PLATFORM'
-    }),
+    mutationFn: (name: string) => {
+      const rootType = contentData?.data?.folder?.rootType ?? 'PLATFORM';
+      const body: Record<string, unknown> = {
+        folder_name: name.trim(),
+        rootType
+      };
+      if (currentFolderId) {
+        body.parentId = currentFolderId;
+      }
+      return apiPost(endPoints.LIBRARY.FOLDERS, body);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['library-content', currentFolderId] });
       queryClient.invalidateQueries({ queryKey: ['library-roots'] });
