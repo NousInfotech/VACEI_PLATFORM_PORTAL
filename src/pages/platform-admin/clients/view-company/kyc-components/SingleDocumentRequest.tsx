@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Eye, Download, FileText, Upload, Trash2, Edit2, Check, X, Loader2, Plus, FileEdit } from "lucide-react";
 import { saveAs } from 'file-saver';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -113,6 +113,27 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
     }).format(date);
   };
 
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ docId, status, reason }: { docId: string; status: string; reason?: string }) => 
+      apiPatch(endPoints.DOCUMENT_REQUESTS.STATUS(docId), { status, reason }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["kyc-cycle"] });
+      queryClient.invalidateQueries({ queryKey: ["incorporation-cycle"] });
+      toast.success(`Document ${variables.status.toLowerCase()} successfully.`);
+      setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update status', { description: error?.response?.data?.message || error?.message });
+    },
+  });
+
+  const [rejectionReason, setRejectionReason] = useState("");
+  const rejectionReasonRef = useRef("");
+
+  useEffect(() => {
+    rejectionReasonRef.current = rejectionReason;
+  }, [rejectionReason]);
+
   const handleDownload = (url: string, fileName: string) => {
     saveAs(url, fileName);
   };
@@ -201,8 +222,8 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                     <Badge variant="outline" className="text-gray-600 border-gray-300 bg-gray-50 capitalize text-[10px] p-2 rounded-[10px]">
                       {isTemplate ? "Template" : "Direct"}
                     </Badge>
-                    <Badge variant="outline" className="text-gray-600 border-gray-300 text-[10px] p-2 rounded-[10px]">
-                      {doc.status?.toLowerCase() === 'verified' ? 'Approved' : doc.url ? 'Submitted' : 'Pending'}
+                    <Badge variant="outline" className={doc.status?.toLowerCase() === 'rejected' ? "text-rose-600 border-rose-300 bg-rose-50 text-[10px] p-2 rounded-[10px]" : "text-gray-600 border-gray-300 text-[10px] p-2 rounded-[10px]"}>
+                      {doc.status?.toLowerCase() === 'verified' ? 'Approved' : doc.status?.toLowerCase() === 'rejected' ? 'Rejected' : doc.url ? 'Submitted' : 'Pending'}
                     </Badge>
                     {doc.url && doc.uploadedAt && (
                       <div className="flex flex-col">
@@ -218,6 +239,12 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                       </div>
                     )}
                   </div>
+                  {doc.status?.toLowerCase() === 'rejected' && doc.rejectionReason && (
+                    <div className="mt-2 text-xs bg-rose-50 text-rose-700 p-2 rounded-lg border border-rose-100 flex items-start gap-2">
+                      <span className="font-bold shrink-0">Reason:</span>
+                      <span>{doc.rejectionReason}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -281,6 +308,53 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                     >
                       <Download size={20} />
                     </Button>
+                    
+                    {doc.status?.toLowerCase() !== 'verified' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setConfirmConfig({
+                          isOpen: true,
+                          title: "Approve Document",
+                          message: `Are you sure you want to approve "${doc.name}"?`,
+                          onConfirm: () => updateStatusMutation.mutate({ docId, status: 'ACCEPTED' }),
+                          variant: 'primary'
+                        })}
+                        disabled={isAnyActionLoading}
+                        className="border-green-300 text-green-600 hover:bg-green-50 h-10 w-10 p-0"
+                        title="Accept Document"
+                      >
+                        <Check size={20} />
+                      </Button>
+                    )}
+
+                    {doc.status?.toLowerCase() !== 'rejected' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setRejectionReason("");
+                          setConfirmConfig({
+                            isOpen: true,
+                            title: "Reject Document",
+                            message: `Please provide a reason for rejecting "${doc.name}":`,
+                            onConfirm: () => {
+                              if (!rejectionReasonRef.current.trim()) {
+                                toast.error("Please enter a rejection reason");
+                                return;
+                              }
+                              updateStatusMutation.mutate({ docId, status: 'REJECTED', reason: rejectionReasonRef.current });
+                            },
+                            variant: 'danger'
+                          });
+                        }}
+                        disabled={isAnyActionLoading}
+                        className="border-rose-300 text-rose-600 hover:bg-rose-50 h-10 w-10 p-0"
+                        title="Reject Document"
+                      >
+                        <X size={20} />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -337,7 +411,20 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
       <ConfirmModal
         isOpen={confirmConfig.isOpen}
         title={confirmConfig.title}
-        message={confirmConfig.message}
+        message={
+          <div className="space-y-3">
+            <p className="text-gray-500">{confirmConfig.message}</p>
+            {confirmConfig.title === "Reject Document" && (
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Enter rejection reason..."
+                className="w-full p-3 border border-gray-200 rounded-xl text-sm min-h-[100px] focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all resize-none bg-gray-50/50"
+                autoFocus
+              />
+            )}
+          </div>
+        }
         onConfirm={confirmConfig.onConfirm}
         onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
         variant={confirmConfig.variant}

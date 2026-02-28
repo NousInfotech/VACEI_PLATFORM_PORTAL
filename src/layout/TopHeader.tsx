@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { PanelLeft, PanelLeftClose, ChevronLeft, Bell, LogOut, Settings, MessageSquare, Calendar, AlertCircle, CheckCheck } from "lucide-react";
 import { Button } from "../ui/Button";
@@ -25,6 +25,7 @@ export default function TopHeader({
     const navigate = useNavigate();
     const { logout, organizationMember, selectedService, setSelectedService } = useAuth();
     const { unreadCount, setUnreadCount, notifications: sseNotifications } = useSSE();
+    const { pathname } = useLocation();
     const [latestNotifications, setLatestNotifications] = useState<Notification[]>([]);
 
     const fetchLatestNotifications = useCallback(async () => {
@@ -122,14 +123,16 @@ export default function TopHeader({
                     )}
                 </button>
 
-                <Button
-                     onClick={() => navigate(-1)}
-                    title="Go Back"
-                    variant="default"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back
-                </Button>
+                {pathname !== '/dashboard' && (
+                    <Button
+                         onClick={() => navigate(-1)}
+                        title="Go Back"
+                        variant="default"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        Back
+                    </Button>
+                )}
 
                 {organizationMember && (
                     <div className="flex items-center gap-2 ml-4">

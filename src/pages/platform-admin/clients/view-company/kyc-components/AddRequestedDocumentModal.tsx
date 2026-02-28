@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, FileText, Upload, Plus, Loader2, CheckCircle2, LayoutGrid, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from '../../../../../ui/Button';
-import { apiPostFormData } from '../../../../../config/base';
+import { apiPostFormData, apiPost } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 
 interface AddRequestedDocumentModalProps {
@@ -11,17 +11,22 @@ interface AddRequestedDocumentModalProps {
   documentRequestId: string;
   parentId?: string | null;
   onSuccess?: () => void;
+  isNewCategory?: boolean;
+  cycleId?: string;
 }
 
 const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
   isOpen,
   onClose,
-  documentRequestId,
+  documentRequestId: initialDocumentRequestId,
   parentId = null,
   onSuccess,
+  isNewCategory = false,
+  cycleId,
 }) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
+    categoryName: "Document Request",
     documentName: "",
     type: "DIRECT" as "DIRECT" | "TEMPLATE",
     count: "SINGLE" as "SINGLE" | "MULTIPLE",
@@ -34,6 +39,19 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      let currentRequestId = initialDocumentRequestId;
+
+      // 0. Create Category if needed
+      if (isNewCategory && cycleId) {
+        const catRes = await apiPost<any>(endPoints.INCORPORATION.CREATE_DOCUMENT_REQUEST(cycleId), {
+          title: formData.categoryName,
+          description: `Documents for ${formData.categoryName}`
+        });
+        currentRequestId = catRes.data.id;
+      }
+
+      if (!currentRequestId) throw new Error("Document Request ID missing");
+
       // 1. Create parent or SINGLE doc
       const parentFd = new FormData();
       parentFd.append("documentName", formData.documentName);
@@ -50,7 +68,7 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
         parentFd.append("template", formData.templateFile);
       }
 
-      const parentRes = await apiPostFormData<any>(endPoints.DOCUMENT_REQUESTS.DOCUMENTS(documentRequestId), parentFd);
+      const parentRes = await apiPostFormData<any>(endPoints.DOCUMENT_REQUESTS.DOCUMENTS(currentRequestId), parentFd);
       
       const newParentId = parentRes.data.id;
 
@@ -68,7 +86,7 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
           if (formData.type === 'TEMPLATE' && item.templateFile) {
             childFd.append("template", item.templateFile);
           }
-          await apiPostFormData(endPoints.DOCUMENT_REQUESTS.DOCUMENTS(documentRequestId), childFd);
+          await apiPostFormData(endPoints.DOCUMENT_REQUESTS.DOCUMENTS(currentRequestId), childFd);
         }
       }
 
@@ -81,6 +99,7 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
       onClose();
       // Reset form
       setFormData({
+        categoryName: "Document Request",
         documentName: "",
         type: "DIRECT",
         count: "SINGLE",
@@ -106,8 +125,8 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
               <Plus size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Add Requested Document</h3>
-              <p className="text-xs text-gray-500 font-medium">Define a new requirement for this section</p>
+              <h3 className="text-xl font-bold text-gray-900">{isNewCategory ? "Create New Category & Request" : "Add Requested Document"}</h3>
+              <p className="text-xs text-gray-500 font-medium">{isNewCategory ? "Set up a new category and its first requirement" : "Define a new requirement for this section"}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-all text-gray-400">
@@ -117,6 +136,21 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
 
         <div className="p-8 space-y-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
           <div className="space-y-4">
+            {isNewCategory && (
+              <div className="space-y-1.5 focus-within:ring-2 focus-within:ring-primary/10 ring-offset-2 rounded-xl transition-all pb-4 border-b border-gray-100">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-1 pl-1">
+                  <LayoutGrid size={14} /> Category Name
+                </label>
+                <input 
+                  value={formData.categoryName} 
+                  onChange={e => setFormData({...formData, categoryName: e.target.value})} 
+                  className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-primary/50 outline-none text-sm font-semibold transition-all"
+                  placeholder="e.g. Legal Documents" 
+                  required 
+                />
+              </div>
+            )}
+
             <div className="space-y-1.5 focus-within:ring-2 focus-within:ring-primary/10 ring-offset-2 rounded-xl transition-all">
               <label className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-1 pl-1">
                 <FileText size={14} /> Document Title
@@ -268,11 +302,11 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
           </Button>
           <Button
             onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending || !formData.documentName || (formData.type === 'TEMPLATE' && formData.count === 'SINGLE' && !formData.templateFile)}
+            disabled={createMutation.isPending || !formData.documentName || (isNewCategory && !formData.categoryName) || (formData.type === 'TEMPLATE' && formData.count === 'SINGLE' && !formData.templateFile)}
             className="px-10 h-12 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all font-bold uppercase tracking-widest text-[10px] disabled:opacity-50 disabled:scale-100"
           >
             {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-            Create Request
+            {isNewCategory ? "Create Category & Request" : "Create Request"}
           </Button>
         </div>
       </div>

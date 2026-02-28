@@ -14,7 +14,6 @@ import DoubleDocumentRequest from './view-company/kyc-components/DoubleDocumentR
 import { Select } from '../../../ui/Select';
 import { Button } from '../../../ui/Button';
 import AddRequestedDocumentModal from './view-company/kyc-components/AddRequestedDocumentModal';
-import AddCategoryModal from './view-company/kyc-components/AddCategoryModal';
 import { Plus } from 'lucide-react';
 
 interface IncorpCycleProps {
@@ -27,7 +26,7 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
     const clientId = propClientId || params.clientId;
     const companyId = propCompanyId || params.companyId;
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
     const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
@@ -56,22 +55,6 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
         }
     });
 
-    const createDocumentRequestMutation = useMutation({
-        mutationFn: (title: string) => 
-            apiPost<{ data: { id: string } }>(endPoints.INCORPORATION.CREATE_DOCUMENT_REQUEST(cycle!.id), { 
-                title, 
-                description: `Documents for ${title}` 
-            }),
-        onSuccess: (response) => {
-            queryClient.invalidateQueries({ queryKey: ['incorporation-cycle', companyId] });
-            const drId = response?.data?.id;
-            setIsCategoryModalOpen(false);
-            if (drId) {
-                setActiveRequestId(drId);
-                setIsAddModalOpen(true);
-            }
-        }
-    });
 
     const updateDocRequestStatusMutation = useMutation({
         mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
@@ -214,11 +197,13 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setIsCategoryModalOpen(true)}
+                            onClick={() => {
+                                setIsAddingNewCategory(true);
+                                setIsAddModalOpen(true);
+                            }}
                             className="h-8 rounded-xl border-dashed border-gray-200 text-primary hover:bg-primary/5 hover:border-primary/40 text-[10px] uppercase font-bold tracking-widest px-4"
-                            disabled={createDocumentRequestMutation.isPending}
                         >
-                            {createDocumentRequestMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} className="mr-1.5" />}
+                            <Plus size={14} className="mr-1.5" />
                             Add Category
                         </Button>
                     </div>
@@ -278,22 +263,16 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                 </ShadowCard>
         </div>
         
-        {activeRequestId && (
-            <AddRequestedDocumentModal 
-                isOpen={isAddModalOpen}
-                onClose={() => {
-                    setIsAddModalOpen(false);
-                    setActiveRequestId(null);
-                }}
-                documentRequestId={activeRequestId}
-            />
-        )}
-
-        <AddCategoryModal 
-            isOpen={isCategoryModalOpen}
-            onClose={() => setIsCategoryModalOpen(false)}
-            onConfirm={(title) => createDocumentRequestMutation.mutate(title)}
-            isPending={createDocumentRequestMutation.isPending}
+        <AddRequestedDocumentModal 
+            isOpen={isAddModalOpen}
+            onClose={() => {
+                setIsAddModalOpen(false);
+                setActiveRequestId(null);
+                setIsAddingNewCategory(false);
+            }}
+            documentRequestId={activeRequestId || ""}
+            isNewCategory={isAddingNewCategory}
+            cycleId={cycle.id}
         />
         </>
     );

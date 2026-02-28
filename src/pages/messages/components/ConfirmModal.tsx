@@ -4,7 +4,7 @@ import { cn } from '../../../lib/utils';
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
@@ -32,7 +32,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       >
         <div className="p-6">
           <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-500 text-[15px] leading-relaxed">{message}</p>
+          <div className="text-gray-500 text-[15px] leading-relaxed">{message}</div>
         </div>
         
         <div className="flex items-center gap-3 p-4 bg-gray-50 border-t border-gray-100">

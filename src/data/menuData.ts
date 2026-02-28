@@ -6,7 +6,6 @@ import {
     ArchiveIcon,
     Settings02Icon,
     UserGroupIcon as UsersIcon,
-    BubbleChatIcon,
     Notification01Icon,
     NoteEditIcon
 } from '@hugeicons/core-free-icons';
@@ -85,14 +84,14 @@ export const menuData: MenuItem[] = [
         section: "primary",
         description: "Manage bespoke services",
     },
-    {
-        slug: "messages",
-        icon: BubbleChatIcon,
-        label: "Messages",
-        href: "/dashboard/messages",
-        section: "primary",
-        description: "Chat with your team",
-    },
+    // {
+    //     slug: "messages",
+    //     icon: BubbleChatIcon,
+    //     label: "Messages",
+    //     href: "/dashboard/messages",
+    //     section: "primary",
+    //     description: "Chat with your team",
+    // },
     {
         slug: "notice-management",
         icon: Notification01Icon,
@@ -117,12 +116,12 @@ export const menuData: MenuItem[] = [
         section: "primary",
         description: "Platform-wide compliance deadlines",
     },
-    {
-        slug: "settings",
-        icon: Settings02Icon,
-        label: "Settings",
-        href: "/dashboard/settings",
-        section: "settings",
-        description: "System configuration",
-    },
+    // {
+    //     slug: "settings",
+    //     icon: Settings02Icon,
+    //     label: "Settings",
+    //     href: "/dashboard/settings",
+    //     section: "settings",
+    //     description: "System configuration",
+    // },
 ];
