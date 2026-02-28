@@ -69,6 +69,7 @@ export interface DocumentRequestDocumentSingle {
   name: string;
   description?: string;
   status?: string;
+  rejectionReason?: string;
   url?: string;
   uploadedAt?: string;
   uploadedFileName?: string;
@@ -82,6 +83,7 @@ export interface MultipleDocumentItem {
   _id?: string;
   label: string;
   status?: string;
+  rejectionReason?: string;
   url?: string;
   uploadedAt?: string;
   uploadedFileName?: string;
