@@ -109,6 +109,13 @@ export interface KycPerson {
   id?: string;
 }
 
+export interface UnassignedFile {
+  fileId: string;
+  fileName: string;
+  uploadDate: string;
+  url: string;
+}
+
 export interface DocumentRequest {
   _id: string;
   category: string;
@@ -117,6 +124,7 @@ export interface DocumentRequest {
   status: string;
   documents: DocumentRequestDocumentSingle[];
   multipleDocuments: DocumentRequestDocumentMultiple[];
+  unassignedFiles?: UnassignedFile[];
 }
 
 export interface KycRequestFull {

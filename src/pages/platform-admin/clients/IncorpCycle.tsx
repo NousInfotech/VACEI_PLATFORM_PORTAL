@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown } from 'lucide-react';
+import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown, Plus } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import TemplateSelector from './view-company/kyc-components/TemplateSelector';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { apiGet, apiPatch, apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
@@ -14,8 +16,8 @@ import DoubleDocumentRequest from './view-company/kyc-components/DoubleDocumentR
 import { Select } from '../../../ui/Select';
 import { Button } from '../../../ui/Button';
 import AddRequestedDocumentModal from './view-company/kyc-components/AddRequestedDocumentModal';
-import { Plus } from 'lucide-react';
-
+import UnassignedFiles from './view-company/kyc-components/UnassignedFiles';
+ 
 interface IncorpCycleProps {
     clientId?: string;
     companyId?: string;
@@ -29,6 +31,7 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
     const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
     const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+    const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
 
     const queryClient = useQueryClient();
     const { data: cycle, isLoading } = useQuery<IncorporationCycle>({
@@ -52,6 +55,24 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['incorporation-cycle', companyId] });
             queryClient.invalidateQueries({ queryKey: ['client-companies', clientId] });
+        }
+    });
+
+    const createFromTemplateMutation = useMutation({
+        mutationFn: (templateId: string) => 
+            apiPost(endPoints.DOCUMENT_REQUESTS.FROM_TEMPLATE, {
+                templateId,
+                incorporationCycleId: cycle!.id,
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['incorporation-cycle', companyId] });
+            setIsTemplateSelectorOpen(false);
+            toast.success('Documents initialized from template.');
+        },
+        onError: (error: any) => {
+            toast.error('Failed to initialize from template', {
+                description: error?.response?.data?.message || error?.message || 'Unexpected error'
+            });
         }
     });
 
@@ -194,18 +215,30 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                             <FileText className="h-4 w-4 text-primary" />
                             Required Documents
                         </h3>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                                setIsAddingNewCategory(true);
-                                setIsAddModalOpen(true);
-                            }}
-                            className="h-8 rounded-xl border-dashed border-gray-200 text-primary hover:bg-primary/5 hover:border-primary/40 text-[10px] uppercase font-bold tracking-widest px-4"
-                        >
-                            <Plus size={14} className="mr-1.5" />
-                            Add Category
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsTemplateSelectorOpen(true)}
+                                disabled={createFromTemplateMutation.isPending}
+                                className="h-8 rounded-xl bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 text-[10px] uppercase font-bold tracking-widest px-4"
+                            >
+                                <Plus size={14} className="mr-1.5" />
+                                Template
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setIsAddingNewCategory(true);
+                                    setIsAddModalOpen(true);
+                                }}
+                                className="h-8 rounded-xl border-dashed border-gray-200 text-gray-500 hover:bg-white hover:border-gray-300 text-[10px] uppercase font-bold tracking-widest px-4"
+                            >
+                                <Plus size={14} className="mr-1.5" />
+                                Manual
+                            </Button>
+                        </div>
                     </div>
                     <div className="space-y-6">
                         {transformedDocs.length > 0 ? (
@@ -245,6 +278,16 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                                             )}
                                         </div>
                                     </div>
+                                    {dr.unassignedFiles && dr.unassignedFiles.length > 0 && (
+                                        <div className="mb-4">
+                                            <UnassignedFiles 
+                                                unassignedFiles={dr.unassignedFiles} 
+                                                requestId={dr._id} 
+                                                documentRequest={dr}
+                                            />
+                                        </div>
+                                    )}
+
                                     {dr.documents && dr.documents.length > 0 && (
                                         <SingleDocumentRequest requestId={dr._id} documents={dr.documents} />
                                     )}
@@ -273,6 +316,15 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
             documentRequestId={activeRequestId || ""}
             isNewCategory={isAddingNewCategory}
             cycleId={cycle.id}
+            moduleType="INCORPORATION"
+        />
+
+        <TemplateSelector 
+            isOpen={isTemplateSelectorOpen}
+            onClose={() => setIsTemplateSelectorOpen(false)}
+            onSelect={(template) => createFromTemplateMutation.mutate(template.id)}
+            moduleType="INCORPORATION"
+            title="Select Incorporation Template"
         />
         </>
     );

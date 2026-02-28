@@ -43,6 +43,10 @@ import EditProcedurePrompt from './pages/platform-admin/procedure-prompt/EditPro
 import ViewProcedurePrompt from './pages/platform-admin/procedure-prompt/ViewProcedurePrompt'
 import CreateComplianceCalendarPage from './pages/platform-admin/compliance-calendar/CreateComplianceCalendarPage'
 import EditComplianceCalendarPage from './pages/platform-admin/compliance-calendar/EditComplianceCalendarPage'
+import TemplateManagement from './pages/platform-admin/template-management/TemplateManagement'
+import CreateTemplateForm from './pages/platform-admin/template-management/CreateTemplateForm'
+import EditTemplateForm from './pages/platform-admin/template-management/EditTemplateForm'
+import ViewTemplateDetail from './pages/platform-admin/template-management/ViewTemplateDetail'
 import { Toaster } from 'sonner'
 
 const App = () => {
@@ -96,6 +100,10 @@ const App = () => {
           <Route path="/dashboard/procedure-prompts/create" element={<CreateProcedurePrompt />} />
           <Route path="/dashboard/procedure-prompts/:id" element={<ViewProcedurePrompt />} />
           <Route path="/dashboard/procedure-prompts/:id/edit" element={<EditProcedurePrompt />} />
+          <Route path="/dashboard/template-management" element={<TemplateManagement />} />
+          <Route path="/dashboard/template-management/create" element={<CreateTemplateForm />} />
+          <Route path="/dashboard/template-management/:id/view" element={<ViewTemplateDetail />} />
+          <Route path="/dashboard/template-management/:id/edit" element={<EditTemplateForm />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/dashboard/service-request-templates/:id/preview" element={<TemplatePreview />} />

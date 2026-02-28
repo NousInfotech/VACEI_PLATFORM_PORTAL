@@ -6,14 +6,15 @@ import DocumentRequestSingle from './SingleDocumentRequest';
 import DocumentRequestDouble from './DoubleDocumentRequest';
 import ShadowCard from '../../../../../ui/ShadowCard';
 import { Building2, Plus, Trash2, ShieldCheck, ChevronDown, ChevronUp } from 'lucide-react';
-import { apiPatch, apiDelete, apiPost, apiPostFormData } from '../../../../../config/base';
+import { apiPatch, apiDelete, apiPost } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import { Button } from '../../../../../ui/Button';
 import AddRequestedDocumentModal from './AddRequestedDocumentModal';
 import { ConfirmModal } from '../../../../messages/components/ConfirmModal';
+import UnassignedFiles from './UnassignedFiles';
 
-// Import KYC Templates
-import kycCompanyTemplate from '../../../../../../src/data/kycCompanyTemplate.json';
+// Import Template Selector
+import TemplateSelector from './TemplateSelector';
 
 interface CompanyKycProps {
   workflows: KycWorkflow[];
@@ -31,6 +32,8 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
   const toggleWorkflow = (id: string) => {
     setExpandedWorkflows(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -70,30 +73,47 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
 
 
   const createDocumentRequestMutation = useMutation({
-    mutationFn: async (mode: 'MANUAL' | 'TEMPLATE' = 'MANUAL') => {
+    mutationFn: async () => {
       if (!kycId) throw new Error("KYC ID is missing");
       const res = await apiPost<{ data: { documentRequest: { id: string } } }>(endPoints.COMPANY.KYC_DOCUMENT_REQUEST(kycId), {
-        title: mode === 'TEMPLATE' ? kycCompanyTemplate.DOC_REQUEST[0].data.title : "Company Verification Documents",
-        description: mode === 'TEMPLATE' ? kycCompanyTemplate.DOC_REQUEST[0].data.description : "Standard documents required for company verification"
+        title: "Company Verification Documents",
+        description: "Standard documents required for company verification"
       });
-
-      const drId = res?.data?.documentRequest?.id;
-      if (mode === 'TEMPLATE' && drId) {
-        await submitTemplateDocs(drId);
-      }
       return res.data;
     },
-    onSuccess: (data: any, variables) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
       const drId = data?.documentRequest?.id;
-      if (drId && variables === 'MANUAL') {
+      if (drId) {
         setActiveRequestId(drId);
         setIsAddModalOpen(true);
       }
     }
   });
 
-  const isAnyActionLoading = patchKycStatusMutation.isPending || deleteKycMutation.isPending || createDocumentRequestMutation.isPending;
+  const createFromTemplateMutation = useMutation({
+    mutationFn: (templateId: string) => 
+      apiPost(endPoints.DOCUMENT_REQUESTS.FROM_TEMPLATE, {
+        templateId,
+        kycCycleId: kycId,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      setIsTemplateSelectorOpen(false);
+      toast.success('KYC documents initialized from template.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to initialize from template', {
+        description: error?.response?.data?.message || error?.message || 'Unexpected error'
+      });
+    }
+  });
+
+  const isAnyActionLoading = 
+    patchKycStatusMutation.isPending || 
+    deleteKycMutation.isPending || 
+    createDocumentRequestMutation.isPending ||
+    createFromTemplateMutation.isPending;
 
   const updateDocRequestStatusMutation = useMutation({
     mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
@@ -119,38 +139,6 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
     }
   };
 
-  const submitTemplateDocs = async (documentRequestId: string) => {
-    const docRequestData = kycCompanyTemplate.DOC_REQUEST[0].data;
-
-    for (const rd of docRequestData.requestedDocuments) {
-        const fd = new FormData();
-        fd.append("documentName", rd.documentName);
-        fd.append("description", rd.description || "");
-        fd.append("type", rd.type);
-        fd.append("count", rd.count);
-        fd.append("isMandatory", String(rd.isMandatory));
-        
-        const res = await apiPostFormData<any>(
-            endPoints.DOCUMENT_REQUESTS.DOCUMENTS(documentRequestId), 
-            fd
-        );
-
-        if (rd.count === 'MULTIPLE' && (rd as any).children?.length > 0) {
-            const parentId = res.data.id;
-            for (const child of (rd as any).children) {
-                const childFd = new FormData();
-                childFd.append("documentName", child.documentName);
-                childFd.append("description", child.description || "");
-                childFd.append("type", rd.type);
-                childFd.append("count", 'SINGLE');
-                childFd.append("isMandatory", String(child.isMandatory));
-                childFd.append("parentId", parentId);
-                await apiPostFormData(endPoints.DOCUMENT_REQUESTS.DOCUMENTS(documentRequestId), childFd);
-            }
-        }
-    }
-  };
-
   if (companyWorkflows.length === 0) {
     return (
       <div className="p-16 text-center bg-gray-50/30 rounded-[2.5rem] border border-dashed border-gray-200 animate-in fade-in duration-700 flex flex-col items-center">
@@ -163,14 +151,14 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
         </p>
         <div className="flex gap-4">
           <Button 
-            onClick={() => createDocumentRequestMutation.mutate('TEMPLATE')} 
-            disabled={createDocumentRequestMutation.isPending}
+            onClick={() => setIsTemplateSelectorOpen(true)} 
+            disabled={isAnyActionLoading}
             className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all px-8 h-12 font-bold uppercase tracking-widest text-xs"
           >
-            {createDocumentRequestMutation.isPending ? 'Initializing...' : <><Plus size={18} className="mr-2" /> Initial from Template</>}
+            {createFromTemplateMutation.isPending ? 'Initializing...' : <><Plus size={18} className="mr-2" /> Initial from Template</>}
           </Button>
           <Button 
-            onClick={() => createDocumentRequestMutation.mutate('MANUAL')} 
+            onClick={() => createDocumentRequestMutation.mutate()} 
             disabled={isAnyActionLoading}
             variant="outline"
             className="rounded-xl border-gray-200 text-gray-500 hover:bg-white h-12 px-8 font-bold uppercase tracking-widest text-xs"
@@ -303,6 +291,12 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
               <div className="bg-gray-50/50 border-t border-gray-100 p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
                 {workflow.documentRequests.map(request => (
                   <div key={request._id} className="space-y-6">
+                    <UnassignedFiles 
+                      requestId={request.documentRequest._id}
+                      unassignedFiles={request.documentRequest.unassignedFiles || []}
+                      documentRequest={request.documentRequest}
+                    />
+
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100 text-indigo-400">
@@ -362,6 +356,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
                         </div>
                       )}
                     </div>
+                    
                   </div>
                 ))}
               </div>
@@ -378,6 +373,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
             setActiveRequestId(null);
           }}
           documentRequestId={activeRequestId}
+          moduleType="KYC"
         />
       )}
 
@@ -389,6 +385,14 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
         onCancel={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
         variant={confirmConfig.variant}
         confirmLabel="Proceed"
+      />
+
+      <TemplateSelector
+        isOpen={isTemplateSelectorOpen}
+        onClose={() => setIsTemplateSelectorOpen(false)}
+        onSelect={(template) => createFromTemplateMutation.mutate(template.id)}
+        moduleType="KYC"
+        title="Select KYC Template"
       />
     </div>
   );

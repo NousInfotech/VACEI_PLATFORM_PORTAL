@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Eye, Download, FileText, Upload, Trash2, Edit2, Check, X, Loader2, Plus, FileEdit } from "lucide-react";
-import { saveAs } from 'file-saver';
+import { downloadFile } from "../../../../../utils/downloadUtils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from 'sonner';
 import type { DocumentRequestDocumentSingle } from "./types";
@@ -124,7 +124,7 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
   }, [rejectionReason]);
 
   const handleDownload = (url: string, fileName: string) => {
-    saveAs(url, fileName);
+    downloadFile(url, fileName);
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, docId: string) => {

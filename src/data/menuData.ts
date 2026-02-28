@@ -7,7 +7,7 @@ import {
     Settings02Icon,
     UserGroupIcon as UsersIcon,
     Notification01Icon,
-    NoteEditIcon
+    NoteEditIcon,
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -115,6 +115,14 @@ export const menuData: MenuItem[] = [
         href: "/dashboard/compliance",
         section: "primary",
         description: "Platform-wide compliance deadlines",
+    },
+    {
+        slug: "template-management",
+        icon: NoteEditIcon,
+        label: "Template",
+        href: "/dashboard/template-management",
+        section: "primary",
+        description: "Manage doc, milestone & checklist templates",
     },
     // {
     //     slug: "settings",

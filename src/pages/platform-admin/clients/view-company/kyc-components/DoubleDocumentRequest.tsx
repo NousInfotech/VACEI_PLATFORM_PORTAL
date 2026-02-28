@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Eye, Download, Upload, Trash2, Edit2, Check, X, Loader2, Plus, FileEdit, FileUp } from "lucide-react";
-import { saveAs } from 'file-saver';
+import { downloadFile } from "../../../../../utils/downloadUtils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from 'sonner';
 import type { DocumentRequestDocumentMultiple } from "./types";
@@ -8,7 +8,6 @@ import Badge from "../../../../common/Badge";
 import { Button } from "../../../../../ui/Button";
 import { apiPostFormData, apiDelete, apiPatch } from "../../../../../config/base";
 import { endPoints } from "../../../../../config/endPoint";
-import AddRequestedDocumentModal from "./AddRequestedDocumentModal";
 import { ConfirmModal } from "../../../../messages/components/ConfirmModal";
 
 
@@ -25,9 +24,6 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null);
-
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
     title: string;
@@ -125,7 +121,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
   }, [rejectionReason]);
 
   const handleDownload = (url: string, fileName: string) => {
-    saveAs(url, fileName);
+    downloadFile(url, fileName);
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>, docId: string) => {
@@ -213,19 +209,6 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                   </Button>
                 )}
                 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedParentId(groupId!);
-                    setIsAddModalOpen(true);
-                  }}
-                  className="border-blue-300 hover:bg-blue-50 hover:text-blue-800 text-blue-700 h-10 px-4"
-                  title="Add Document Item"
-                >
-                  <Plus size={20} className="mr-1.5" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Add Item</span>
-                </Button>
 
                 <Button
                   size="sm"
@@ -464,15 +447,6 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
         );
       })}
 
-      <AddRequestedDocumentModal 
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          setSelectedParentId(null);
-        }}
-        documentRequestId={requestId}
-        parentId={selectedParentId}
-      />
 
       <ConfirmModal
         isOpen={confirmConfig.isOpen}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Users, ShieldCheck, Plus, Search, Building2, Lock } from 'lucide-react';
+import { X, Users, ShieldCheck, Plus, Search, Building2 } from 'lucide-react';
 import { Button } from '../../../../../ui/Button';
 import NumericInput from '../../../../../ui/NumericInput';
 import { apiGet, apiPost, apiPut } from '../../../../../config/base';

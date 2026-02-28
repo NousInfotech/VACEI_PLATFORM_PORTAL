@@ -23,6 +23,12 @@ export const transformBackendDocReq = (docReq: any): any => {
           template: d.templateFile ? { url: d.templateFile.url } : undefined
         };
       }),
+    unassignedFiles: (docReq.unassignedFiles || []).map((f: any) => ({
+        fileId: f.id,
+        fileName: f.file_name,
+        uploadDate: f.createdAt || new Date().toISOString(),
+        url: f.url
+    })),
     multipleDocuments: (docReq.requestedDocuments || [])
         .filter((d: any) => !d.parentId && d.count === 'MULTIPLE')
         .map((d: any) => ({

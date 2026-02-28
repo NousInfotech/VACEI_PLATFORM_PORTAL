@@ -28,6 +28,7 @@ import { StatusConfirmModal, StatusSuccessModal } from './components/StatusUpdat
 import CreateEngagementModal from './components/CreateEngagementModal';
 import { mockRequests as mockServiceRequests } from './serviceMockData';
 import { TemplatesProvider, useTemplates } from '../../context/ServicesContext';
+import { downloadFile } from '../../../../utils/downloadUtils';
 
 const USE_MOCK_DATA = false;
 
@@ -502,14 +503,14 @@ const ViewServiceRequestContent: React.FC = () => {
                         <Eye className="h-4 w-4" />
                         View
                       </a>
-                      <a 
-                        href={`${doc.url}${doc.url.includes('?') ? '&' : '?'}download=`} 
-                        download={doc.file_name}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all shadow-md shadow-primary/10"
+                      <Button 
+                        size="sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all shadow-md shadow-primary/10 h-auto"
+                        onClick={() => downloadFile(doc.url, doc.file_name)}
                       >
                         <Download className="h-4 w-4" />
                         Download
-                      </a>
+                      </Button>
                     </div>
                   </div>
                 ))}

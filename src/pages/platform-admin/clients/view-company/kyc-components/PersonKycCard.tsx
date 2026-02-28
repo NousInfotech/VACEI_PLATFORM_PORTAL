@@ -12,6 +12,7 @@ import { endPoints } from '../../../../../config/endPoint';
 import InvolvementKycModal from './InvolvementKycModal';
 import AddRequestedDocumentModal from './AddRequestedDocumentModal';
 import { ConfirmModal } from '../../../../messages/components/ConfirmModal';
+import UnassignedFiles from './UnassignedFiles';
 
 
 interface PersonKycCardProps {
@@ -215,6 +216,12 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
       {isExpanded && (
         <div className="bg-gray-50/50 border-t border-gray-100 p-6 animate-in slide-in-from-top-2 duration-300 space-y-4">
            
+           <UnassignedFiles 
+             requestId={request._id}
+             unassignedFiles={request.unassignedFiles || []}
+             documentRequest={request}
+           />
+
            {(request.documents?.length || 0) + (request.multipleDocuments?.length || 0) > 0 ? (
              <>
                <DocumentRequestSingle 

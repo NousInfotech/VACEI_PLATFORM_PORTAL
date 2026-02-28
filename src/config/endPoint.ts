@@ -140,6 +140,9 @@ export const endPoints = {
     DELETE: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}`,
     STATUS: (docId: string) => `/document-requests/requested-documents/${docId}/status`,
     UPDATE_STATUS: (requestId: string) => `/document-requests/${requestId}/status`,
+    ATTACH_FILES: (requestId: string, docId: string) => `/document-requests/${requestId}/documents/${docId}/attach`,
+    UNASSIGNED_FILE: (requestId: string, fileId: string) => `/document-requests/${requestId}/unassigned-files/${fileId}`,
+    FROM_TEMPLATE: '/document-requests/from-template',
   },
   INCORPORATION: {
     BASE: '/incorporation',
@@ -172,6 +175,17 @@ export const endPoints = {
     MARK_READ: (id: string) => `/notifications/read/${id}`,
     MARK_ALL_READ: '/notifications/read-all',
     PREFERENCES: '/notifications/preferences',
+  },
+
+  TEMPLATE: {
+    BASE: '/templates',
+    GET_ALL: '/templates',
+    GET_BY_ID: (id: string) => `/templates/${id}`,
+    CREATE: '/templates',
+    UPDATE: (id: string) => `/templates/${id}`,
+    DELETE: (id: string) => `/templates/${id}`,
+    HARD_DELETE: (id: string) => `/templates/${id}/hard`,
+    UPLOAD_FOLDER: '/templates/upload-folder',
   },
 
   QUICKBOOK: {

@@ -145,12 +145,18 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
             const docUrl = doc.url;
             if (docUrl) {
               const promise = fetch(docUrl)
-                .then(res => res.blob())
+                .then(res => {
+                  const contentType = res.headers.get('Content-Type');
+                  if (contentType && contentType.includes('text/html')) {
+                    throw new Error('Received HTML instead of file');
+                  }
+                  return res.blob();
+                })
                 .then(blob => {
                   const extension = docUrl.split('.').pop()?.split('?')[0] || 'pdf';
                   const docName = ('name' in doc ? (doc as any).name : (doc as any).label) || 'document';
                   const fileName = `${docName}.${extension}`;
-                   companyFolder?.file(fileName, blob);
+                  companyFolder?.file(fileName, blob);
                 })
                 .catch(err => console.error(`Failed to download ${'name' in doc ? (doc as any).name : (doc as any).label}`, err));
               downloadPromises.push(promise);

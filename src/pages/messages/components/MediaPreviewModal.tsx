@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Download, FileText } from 'lucide-react';
+import { downloadFile } from '../../../utils/downloadUtils';
 import type { Message } from '../types';
 
 interface MediaPreviewModalProps {
@@ -29,14 +30,13 @@ export const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({ message, o
         </div>
         
         <div className="flex items-center gap-2">
-          <a 
-            href={message.fileUrl} 
-            download={message.fileName}
+          <button 
+            onClick={() => downloadFile(message.fileUrl!, message.fileName || 'file')}
             className="p-2.5 hover:bg-white/10 rounded-full transition-colors text-white"
             title="Download"
           >
             <Download className="w-5 h-5" />
-          </a>
+          </button>
           <button 
             onClick={onClose}
             className="p-2.5 hover:bg-white/10 rounded-full transition-colors text-white"
@@ -64,14 +64,13 @@ export const MediaPreviewModal: React.FC<MediaPreviewModalProps> = ({ message, o
               <h3 className="text-xl font-medium text-gray-900">{message.fileName}</h3>
               <p className="text-gray-500 uppercase tracking-wide text-sm">{message.fileSize}</p>
             </div>
-            <a 
-              href={message.fileUrl} 
-              download={message.fileName}
+            <button 
+              onClick={() => downloadFile(message.fileUrl!, message.fileName || 'file')}
               className="mt-4 px-8 py-3 bg-primary text-white rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
             >
               <Download className="w-5 h-5" />
               Download Document
-            </a>
+            </button>
           </div>
         )}
       </div>
