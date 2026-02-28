@@ -81,7 +81,8 @@ export const notificationService = {
         try {
             const response = await apiGet<any>(endPoints.NOTIFICATION.UNREAD_COUNT);
             const data = response?.data ?? response;
-            return { count: data?.count ?? 0 };
+            const count = typeof data?.count === 'number' ? data.count : (data?.data?.count ?? 0);
+            return { count };
         } catch (error) {
             console.error('Error fetching unread count:', error);
             throw error;

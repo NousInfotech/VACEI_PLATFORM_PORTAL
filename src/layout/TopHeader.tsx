@@ -63,7 +63,7 @@ export default function TopHeader({
             setLatestNotifications(prev =>
                 prev.map(notif => (notif.id === id ? { ...notif, isRead: true } : notif))
             );
-            fetchUnreadCount();
+            setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (err) {
             console.error('Error marking as read:', err);
         }
@@ -184,7 +184,6 @@ export default function TopHeader({
                                     <div 
                                         key={notification.id}
                                         onClick={() => {
-                                            if (!notification.isRead) handleMarkAsRead(notification.id);
                                             if (notification.redirectUrl) navigate(notification.redirectUrl);
                                         }}
                                         className={`p-3 rounded-xl mb-1 cursor-pointer transition-all hover:bg-gray-50 flex gap-3 ${!notification.isRead ? 'bg-primary/5 border border-primary/10' : 'bg-white'}`}
@@ -203,6 +202,18 @@ export default function TopHeader({
                                                 {new Date(notification.createdAt).toLocaleString()}
                                             </span>
                                         </div>
+                                        {!notification.isRead && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMarkAsRead(notification.id);
+                                                }}
+                                                className="self-center shrink-0 text-[10px] font-bold uppercase tracking-widest text-primary hover:underline px-2 py-1 rounded-lg hover:bg-primary/5"
+                                            >
+                                                Mark as read
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             ) : (
