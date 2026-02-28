@@ -93,6 +93,14 @@ export const menuData: MenuItem[] = [
     //     description: "Chat with your team",
     // },
     {
+        slug: "notifications",
+        icon: Notification01Icon,
+        label: "Alerts & Notifications",
+        href: "/dashboard/notifications",
+        section: "primary",
+        description: "Important updates & reminders",
+    },
+    {
         slug: "notice-management",
         icon: Notification01Icon,
         label: "Notice Management",

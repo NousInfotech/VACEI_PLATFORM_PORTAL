@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../../lib/utils";
 import { ChevronDown, Search } from "lucide-react";
 
@@ -152,17 +153,6 @@ export const Dropdown = ({
     );
   };
 
-  const alignmentClasses = {
-    left: "left-0",
-    right: "right-0",
-    center: "left-1/2 -translate-x-1/2",
-  };
-
-  const sideClasses = {
-    bottom: "mt-2 top-full",
-    top: "mb-2 bottom-full",
-  };
-
   return (
     <div className={cn("relative text-left z-20 hover:z-[100] focus-within:z-[100]", fullWidth ? "w-full" : "inline-block", className)} ref={dropdownRef}>
       {/* Trigger */}
@@ -186,19 +176,30 @@ export const Dropdown = ({
         )}
       </div>
 
-      {/* Dropdown menu */}
-      <div
-        className={cn(
-          "absolute z-[999] origin-top rounded-2xl bg-white p-1.5 shadow-2xl ring-1 ring-black/5 focus:outline-none transition-all duration-300 ease-in-out",
-          fullWidth ? "w-full" : "w-64",
-          alignmentClasses[calculatedAlign],
-          sideClasses[calculatedSide],
-          isOpen
-            ? "scale-100 opacity-100 translate-y-0 pointer-events-auto"
-            : "scale-95 opacity-0 -translate-y-2 pointer-events-none",
-          contentClassName
-        )}
-      >
+      {/* Dropdown menu - use portal when open to avoid overflow/z-index issues */}
+      {isOpen && typeof document !== "undefined" && createPortal(
+        <div
+          className={cn(
+            "fixed z-[9999] origin-top rounded-2xl bg-white p-1.5 shadow-2xl ring-1 ring-black/5 focus:outline-none transition-all duration-300 ease-in-out min-w-[200px]",
+            fullWidth ? "w-full" : "w-64",
+            contentClassName
+          )}
+          style={{
+            top: dropdownRef.current
+              ? calculatedSide === "bottom"
+                ? dropdownRef.current.getBoundingClientRect().bottom + 8
+                : dropdownRef.current.getBoundingClientRect().top - 8
+              : 0,
+            left: dropdownRef.current
+              ? calculatedAlign === "right"
+                ? dropdownRef.current.getBoundingClientRect().right - (fullWidth ? dropdownRef.current.getBoundingClientRect().width : 256)
+                : calculatedAlign === "center"
+                  ? dropdownRef.current.getBoundingClientRect().left + dropdownRef.current.getBoundingClientRect().width / 2 - (fullWidth ? dropdownRef.current.getBoundingClientRect().width / 2 : 128)
+                  : dropdownRef.current.getBoundingClientRect().left
+              : 0,
+            transform: calculatedSide === "top" ? "translateY(-100%)" : "none",
+          }}
+        >
         {searchable && !children && (
           <div className="p-2 pb-1.5 border-b border-gray-100/50 mb-1">
             <div className="relative">
@@ -265,7 +266,9 @@ export const Dropdown = ({
             )}
             </div>
         )}
-      </div>
+      </div>,
+      document.body
+      )}
     </div>
   );
 };

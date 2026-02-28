@@ -40,7 +40,8 @@ export default function TopHeader({
     const fetchUnreadCount = useCallback(async () => {
         try {
             const response = await notificationService.fetchUnreadCount();
-            setUnreadCount(response.count);
+            const count = typeof response?.count === 'number' ? response.count : 0;
+            setUnreadCount(count);
         } catch (err) {
             console.error('Error fetching unread count:', err);
         }
@@ -57,13 +58,33 @@ export default function TopHeader({
         fetchUnreadCount();
     }, [fetchUnreadCount]);
 
+    // When user navigates (e.g. go back) or returns to tab, update badge number
+    useEffect(() => {
+        fetchUnreadCount();
+    }, [pathname, fetchUnreadCount]);
+
+    useEffect(() => {
+        const onFocus = () => fetchUnreadCount();
+        window.addEventListener('focus', onFocus);
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') fetchUnreadCount();
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+    }, [fetchUnreadCount]);
+
     const handleMarkAsRead = async (id: string) => {
         try {
             await notificationService.markAsRead(id);
             setLatestNotifications(prev =>
                 prev.map(notif => (notif.id === id ? { ...notif, isRead: true } : notif))
             );
-            fetchUnreadCount();
+            setUnreadCount(prev => Math.max(0, prev - 1));
+            await fetchLatestNotifications();
+            await fetchUnreadCount();
         } catch (err) {
             console.error('Error marking as read:', err);
         }
@@ -74,6 +95,8 @@ export default function TopHeader({
             await notificationService.markAllAsRead();
             setLatestNotifications(prev => prev.map(notif => ({ ...notif, isRead: true })));
             setUnreadCount(0);
+            await fetchLatestNotifications();
+            await fetchUnreadCount();
         } catch (err) {
             console.error('Error marking all as read:', err);
         }
@@ -154,11 +177,11 @@ export default function TopHeader({
                     align="right"
                     contentClassName="w-80 overflow-hidden"
                     trigger={
-                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl relative" onClick={fetchLatestNotifications}>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl relative" onClick={() => { fetchLatestNotifications(); fetchUnreadCount(); }}>
                             <Bell className="h-5 w-5 text-gray-700" />
                             {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white font-bold">
-                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white font-bold leading-none">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                             )}
                         </Button>
@@ -184,7 +207,6 @@ export default function TopHeader({
                                     <div 
                                         key={notification.id}
                                         onClick={() => {
-                                            if (!notification.isRead) handleMarkAsRead(notification.id);
                                             if (notification.redirectUrl) navigate(notification.redirectUrl);
                                         }}
                                         className={`p-3 rounded-xl mb-1 cursor-pointer transition-all hover:bg-gray-50 flex gap-3 ${!notification.isRead ? 'bg-primary/5 border border-primary/10' : 'bg-white'}`}
@@ -203,6 +225,18 @@ export default function TopHeader({
                                                 {new Date(notification.createdAt).toLocaleString()}
                                             </span>
                                         </div>
+                                        {!notification.isRead && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleMarkAsRead(notification.id);
+                                                }}
+                                                className="self-center shrink-0 text-[10px] font-bold uppercase tracking-widest text-primary hover:underline px-2 py-1 rounded-lg hover:bg-primary/5"
+                                            >
+                                                Mark as read
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             ) : (

@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { Search, List, LayoutGrid, Download, ArrowLeft, Filter, ChevronDown, Menu, FolderPlus, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '../../../../ui/Button';
 import { Input } from '../../../../ui/input';
 import { cn } from '../../../../lib/utils';
@@ -36,13 +37,15 @@ export const Toolbar: React.FC = () => {
 
   const handleCreateFolder = async () => {
     const name = prompt('Enter folder name:');
-    if (name) {
-      try {
-        await createFolder(name);
-      } catch (err) {
-        alert('Failed to create folder');
-        console.error(err);
-      }
+    if (!name?.trim()) return;
+    try {
+      await createFolder(name.trim());
+      toast.success('Folder created');
+    } catch (err: unknown) {
+      const res = err && typeof err === 'object' ? (err as { message?: string; details?: unknown }) : null;
+      const msg = res?.message || (res?.details ? JSON.stringify(res.details) : null) || 'Failed to create folder';
+      toast.error(msg);
+      console.error(err);
     }
   };
 

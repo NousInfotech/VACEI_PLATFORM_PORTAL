@@ -60,18 +60,16 @@ export const notificationService = {
     fetchNotifications: async (filters?: { page?: number; limit?: number; isRead?: boolean }) => {
         try {
             const response = await apiGet<any>(endPoints.NOTIFICATION.BASE, filters);
-
-            let mappedItems = response.data;
-            if (Array.isArray(mappedItems)) {
-                mappedItems = mappedItems.map(notif => ({
-                    ...notif,
-                    redirectUrl: getPortalRedirectUrl(notif.redirectUrl)
-                }));
-            }
+            const rawData = response?.data ?? response;
+            const rawItems = Array.isArray(rawData) ? rawData : (rawData?.items ?? []);
+            const mappedItems = rawItems.map((notif: Notification) => ({
+                ...notif,
+                redirectUrl: getPortalRedirectUrl(notif.redirectUrl ?? null)
+            }));
 
             return {
                 items: mappedItems,
-                meta: response.meta
+                meta: rawData?.meta ?? response?.meta ?? { total: 0, page: 1, limit: 10, totalPages: 0 }
             } as FetchNotificationsResponse;
         } catch (error) {
             console.error('Error fetching notifications:', error);
@@ -82,7 +80,9 @@ export const notificationService = {
     fetchUnreadCount: async () => {
         try {
             const response = await apiGet<any>(endPoints.NOTIFICATION.UNREAD_COUNT);
-            return response.data as { count: number };
+            const data = response?.data ?? response;
+            const count = typeof data?.count === 'number' ? data.count : (data?.data?.count ?? 0);
+            return { count };
         } catch (error) {
             console.error('Error fetching unread count:', error);
             throw error;
