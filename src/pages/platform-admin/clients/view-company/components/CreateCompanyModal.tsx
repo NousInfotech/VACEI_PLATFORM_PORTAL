@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash, Search } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash, Search, Lock, ChevronDown } from 'lucide-react';
 import { Button } from '../../../../../ui/Button';
 import NumericInput from '../../../../../ui/NumericInput';
 import { apiGet, apiPost, apiPut } from '../../../../../config/base';
@@ -13,12 +13,19 @@ interface CreateCompanyModalProps {
   clientId: string;
 }
 
+const industries = [
+  'Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail',
+  'Energy', 'Construction', 'Education', 'Transportation', 'Real Estate',
+  'Consulting', 'Other',
+];
+
 const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
   clientId,
 }) => {
+  const [industrySelection, setIndustrySelection] = useState<string>('');
   const [mode, setMode] = useState<'new' | 'existing'>('new');
   const [nonPrimaryCompanies, setNonPrimaryCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
@@ -32,84 +39,108 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     registrationNumber: '',
   });
 
-  const [shareClasses, setShareClasses] = useState({
-    A: 0,
-    B: 0,
-    C: 0,
-    ORDINARY: 0,
-  });
-
+  const [shareClasses, setShareClasses] = useState({ A: 0, B: 0, C: 0 });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  // Auto-calculate Ordinary = Issued - (A + B + C)
+  const ordinaryShares = useMemo(() => {
+    const named = shareClasses.A + shareClasses.B + shareClasses.C;
+    const result = formData.issuedShares - named;
+    return result >= 0 ? result : 0;
+  }, [formData.issuedShares, shareClasses]);
+
+  // Real-time validation errors
+  const shareErrors = useMemo(() => {
+    const errors: Record<string, string> = {};
+    const namedSum = shareClasses.A + shareClasses.B + shareClasses.C;
+
+    if (formData.issuedShares > formData.authorizedShares && formData.authorizedShares > 0) {
+      errors.issuedShares = `Issued shares (${formData.issuedShares}) cannot exceed authorized shares (${formData.authorizedShares})`;
+    }
+    if (namedSum > formData.issuedShares && formData.issuedShares > 0) {
+      errors.shareClasses = `Sum of share classes (${namedSum}) exceeds issued shares (${formData.issuedShares}). Reduce Class A, B, or C.`;
+    }
+    return errors;
+  }, [formData.authorizedShares, formData.issuedShares, shareClasses]);
+
+  const hasErrors = Object.keys(shareErrors).length > 0;
 
   React.useEffect(() => {
     if (isOpen && mode === 'existing') {
-        fetchNonPrimaryCompanies();
+      fetchNonPrimaryCompanies();
     }
   }, [isOpen, mode]);
 
   const fetchNonPrimaryCompanies = async () => {
     try {
-        const res = await apiGet<{ data: Company[] }>(endPoints.COMPANY.GET_ALL);
-        // Filter for NON_PRIMARY companies that are NOT already primary for this client (or just all non-primary)
-        const filtered = res.data.filter(c => c.companyType === 'NON_PRIMARY');
-        setNonPrimaryCompanies(filtered);
+      const res = await apiGet<{ data: Company[] }>(endPoints.COMPANY.GET_ALL);
+      const filtered = res.data.filter(c => c.companyType === 'NON_PRIMARY');
+      setNonPrimaryCompanies(filtered);
     } catch (err) {
-        console.error('Failed to fetch non-primary companies:', err);
+      console.error('Failed to fetch non-primary companies:', err);
     }
   };
 
   const handleSelectExisting = (companyId: string) => {
     const company = nonPrimaryCompanies.find(c => c.id === companyId);
     if (company) {
-        setSelectedCompanyId(companyId);
-        setFormData({
-            ...formData,
-            name: company.name || '',
-            registrationNumber: company.registrationNumber || '',
-            address: company.address || '',
-            industry: company.industry || [''],
-            summary: company.summary || '',
-            authorizedShares: company.authorizedShares || 0,
-            issuedShares: company.issuedShares || 0,
-        });
+      setSelectedCompanyId(companyId);
+      const existingA = company.shareClasses?.find(s => s.class === 'A' || s.class === 'CLASS_A')?.issued || 0;
+      const existingB = company.shareClasses?.find(s => s.class === 'B' || s.class === 'CLASS_B')?.issued || 0;
+      const existingC = company.shareClasses?.find(s => s.class === 'C' || s.class === 'CLASS_C')?.issued || 0;
+      setFormData({
+        ...formData,
+        name: company.name || '',
+        registrationNumber: company.registrationNumber || '',
+        address: company.address || '',
+        industry: company.industry || [''],
+        summary: company.summary || '',
+        authorizedShares: company.authorizedShares || 0,
+        issuedShares: company.issuedShares || 0,
+      });
+      setShareClasses({ A: existingA, B: existingB, C: existingC });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasErrors) return;
     setIsSubmitting(true);
+    setSubmitError('');
     try {
       const shareDetails = [
         { class: 'A', issued: shareClasses.A },
         { class: 'B', issued: shareClasses.B },
         { class: 'C', issued: shareClasses.C },
-        { class: 'ORDINARY', issued: shareClasses.ORDINARY },
+        { class: 'ORDINARY', issued: ordinaryShares },
       ].filter(s => s.issued > 0);
 
       if (mode === 'new') {
-          await apiPost(endPoints.COMPANY.CREATE, {
-            ...formData,
-            clientId,
-            companyType: 'PRIMARY',
-            incorporationStatus: true,
-            industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
-            shareDetails,
-          });
+        await apiPost(endPoints.COMPANY.CREATE, {
+          ...formData,
+          clientId,
+          companyType: 'PRIMARY',
+          incorporationStatus: true,
+          industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
+          shareDetails,
+        });
       } else {
-          await apiPut(endPoints.COMPANY.UPDATE(selectedCompanyId), {
-            ...formData,
-            clientId, // Associate with current client
-            companyType: 'PRIMARY', // Convert to primary
-            incorporationStatus: true,
-            industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
-            shareDetails,
-          });
+        await apiPut(endPoints.COMPANY.UPDATE(selectedCompanyId), {
+          ...formData,
+          clientId,
+          companyType: 'PRIMARY',
+          incorporationStatus: true,
+          industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
+          shareDetails,
+        });
       }
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create company:', err);
-      alert('Failed to create company');
+      const msg = err?.response?.data?.message || err?.message || 'Failed to create company';
+      setSubmitError(Array.isArray(msg) ? msg.join(', ') : msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -119,8 +150,8 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div 
-        className="bg-white w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-300"
+      <div
+        className="bg-white w-full max-w-2xl max-h-[90vh] flex flex-col rounded-[32px] shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-8 py-6 border-b border-gray-50 bg-gray-50/30">
@@ -139,41 +170,41 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         </div>
 
         <div className="flex border-b border-gray-100 bg-gray-50/50 px-8 py-2 gap-4">
-            <button
-                type="button"
-                onClick={() => { setMode('new'); setSelectedCompanyId(''); }}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${mode === 'new' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-            >
-                New Company
-            </button>
-            <button
-                type="button"
-                onClick={() => setMode('existing')}
-                className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${mode === 'existing' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-            >
-                Existing (Non-Primary)
-            </button>
+          <button
+            type="button"
+            onClick={() => { setMode('new'); setSelectedCompanyId(''); }}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${mode === 'new' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            New Company
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('existing')}
+            className={`px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 ${mode === 'existing' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+          >
+            Existing (Non-Primary)
+          </button>
         </div>
 
         <form id="create-company-form" onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
           {mode === 'existing' && (
-              <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                    <Search size={14} /> Select Non-Primary Company
-                  </label>
-                  <select
-                    value={selectedCompanyId}
-                    onChange={(e) => handleSelectExisting(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
-                    required={mode === 'existing'}
-                  >
-                    <option value="">-- Choose a company --</option>
-                    {nonPrimaryCompanies.map(c => (
-                        <option key={c.id} value={c.id}>{c.name} ({c.registrationNumber || 'No Reg.'})</option>
-                    ))}
-                  </select>
-                  <p className="text-[10px] text-gray-400 font-medium italic">Selecting a company will pre-fill its basic details.</p>
-              </div>
+            <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <Search size={14} /> Select Non-Primary Company
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={(e) => handleSelectExisting(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                required={mode === 'existing'}
+              >
+                <option value="">-- Choose a company --</option>
+                {nonPrimaryCompanies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.registrationNumber || 'No Reg.'})</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-gray-400 font-medium italic">Selecting a company will pre-fill its basic details.</p>
+            </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -223,12 +254,33 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <Globe size={14} /> Industry
               </label>
-              <input
-                type="text"
-                value={formData.industry[0] || ''}
-                onChange={(e) => setFormData({ ...formData, industry: [e.target.value] })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
-              />
+              <div className="relative">
+                <select
+                  value={industrySelection}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setIndustrySelection(val);
+                    if (val !== 'Other') setFormData({ ...formData, industry: [val] });
+                    else setFormData({ ...formData, industry: [''] });
+                  }}
+                  className="w-full appearance-none px-4 py-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  <option value="">-- Select Industry --</option>
+                  {industries.map(ind => (
+                    <option key={ind} value={ind}>{ind}</option>
+                  ))}
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+              {industrySelection === 'Other' && (
+                <input
+                  type="text"
+                  value={formData.industry[0] || ''}
+                  onChange={(e) => setFormData({ ...formData, industry: [e.target.value] })}
+                  placeholder="Enter your industry..."
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -253,11 +305,17 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                 step={1}
                 min={0}
               />
+              {shareErrors.issuedShares && (
+                <p className="text-xs text-red-500 font-medium mt-1">{shareErrors.issuedShares}</p>
+              )}
             </div>
 
             {/* Share Classes Breakdown */}
             <div className="md:col-span-2 p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
-              <h4 className="text-xs font-bold text-gray-900 border-b-2 border-primary pb-1 uppercase tracking-widest inline-block">Share Class Breakdown</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-gray-900 border-b-2 border-primary pb-1 uppercase tracking-widest inline-block">Share Class Breakdown</h4>
+                <p className="text-[10px] text-gray-400 font-medium italic">Ordinary = Issued − (A + B + C)</p>
+              </div>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class A</label>
@@ -287,15 +345,19 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ordinary</label>
-                  <NumericInput
-                    value={shareClasses.ORDINARY}
-                    onChange={(val) => setShareClasses({ ...shareClasses, ORDINARY: val })}
-                    step={1}
-                    min={0}
-                  />
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-1">
+                    Ordinary <Lock size={10} className="text-gray-400" />
+                  </label>
+                  <div className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 cursor-not-allowed select-none">
+                    {ordinaryShares.toLocaleString()}
+                  </div>
                 </div>
               </div>
+              {shareErrors.shareClasses && (
+                <p className="text-xs text-red-500 font-medium bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  ⚠️ {shareErrors.shareClasses}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2 space-y-1.5">
@@ -310,6 +372,12 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               />
             </div>
           </div>
+
+          {submitError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">
+              ⚠️ {submitError}
+            </div>
+          )}
         </form>
 
         <div className="px-8 py-6 bg-gray-50/30 border-t border-gray-50 flex items-center justify-end gap-3">
@@ -323,7 +391,7 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           <Button
             form="create-company-form"
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || hasErrors}
             className="px-8 py-2 rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : mode === 'new' ? 'Create Company' : 'Onboard Company'}

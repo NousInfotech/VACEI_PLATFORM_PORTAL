@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Users, Eye, Calendar, Plus } from 'lucide-react';
 import { Button } from '../../../ui/Button';
@@ -15,9 +15,14 @@ import Dropdown from '../../common/Dropdown';
 
 const Clients: React.FC = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [search, setSearch] = useState('');
     const [selectedDateRange, setSelectedDateRange] = useState('All time');
-    const [page, setPage] = useState(1);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const setPage = (updater: number | ((p: number) => number)) => {
+        const newPage = typeof updater === 'function' ? updater(page) : updater;
+        setSearchParams({ page: String(newPage) });
+    };
     const limit = 10;
 
     const { data: realData, isLoading: isRealLoading } = useQuery<ClientResponse>({

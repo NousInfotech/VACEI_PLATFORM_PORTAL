@@ -101,17 +101,6 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
 
   const isAnyActionLoading = uploadMutation.isPending || clearMutation.isPending || deleteMutation.isPending || updateMutation.isPending;
 
-  const formatDateTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "N/A";
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ docId, status, reason }: { docId: string; status: string; reason?: string }) => 
@@ -222,22 +211,9 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                     <Badge variant="outline" className="text-gray-600 border-gray-300 bg-gray-50 capitalize text-[10px] p-2 rounded-[10px]">
                       {isTemplate ? "Template" : "Direct"}
                     </Badge>
-                    <Badge variant="outline" className={doc.status?.toLowerCase() === 'rejected' ? "text-rose-600 border-rose-300 bg-rose-50 text-[10px] p-2 rounded-[10px]" : "text-gray-600 border-gray-300 text-[10px] p-2 rounded-[10px]"}>
-                      {doc.status?.toLowerCase() === 'verified' ? 'Approved' : doc.status?.toLowerCase() === 'rejected' ? 'Rejected' : doc.url ? 'Submitted' : 'Pending'}
+                    <Badge variant="outline" className={doc.status?.toLowerCase() === 'rejected' ? "text-rose-600 border-rose-300 bg-rose-50 text-[10px] p-2 rounded-[10px]" : doc.status?.toLowerCase() === 'accepted' || doc.status?.toLowerCase() === 'verified' ? "text-green-700 border-green-300 bg-green-50 text-[10px] p-2 rounded-[10px]" : "text-gray-600 border-gray-300 text-[10px] p-2 rounded-[10px]"}>
+                      {doc.status?.toLowerCase() === 'verified' ? 'Approved' : doc.status?.toLowerCase() === 'accepted' ? 'Accepted' : doc.status?.toLowerCase() === 'rejected' ? 'Rejected' : doc.url ? 'Submitted' : 'Pending'}
                     </Badge>
-                    {doc.url && doc.uploadedAt && (
-                      <div className="flex flex-col">
-                        <span className="text-xs text-gray-500">
-                          Uploaded: {formatDateTime(doc.uploadedAt)}
-                        </span>
-                        {doc.uploadedFileName && (
-                          <span className="text-[10px] font-medium text-primary mt-0.5 flex items-center gap-1">
-                            <FileEdit size={12} />
-                            {doc.uploadedFileName}
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
                   {doc.status?.toLowerCase() === 'rejected' && doc.rejectionReason && (
                     <div className="mt-2 text-xs bg-rose-50 text-rose-700 p-2 rounded-lg border border-rose-100 flex items-start gap-2">
@@ -309,22 +285,20 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                       <Download size={20} />
                     </Button>
                     
-                    {doc.status?.toLowerCase() !== 'verified' && (
+                    {doc.status?.toLowerCase() !== 'verified' && doc.status?.toLowerCase() !== 'accepted' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setConfirmConfig({
-                          isOpen: true,
-                          title: "Approve Document",
-                          message: `Are you sure you want to approve "${doc.name}"?`,
-                          onConfirm: () => updateStatusMutation.mutate({ docId, status: 'ACCEPTED' }),
-                          variant: 'primary'
-                        })}
-                        disabled={isAnyActionLoading}
+                        onClick={() => updateStatusMutation.mutate({ docId, status: 'ACCEPTED' })}
+                        disabled={isAnyActionLoading || updateStatusMutation.isPending}
                         className="border-green-300 text-green-600 hover:bg-green-50 h-10 w-10 p-0"
                         title="Accept Document"
                       >
-                        <Check size={20} />
+                        {updateStatusMutation.isPending ? (
+                          <span className="text-[9px] font-bold">...</span>
+                        ) : (
+                          <Check size={20} />
+                        )}
                       </Button>
                     )}
 

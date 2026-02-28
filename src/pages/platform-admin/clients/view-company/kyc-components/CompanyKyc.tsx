@@ -27,7 +27,6 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [expandedWorkflows, setExpandedWorkflows] = useState<Record<string, boolean>>({});
-  const [openDocStatusId, setOpenDocStatusId] = useState<string | null>(null);
 
   const toggleWorkflow = (id: string) => {
     setExpandedWorkflows(prev => ({ ...prev, [id]: !prev[id] }));
@@ -314,34 +313,16 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
                         </h4>
                       </div>
                       <div className="flex items-center gap-2">
-                        {/* Document Request Status Dropdown */}
-                        <div className="relative">
-                          <button
-                            onClick={() => setOpenDocStatusId(openDocStatusId === request._id ? null : request._id)}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${docStatusBadgeClass(request.documentRequest.status || 'DRAFT')}`}
-                          >
-                            <span>{request.documentRequest.status || 'DRAFT'}</span>
-                            <ChevronDown size={10} />
-                          </button>
-                          {openDocStatusId === request._id && (
-                            <div className="absolute right-0 top-8 flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[130px] overflow-hidden">
-                              {docRequestStatuses.map(s => (
-                                <button
-                                  key={s}
-                                  onClick={() => {
-                                    updateDocRequestStatusMutation.mutate({ requestId: request.documentRequest._id, status: s });
-                                    setOpenDocStatusId(null);
-                                  }}
-                                  className={`px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors ${
-                                    (request.documentRequest.status || 'DRAFT') === s ? 'text-primary font-bold bg-primary/5' : 'text-gray-700'
-                                  }`}
-                                >
-                                  {s}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        {/* Document Request Status */}
+                        <select
+                          value={request.documentRequest.status || 'DRAFT'}
+                          onChange={(e) => updateDocRequestStatusMutation.mutate({ requestId: request.documentRequest._id, status: e.target.value })}
+                          className={`appearance-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border outline-none cursor-pointer transition-all ${docStatusBadgeClass(request.documentRequest.status || 'DRAFT')}`}
+                        >
+                          {docRequestStatuses.map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
                         <Button
                           size="sm"
                           variant="outline"

@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { X, Users, ShieldCheck, Plus, Search, Building2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Users, ShieldCheck, Plus, Search, Building2, Lock } from 'lucide-react';
 import { Button } from '../../../../../ui/Button';
+import NumericInput from '../../../../../ui/NumericInput';
 import { apiGet, apiPost, apiPut } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import type { CompanyInvolvement, RepresentationRole } from '../../../../../types/company';
+
+interface ShareClassItem {
+  class: string;
+  issued: number;
+}
 
 interface InvolvementModalProps {
   isOpen: boolean;
@@ -13,6 +19,7 @@ interface InvolvementModalProps {
   involvement?: CompanyInvolvement | null;
   mode: 'add' | 'edit';
   existingInvolvements?: CompanyInvolvement[];
+  shareClasses?: ShareClassItem[];
 }
 
 interface Person {
@@ -39,8 +46,10 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
   involvement,
   mode,
   existingInvolvements = [],
+  shareClasses = [],
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [persons, setPersons] = useState<Person[]>([]);
   const [companies, setCompanies] = useState<MiniCompany[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,6 +72,37 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
     companyRegNumber: '',
     companyAddress: '',
   });
+
+  // Helper: get the company's cap for a share class
+  const getCompanyCap = (cls: string) =>
+    shareClasses.find(
+      (sc) => sc.class === cls || sc.class === `CLASS_${cls}` || sc.class === cls.toUpperCase()
+    )?.issued ?? 0;
+
+  // Helper: how much of a class is already used by OTHER involvements
+  const getUsedByOthers = (cls: keyof Pick<CompanyInvolvement, 'classA' | 'classB' | 'classC' | 'ordinary'>) =>
+    existingInvolvements
+      .filter((inv) => inv.id !== involvement?.id)
+      .reduce((sum, inv) => sum + (inv[cls] || 0), 0);
+
+  // Compute max remaining per class
+  const maxA = Math.max(0, getCompanyCap('A') - getUsedByOthers('classA'));
+  const maxB = Math.max(0, getCompanyCap('B') - getUsedByOthers('classB'));
+  const maxC = Math.max(0, getCompanyCap('C') - getUsedByOthers('classC'));
+  const maxOrdinary = Math.max(0, getCompanyCap('ORDINARY') - getUsedByOthers('ordinary'));
+
+  // Real-time validation errors (only when SHAREHOLDER role selected)
+  const shareErrors = useMemo(() => {
+    if (!formData.role.includes('SHAREHOLDER')) return {};
+    const errors: Record<string, string> = {};
+    if (formData.classA > maxA) errors.classA = `Max available: ${maxA.toLocaleString()} (company total: ${getCompanyCap('A').toLocaleString()})`;
+    if (formData.classB > maxB) errors.classB = `Max available: ${maxB.toLocaleString()} (company total: ${getCompanyCap('B').toLocaleString()})`;
+    if (formData.classC > maxC) errors.classC = `Max available: ${maxC.toLocaleString()} (company total: ${getCompanyCap('C').toLocaleString()})`;
+    if (formData.ordinary > maxOrdinary) errors.ordinary = `Max available: ${maxOrdinary.toLocaleString()} (company total: ${getCompanyCap('ORDINARY').toLocaleString()})`;
+    return errors;
+  }, [formData.role, formData.classA, formData.classB, formData.classC, formData.ordinary, maxA, maxB, maxC, maxOrdinary]);
+
+  const hasShareErrors = Object.keys(shareErrors).length > 0;
 
   useEffect(() => {
     if (isOpen) {
@@ -88,6 +128,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
       } else {
         resetForm();
       }
+      setSubmitError('');
     }
   }, [isOpen, mode, involvement]);
 
@@ -103,7 +144,6 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
   const fetchCompanies = async () => {
     try {
       const response = await apiGet<{ data: MiniCompany[] }>(endPoints.COMPANY.GET_ALL);
-      // Filter out the current company if needed, but usually fine
       setCompanies(response.data || []);
     } catch (err) {
       console.error('Failed to fetch companies:', err);
@@ -147,8 +187,10 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
       alert('Please select at least one role');
       return;
     }
+    if (hasShareErrors) return;
 
     setIsSubmitting(true);
+    setSubmitError('');
     try {
       let personId = partyType === 'PERSON' ? selectedPersonId : undefined;
       let holderCompanyId = partyType === 'COMPANY' ? selectedHolderCompanyId : undefined;
@@ -204,9 +246,10 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
 
       onSuccess();
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save involvement:', err);
-      alert('Failed to save involvement');
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save involvement';
+      setSubmitError(Array.isArray(msg) ? msg.join(', ') : msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +321,6 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
           {mode === 'add' && (
             <div className="space-y-4">
               {partyType === 'PERSON' ? (
-                // Individual Selection
                 !showPersonForm ? (
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -367,7 +409,6 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                   </div>
                 )
               ) : (
-                // Company Selection
                 !showCompanyForm ? (
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -459,6 +500,65 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
             </div>
           )}
 
+          {/* Edit mode: show party info as read-only fields */}
+          {mode === 'edit' && involvement && (
+            <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 space-y-4 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${involvement.holderCompany ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'}`}>
+                  {involvement.holderCompany ? <Building2 size={16} /> : <Users size={16} />}
+                </div>
+                <h4 className="text-xs font-bold text-gray-700 uppercase tracking-widest">
+                  {involvement.holderCompany ? 'Company' : 'Individual'} Details
+                </h4>
+                <span className="ml-auto text-[9px] text-gray-400 font-medium italic">Read-only</span>
+              </div>
+
+              {involvement.holderCompany ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Company Name</label>
+                    <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+                      {involvement.holderCompany.name || '—'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Registration Number</label>
+                    <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+                      {involvement.holderCompany.registrationNumber || '—'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Address</label>
+                    <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+                      {involvement.holderCompany.address || '—'}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Full Name</label>
+                    <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+                      {involvement.person?.name || '—'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nationality</label>
+                    <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+                      {involvement.person?.nationality || '—'}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Address</label>
+                    <div className="px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
+                      {involvement.person?.address || '—'}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Roles Selection */}
           <div className="space-y-3">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
@@ -482,50 +582,99 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
             </div>
           </div>
 
-          {/* Share Counts (only if shareholder) */}
+          {/* Share Allocation (only if SHAREHOLDER role selected) */}
           {formData.role.includes('SHAREHOLDER') && (
             <div className="space-y-4 pt-2 border-t border-gray-50">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                <Plus size={14} /> Share Allocation
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                  <Plus size={14} /> Share Allocation
+                </label>
+                <p className="text-[10px] text-gray-400 font-medium italic">Cannot exceed company's remaining class capacity</p>
+              </div>
+
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Class A */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class A</label>
-                  <input
-                    type="number"
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class A</label>
+                    <span className="text-[9px] text-gray-400 font-medium">max {maxA.toLocaleString()}</span>
+                  </div>
+                  <NumericInput
                     value={formData.classA}
-                    onChange={(e) => setFormData({ ...formData, classA: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setFormData({ ...formData, classA: val })}
+                    step={1}
+                    min={0}
                   />
+                  {shareErrors.classA && (
+                    <p className="text-[10px] text-red-500 font-medium leading-tight">{shareErrors.classA}</p>
+                  )}
                 </div>
+
+                {/* Class B */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class B</label>
-                  <input
-                    type="number"
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class B</label>
+                    <span className="text-[9px] text-gray-400 font-medium">max {maxB.toLocaleString()}</span>
+                  </div>
+                  <NumericInput
                     value={formData.classB}
-                    onChange={(e) => setFormData({ ...formData, classB: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setFormData({ ...formData, classB: val })}
+                    step={1}
+                    min={0}
                   />
+                  {shareErrors.classB && (
+                    <p className="text-[10px] text-red-500 font-medium leading-tight">{shareErrors.classB}</p>
+                  )}
                 </div>
+
+                {/* Class C */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class C</label>
-                  <input
-                    type="number"
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Class C</label>
+                    <span className="text-[9px] text-gray-400 font-medium">max {maxC.toLocaleString()}</span>
+                  </div>
+                  <NumericInput
                     value={formData.classC}
-                    onChange={(e) => setFormData({ ...formData, classC: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setFormData({ ...formData, classC: val })}
+                    step={1}
+                    min={0}
                   />
+                  {shareErrors.classC && (
+                    <p className="text-[10px] text-red-500 font-medium leading-tight">{shareErrors.classC}</p>
+                  )}
                 </div>
+
+                {/* Ordinary */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ordinary</label>
-                  <input
-                    type="number"
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ordinary</label>
+                    <span className="text-[9px] text-gray-400 font-medium">max {maxOrdinary.toLocaleString()}</span>
+                  </div>
+                  <NumericInput
                     value={formData.ordinary}
-                    onChange={(e) => setFormData({ ...formData, ordinary: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                    onChange={(val) => setFormData({ ...formData, ordinary: val })}
+                    step={1}
+                    min={0}
                   />
+                  {shareErrors.ordinary && (
+                    <p className="text-[10px] text-red-500 font-medium leading-tight">{shareErrors.ordinary}</p>
+                  )}
                 </div>
               </div>
+
+              {/* Total summary */}
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total allocated:</span>
+                <span className="text-xs font-bold text-primary">
+                  {((formData.classA || 0) + (formData.classB || 0) + (formData.classC || 0) + (formData.ordinary || 0)).toLocaleString()} shares
+                </span>
+              </div>
+            </div>
+          )}
+
+          {submitError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium">
+              ⚠️ {submitError}
             </div>
           )}
         </form>
@@ -541,7 +690,8 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
           <Button
             onClick={handleSubmit}
             disabled={
-              isSubmitting || 
+              isSubmitting ||
+              hasShareErrors ||
               (mode === 'add' && (
                 (partyType === 'PERSON' && !selectedPersonId && !showPersonForm) ||
                 (partyType === 'COMPANY' && !selectedHolderCompanyId && !showCompanyForm)

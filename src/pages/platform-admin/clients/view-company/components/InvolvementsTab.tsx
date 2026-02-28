@@ -264,6 +264,7 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                 involvement={selectedInvolvement}
                 mode={modalMode}
                 existingInvolvements={company.involvements}
+                shareClasses={company.shareClasses || []}
             />
         </div>
     );
