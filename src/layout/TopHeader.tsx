@@ -207,7 +207,11 @@ export default function TopHeader({
                                     <div 
                                         key={notification.id}
                                         onClick={() => {
-                                            if (notification.redirectUrl) navigate(notification.redirectUrl);
+                                            const url = notification.redirectUrl;
+                                            if (url && typeof url === 'string') {
+                                                const path = url.startsWith('/') ? url : `/${url}`;
+                                                navigate(path);
+                                            }
                                         }}
                                         className={`p-3 rounded-xl mb-1 cursor-pointer transition-all hover:bg-gray-50 flex gap-3 ${!notification.isRead ? 'bg-primary/5 border border-primary/10' : 'bg-white'}`}
                                     >

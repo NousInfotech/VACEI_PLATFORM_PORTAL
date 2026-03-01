@@ -1,27 +1,60 @@
 import { apiGet, apiPatch } from '../config/base';
 import { endPoints } from '../config/endPoint';
 
+/**
+ * Converts backend notification redirect/cta URLs to Platform Portal routes.
+ * Ensures returned path always starts with "/" so React Router navigate() works.
+ */
 export function getPortalRedirectUrl(url?: string | null): string | null {
-    if (!url) return null;
-    const cleaned = url.replace(/^\/(partner|platform|client)/, '');
+    if (!url || typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+
+    // Strip portal prefix if present (e.g. /platform/... or /client/...)
+    const cleaned = trimmed.replace(/^\/(partner|platform|client)\/?/, '');
+    const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+
     try {
         const dummyBase = 'http://localhost';
-        const parsedUrl = new URL(cleaned, dummyBase);
+        const parsedUrl = new URL(withLeadingSlash, dummyBase);
         const path = parsedUrl.pathname;
 
         if (path === '/library') {
-            return cleaned.replace('/library', '/dashboard/global-library');
+            return '/dashboard/global-library';
         }
 
-        if (path.startsWith('/dashboard')) return cleaned;
+        if (path.startsWith('/dashboard')) {
+            return withLeadingSlash;
+        }
 
+        // Map backend paths to Platform Portal routes (backend often sends /compliance/:id, etc.)
+        const complianceMatch = path.match(/^\/compliance\/([^/]+)\/?$/);
+        if (complianceMatch) {
+            return `/dashboard/compliance/${complianceMatch[1]}/edit`;
+        }
+        if (path === '/compliance' || path === '/compliance/') {
+            return '/dashboard/compliance';
+        }
+
+        const noticeMatch = path.match(/^\/notice-management\/([^/]+)\/?$/);
+        if (noticeMatch) {
+            return `/dashboard/notice-management/${noticeMatch[1]}/edit`;
+        }
+
+        const engagementMatch = path.match(/^\/engagements?\/([^/]+)\/?$/);
+        if (engagementMatch) {
+            return `/dashboard/engagements`;
+        }
+
+        // Generic: prefix with /dashboard for paths like /something/...
         if (path.startsWith('/')) {
-            return `/dashboard${cleaned}`;
+            return `/dashboard${path}`;
         }
-    } catch (e) {
-        return cleaned;
+
+        return `/dashboard/${path}`;
+    } catch {
+        return withLeadingSlash.startsWith('/') ? withLeadingSlash : `/${withLeadingSlash}`;
     }
-    return cleaned;
 }
 
 export interface Notification {
@@ -64,7 +97,7 @@ export const notificationService = {
             const rawItems = Array.isArray(rawData) ? rawData : (rawData?.items ?? []);
             const mappedItems = rawItems.map((notif: Notification) => ({
                 ...notif,
-                redirectUrl: getPortalRedirectUrl(notif.redirectUrl ?? null)
+                redirectUrl: getPortalRedirectUrl(notif.redirectUrl ?? notif.ctaUrl ?? null)
             }));
 
             return {
