@@ -42,8 +42,9 @@ const MilestoneList: React.FC = () => {
 
   const templates = response?.data || [];
   const filtered = templates.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    (t.description || '').toLowerCase().includes(search.toLowerCase())
+    !t.organizationId &&
+    (t.name.toLowerCase().includes(search.toLowerCase()) ||
+    (t.description || '').toLowerCase().includes(search.toLowerCase()))
   );
 
   return (

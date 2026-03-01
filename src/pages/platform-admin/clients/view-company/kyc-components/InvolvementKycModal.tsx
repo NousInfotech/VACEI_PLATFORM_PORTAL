@@ -7,10 +7,7 @@ import { apiGet, apiPost, apiPostFormData } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import type { CompanyInvolvement } from '../../../../../types/company';
 import type { KycWorkflow } from './types';
-
-// Import KYC Templates
-import kycShareholderTemplate from '../../../../../../src/data/kycShareholderTemplate.json';
-import kycRepresentativeTemplate from '../../../../../../src/data/kycRepresentativeTemplate.json';
+import type { Template, TemplateListResponse, DocumentRequestContent } from '../../../../../types/template';
 
 interface InvolvementKycModalProps {
   isOpen: boolean;
@@ -47,6 +44,7 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
   const [viewingExistingKycId, setViewingExistingKycId] = useState<string | null>(null);
 
   const [creationMode, setCreationMode] = useState<'MANUAL' | 'TEMPLATE'>('TEMPLATE');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [formData, setFormData] = useState({
     documentName: "",
     isMandatory: true,
@@ -56,6 +54,13 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
     templateFile: null as File | null,
     multipleItems: [{ label: "", instruction: "", isMandatory: true, templateFile: null as File | null }] as any[],
   });
+
+  const { data: templatesResponse, isLoading: isTemplatesLoading } = useQuery({
+    queryKey: ['templates', 'DOCUMENT_REQUEST', 'KYC'],
+    queryFn: () => apiGet<TemplateListResponse>(`${endPoints.TEMPLATE.GET_ALL}?moduleType=KYC&type=DOCUMENT_REQUEST`),
+    enabled: isOpen,
+  });
+  const kycTemplates = templatesResponse?.data || [];
 
   useEffect(() => {
     if (initialExistingInvolvementKycId) {
@@ -154,32 +159,38 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
   });
 
   const submitTemplateDocs = async (documentRequestId: string) => {
-    const template = activeRoleTab === 'Shareholder' ? kycShareholderTemplate : kycRepresentativeTemplate;
-    const docRequestData = template.DOC_REQUEST[0].data;
+    if (!selectedTemplate) return;
+    const content = selectedTemplate.content as DocumentRequestContent;
 
-    for (const rd of docRequestData.requestedDocuments) {
+    for (const rd of content.documents) {
         const fd = new FormData();
         fd.append("documentName", rd.documentName);
         fd.append("description", rd.description || "");
         fd.append("type", rd.type);
         fd.append("count", rd.count);
         fd.append("isMandatory", String(rd.isMandatory));
+        if (rd.type === 'TEMPLATE' && rd.count === 'SINGLE' && rd.templateFileId) {
+          fd.append("templateFileId", rd.templateFileId);
+        }
         
         const res = await apiPostFormData<any>(
             endPoints.DOCUMENT_REQUESTS.DOCUMENTS(documentRequestId), 
             fd
         );
 
-        if (rd.count === 'MULTIPLE' && (rd as any).children?.length > 0) {
+        if (rd.count === 'MULTIPLE' && rd.multipleItems && rd.multipleItems.length > 0) {
             const parentId = res.data.id;
-            for (const child of (rd as any).children) {
+            for (const child of rd.multipleItems) {
                 const childFd = new FormData();
-                childFd.append("documentName", child.documentName);
-                childFd.append("description", child.description || "");
+                childFd.append("documentName", child.label || rd.documentName);
+                childFd.append("description", child.instruction || "");
                 childFd.append("type", rd.type);
                 childFd.append("count", 'SINGLE');
-                childFd.append("isMandatory", String(child.isMandatory));
+                childFd.append("isMandatory", String(child.templateFileId ? true : true)); // defaulting to true since it's not strictly typed in multipleItems for templates yet
                 childFd.append("parentId", parentId);
+                if (rd.type === 'TEMPLATE' && child.templateFileId) {
+                  childFd.append("templateFileId", child.templateFileId);
+                }
                 await apiPostFormData(endPoints.DOCUMENT_REQUESTS.DOCUMENTS(documentRequestId), childFd);
             }
         }
@@ -397,21 +408,44 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
               {creationMode === 'TEMPLATE' ? (
                 <div className="p-6 bg-primary/5 rounded-[32px] border border-primary/10 space-y-4">
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <LayoutGrid size={16} /> Template Preview: {activeRoleTab}
+                    <LayoutGrid size={16} /> Select a Template
                   </div>
-                  <div className="space-y-2">
-                    {(activeRoleTab === 'Shareholder' ? kycShareholderTemplate : kycRepresentativeTemplate).DOC_REQUEST[0].data.requestedDocuments.map((rd, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary font-bold text-xs">{i + 1}</div>
-                        <div>
-                          <p className="text-[11px] font-bold text-gray-800">{rd.documentName}</p>
-                          <p className="text-[9px] text-gray-400 font-medium truncate max-w-[200px]">{rd.description}</p>
+                  
+                  {isTemplatesLoading ? (
+                    <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" size={24} /></div>
+                  ) : kycTemplates.length > 0 ? (
+                    <select
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
+                      value={selectedTemplate?.id || ''}
+                      onChange={(e) => {
+                        const t = kycTemplates.find(t => t.id === e.target.value);
+                        setSelectedTemplate(t || null);
+                      }}
+                    >
+                      <option value="" disabled>-- Select Template --</option>
+                      {kycTemplates.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="text-xs text-gray-400 p-4 bg-white rounded-xl border border-dashed text-center">No KYC templates found.</div>
+                  )}
+
+                  {selectedTemplate && (
+                    <div className="space-y-2 mt-4">
+                      {((selectedTemplate.content as DocumentRequestContent)?.documents || []).map((rd, i) => (
+                        <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                          <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary font-bold text-xs">{i + 1}</div>
+                          <div>
+                            <p className="text-[11px] font-bold text-gray-800">{rd.documentName}</p>
+                            <p className="text-[9px] text-gray-400 font-medium truncate max-w-[200px]">{rd.description}</p>
+                          </div>
+                          {rd.isMandatory && <span className="ml-auto text-[8px] font-black bg-red-50 text-red-500 px-1.5 py-0.5 rounded uppercase">Mandatory</span>}
                         </div>
-                        {rd.isMandatory && <span className="ml-auto text-[8px] font-black bg-red-50 text-red-500 px-1.5 py-0.5 rounded uppercase">Mandatory</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-gray-400 italic font-medium px-2">This template will automatically create all required document slots for the selected member.</p>
+                      ))}
+                    </div>
+                  )}
+                  {/* <p className="text-[10px] text-gray-400 italic font-medium px-2">This template will automatically create all required document slots for the selected member.</p> */}
                 </div>
               ) : (
                 <>
@@ -562,7 +596,7 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
                 if (existingInvolvementKycId) addDocRequestOnlyMutation.mutate();
                 else createInvolvementKycMutation.mutate();
               }}
-              disabled={isPending || (creationMode === 'MANUAL' && !formData.documentName) || (step === 2 && !existingInvolvementKycId && !selectedInvolvementId)}
+              disabled={isPending || (creationMode === 'TEMPLATE' && !selectedTemplate) || (creationMode === 'MANUAL' && !formData.documentName) || (step === 2 && !existingInvolvementKycId && !selectedInvolvementId)}
               className="px-8 py-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all h-11 font-bold uppercase tracking-widest text-[10px] disabled:opacity-50"
             >
               {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
