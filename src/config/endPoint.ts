@@ -117,6 +117,16 @@ export const endPoints = {
     DELETE: (id: string) => `/notices/${id}`,
     GET_TODAY: '/notices/today',
   },
+  SUPPORT: {
+    SUPPORT_REQUESTS: '/support/support-requests',
+    SUPPORT_REQUEST_BY_ID: (id: string) => `/support/support-requests/${id}`,
+    PATCH_SUPPORT_REQUEST: (id: string) => `/support/support-requests/${id}`,
+    TICKETS: '/support/tickets',
+    TICKET_BY_ID: (id: string) => `/support/tickets/${id}`,
+    PATCH_TICKET: (id: string) => `/support/tickets/${id}`,
+    TICKET_UPDATES: (ticketId: string) => `/support/tickets/${ticketId}/updates`,
+    TICKET_UPDATE_BY_ID: (ticketId: string, id: string) => `/support/tickets/${ticketId}/updates/${id}`,
+  },
   INVOLVEMENT: {
     BASE: '/involvements',
     CREATE: '/involvements',

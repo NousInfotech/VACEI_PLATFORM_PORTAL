@@ -45,6 +45,7 @@ import CreateComplianceCalendarPage from './pages/platform-admin/compliance-cale
 import EditComplianceCalendarPage from './pages/platform-admin/compliance-calendar/EditComplianceCalendarPage'
 import TemplateManagement from './pages/platform-admin/template-management/TemplateManagement'
 import CreateTemplateForm from './pages/platform-admin/template-management/CreateTemplateForm'
+import TicketManagement from './pages/platform-admin/ticket-management/TicketManagement'
 import EditTemplateForm from './pages/platform-admin/template-management/EditTemplateForm'
 import ViewTemplateDetail from './pages/platform-admin/template-management/ViewTemplateDetail'
 import { Toaster } from 'sonner'
@@ -104,6 +105,7 @@ const App = () => {
           <Route path="/dashboard/template-management/create" element={<CreateTemplateForm />} />
           <Route path="/dashboard/template-management/:id/view" element={<ViewTemplateDetail />} />
           <Route path="/dashboard/template-management/:id/edit" element={<EditTemplateForm />} />
+          <Route path="/dashboard/ticket-management" element={<TicketManagement />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="/dashboard/service-request-templates/:id/preview" element={<TemplatePreview />} />

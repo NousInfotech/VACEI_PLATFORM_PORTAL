@@ -109,6 +109,14 @@ export const menuData: MenuItem[] = [
         description: "Manage system notices",
     },
     {
+        slug: "ticket-management",
+        icon: InboxIcon,
+        label: "Ticket Management",
+        href: "/dashboard/ticket-management",
+        section: "primary",
+        description: "Accept support requests and manage tickets",
+    },
+    {
         slug: "procedure-prompts",
         icon: NoteEditIcon,
         label: "Procedure Prompt",
