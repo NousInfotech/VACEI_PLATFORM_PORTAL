@@ -49,7 +49,7 @@ export const ChatList: React.FC<ChatListProps> = ({
       {/* Sidebar Header - WhatsApp style */}
       <div className="h-12 flex items-center justify-between px-6 bg-[#f0f2f5] shrink-0">
         <h1 className="text-xl font-medium text-gray-800">Messages</h1>
-        <div className="flex items-center gap-2 text-gray-500">
+        {/* <div className="flex items-center gap-2 text-gray-500">
           <button
             type="button"
             onClick={onCreateGroup}
@@ -57,7 +57,7 @@ export const ChatList: React.FC<ChatListProps> = ({
           >
             <MessageSquarePlus className="w-5 h-5" />
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Search Bar */}
