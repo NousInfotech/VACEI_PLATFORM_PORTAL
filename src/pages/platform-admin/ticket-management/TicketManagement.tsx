@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MessageSquare,
   CheckCircle,
@@ -19,7 +20,11 @@ interface SupportRequestRow {
   description: string | null;
   status: string;
   createdAt: string;
+  companyId: string | null;
   organizationId: string | null;
+  user?: { id: string; firstName: string; lastName: string; email?: string | null };
+  company?: { id: string; name: string } | null;
+  organization?: { id: string; name: string } | null;
 }
 
 interface TicketRow {
@@ -28,12 +33,24 @@ interface TicketRow {
   category: string;
   status: string;
   createdAt: string;
-  supportRequest?: { subject: string } | null;
+  supportRequest?: {
+    subject: string;
+    companyId?: string | null;
+    organizationId?: string | null;
+    user?: { id: string; firstName: string; lastName: string };
+    company?: { id: string; name: string } | null;
+    organization?: { id: string; name: string } | null;
+  } | null;
 }
 
+type TabType = 'company' | 'organization';
+
 const TicketManagement: React.FC = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
+  const [requestsTab, setRequestsTab] = useState<TabType>('company');
+  const [ticketsTab, setTicketsTab] = useState<TabType>('company');
 
   const { data: requestsRes, isLoading: loadingRequests } = useQuery({
     queryKey: ['support-requests'],
@@ -76,7 +93,33 @@ const TicketManagement: React.FC = () => {
 
   const requests = requestsRes?.data ?? [];
   const tickets = ticketsRes?.data ?? [];
+
   const pendingRequests = requests.filter((r: SupportRequestRow) => r.status === 'PENDING');
+  const pendingCompany = pendingRequests.filter((r: SupportRequestRow) => r.companyId != null);
+  const pendingOrganization = pendingRequests.filter((r: SupportRequestRow) => r.organizationId != null);
+
+  const ticketsCompany = tickets.filter((t: TicketRow) => t.supportRequest?.companyId != null);
+  const ticketsOrganization = tickets.filter((t: TicketRow) => t.supportRequest?.organizationId != null);
+
+  const displayRequests = requestsTab === 'company' ? pendingCompany : pendingOrganization;
+  const displayTickets = ticketsTab === 'company' ? ticketsCompany : ticketsOrganization;
+
+  const userName = (r: SupportRequestRow) =>
+    r.user ? [r.user.firstName, r.user.lastName].filter(Boolean).join(' ') || r.user.email || '—' : '—';
+  const companyOrOrgName = (r: SupportRequestRow) =>
+    r.companyId && r.company ? r.company.name : r.organizationId && r.organization ? r.organization.name : '—';
+
+  const ticketUserName = (t: TicketRow) => {
+    const u = t.supportRequest?.user;
+    return u ? [u.firstName, u.lastName].filter(Boolean).join(' ') || '—' : '—';
+  };
+  const ticketCompanyOrOrgName = (t: TicketRow) => {
+    const sr = t.supportRequest;
+    if (!sr) return '—';
+    if (sr.company) return sr.company.name;
+    if (sr.organization) return sr.organization.name;
+    return '—';
+  };
 
   return (
     <div className="space-y-6">
@@ -91,18 +134,38 @@ const TicketManagement: React.FC = () => {
       )}
 
       <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-3xl bg-white">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-primary" />
-          Pending Support Requests
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            Pending Support Requests
+          </h2>
+          <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+            <button
+              type="button"
+              onClick={() => setRequestsTab('company')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md ${requestsTab === 'company' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Company
+            </button>
+            <button
+              type="button"
+              onClick={() => setRequestsTab('organization')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md ${requestsTab === 'organization' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Organization
+            </button>
+          </div>
+        </div>
         {loadingRequests ? (
           <p className="py-6 text-gray-500">Loading...</p>
-        ) : pendingRequests.length === 0 ? (
-          <p className="py-6 text-gray-500">No pending support requests.</p>
+        ) : displayRequests.length === 0 ? (
+          <p className="py-6 text-gray-500">No pending {requestsTab === 'company' ? 'company' : 'organization'} support requests.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Company | Organization</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Submitted</TableHead>
@@ -110,8 +173,10 @@ const TicketManagement: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pendingRequests.map((r: SupportRequestRow) => (
+              {displayRequests.map((r: SupportRequestRow) => (
                 <TableRow key={r.id}>
+                  <TableCell className="font-medium text-gray-900">{userName(r)}</TableCell>
+                  <TableCell className="text-gray-700">{companyOrOrgName(r)}</TableCell>
                   <TableCell className="font-medium">{r.subject}</TableCell>
                   <TableCell>
                     <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
@@ -138,28 +203,50 @@ const TicketManagement: React.FC = () => {
       </ShadowCard>
 
       <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-3xl bg-white">
-        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <ListChecks className="h-5 w-5 text-primary" />
-          Tickets
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <ListChecks className="h-5 w-5 text-primary" />
+            Tickets
+          </h2>
+          <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+            <button
+              type="button"
+              onClick={() => setTicketsTab('company')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md ${ticketsTab === 'company' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Company
+            </button>
+            <button
+              type="button"
+              onClick={() => setTicketsTab('organization')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md ${ticketsTab === 'organization' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              Organization
+            </button>
+          </div>
+        </div>
         {loadingTickets ? (
           <p className="py-6 text-gray-500">Loading...</p>
-        ) : tickets.length === 0 ? (
-          <p className="py-6 text-gray-500">No tickets yet. Accept a support request to create one.</p>
+        ) : displayTickets.length === 0 ? (
+          <p className="py-6 text-gray-500">No {ticketsTab === 'company' ? 'company' : 'organization'} tickets yet.</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Company | Organization</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead className="text-right">Update status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map((t: TicketRow) => (
+              {displayTickets.map((t: TicketRow) => (
                 <TableRow key={t.id}>
+                  <TableCell className="font-medium text-gray-900">{ticketUserName(t)}</TableCell>
+                  <TableCell className="text-gray-700">{ticketCompanyOrOrgName(t)}</TableCell>
                   <TableCell className="font-medium">{t.supportRequest?.subject ?? '—'}</TableCell>
                   <TableCell>{t.category?.replace('_', ' ') ?? '—'}</TableCell>
                   <TableCell>
@@ -173,10 +260,11 @@ const TicketManagement: React.FC = () => {
                   <TableCell className="text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <select
-                      className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary/20"
+                      className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary/20 mr-2"
                       value={t.status}
                       onChange={(e) => patchTicketMutation.mutate({ id: t.id, status: e.target.value })}
                       disabled={patchTicketMutation.isPending}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <option value="PENDING">PENDING</option>
                       <option value="ACTIVE">ACTIVE</option>
@@ -184,6 +272,13 @@ const TicketManagement: React.FC = () => {
                       <option value="RESOLVED">RESOLVED</option>
                       <option value="CLOSED">CLOSED</option>
                     </select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/dashboard/ticket-management/${t.id}`)}
+                    >
+                      View / Add update
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
