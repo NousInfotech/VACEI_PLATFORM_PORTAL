@@ -4,6 +4,7 @@ import {
   MessageSquare,
   CheckCircle,
   ListChecks,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import PageHeader from '../../common/PageHeader';
@@ -79,15 +80,15 @@ const TicketManagement: React.FC = () => {
     },
   });
 
-  const patchTicketMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiPatch(endPoints.SUPPORT.PATCH_TICKET(id), { status }),
+  const rejectMutation = useMutation({
+    mutationFn: (requestId: string) =>
+      apiPatch(endPoints.SUPPORT.PATCH_SUPPORT_REQUEST(requestId), { status: 'REJECTED' }),
     onSuccess: () => {
-      setAlert({ message: 'Ticket status updated', variant: 'success' });
-      queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+      setAlert({ message: 'Support request rejected', variant: 'success' });
+      queryClient.invalidateQueries({ queryKey: ['support-requests'] });
     },
     onError: (err: any) => {
-      setAlert({ message: err?.response?.data?.message ?? 'Failed to update ticket', variant: 'danger' });
+      setAlert({ message: err?.response?.data?.message ?? 'Failed to reject request', variant: 'danger' });
     },
   });
 
@@ -169,7 +170,7 @@ const TicketManagement: React.FC = () => {
                 <TableHead>Subject</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Submitted</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -187,12 +188,22 @@ const TicketManagement: React.FC = () => {
                   <TableCell className="text-right">
                     <Button
                       size="sm"
-                      className="bg-primary hover:bg-primary/90 text-white"
-                      disabled={acceptMutation.isPending}
+                      className="bg-primary hover:bg-primary/90 text-white mr-2"
+                      disabled={acceptMutation.isPending || rejectMutation.isPending}
                       onClick={() => acceptMutation.mutate(r.id)}
                     >
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-200 text-red-700 hover:bg-red-50"
+                      disabled={acceptMutation.isPending || rejectMutation.isPending}
+                      onClick={() => rejectMutation.mutate(r.id)}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />
+                      Reject
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -239,7 +250,7 @@ const TicketManagement: React.FC = () => {
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -259,25 +270,12 @@ const TicketManagement: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
-                    <select
-                      className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-primary/20 mr-2"
-                      value={t.status}
-                      onChange={(e) => patchTicketMutation.mutate({ id: t.id, status: e.target.value })}
-                      disabled={patchTicketMutation.isPending}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <option value="PENDING">PENDING</option>
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="IN_PROGRESS">IN_PROGRESS</option>
-                      <option value="RESOLVED">RESOLVED</option>
-                      <option value="CLOSED">CLOSED</option>
-                    </select>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => navigate(`/dashboard/ticket-management/${t.id}`)}
                     >
-                      View / Add update
+                      View ticket
                     </Button>
                   </TableCell>
                 </TableRow>
