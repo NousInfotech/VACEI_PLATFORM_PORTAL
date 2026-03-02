@@ -50,8 +50,10 @@ export const OrganizationForm: React.FC<OrganizationFormProps> = ({
     'TECHNOLOGY',
     'GRANTS_AND_INCENTIVES',
     'INCORPORATION',
+    'LIQUIDATION',
     'MBR',
     'TAX',
+    'CUSTOM',
   ];
 
   const formatServiceLabel = (service: string) => {

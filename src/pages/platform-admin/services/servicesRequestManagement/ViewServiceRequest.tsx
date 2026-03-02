@@ -553,6 +553,7 @@ const ViewServiceRequestContent: React.FC = () => {
           customServiceCycleId={request?.customServiceCycleId || request?.template?.customServiceCycleId}
           companyName={request?.company?.name || request?.clientName || 'Unknown Entity'}
           serviceRequestId={request?.id || ''}
+          serviceDetails={request?.serviceDetails}
         />
       )}
     </div>

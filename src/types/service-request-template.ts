@@ -149,5 +149,5 @@ export interface ServiceRequest {
     formFields: FormField[];
   };
   submittedDocuments?: { id: string; file_name: string; url: string }[];
-  engagements: { id: string }[];
+  engagements: { id: string, name: string | null }[];
 }
