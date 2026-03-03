@@ -8,6 +8,7 @@ import {
     UserGroupIcon as UsersIcon,
     Notification01Icon,
     NoteEditIcon,
+    CustomerSupportFreeIcons,
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 
@@ -109,6 +110,14 @@ export const menuData: MenuItem[] = [
         description: "Manage system notices",
     },
     {
+        slug: "ticket-management",
+        icon: InboxIcon,
+        label: "Ticket Management",
+        href: "/dashboard/ticket-management",
+        section: "primary",
+        description: "Accept support requests and manage tickets",
+    },
+    {
         slug: "procedure-prompts",
         icon: NoteEditIcon,
         label: "Procedure Prompt",
@@ -132,12 +141,20 @@ export const menuData: MenuItem[] = [
         section: "primary",
         description: "Manage doc, milestone & checklist templates",
     },
-    // {
-    //     slug: "settings",
-    //     icon: Settings02Icon,
-    //     label: "Settings",
-    //     href: "/dashboard/settings",
-    //     section: "settings",
-    //     description: "System configuration",
-    // },
+    {
+        slug: "ticket-management",
+        icon: CustomerSupportFreeIcons,
+        label: "Settings",
+        href: "/dashboard/ticket-management",
+        section: "settings",
+        description: "System configuration",
+    },
+    {
+        slug: "settings",
+        icon: Settings02Icon,
+        label: "Settings",
+        href: "/dashboard/settings",
+        section: "settings",
+        description: "System configuration",
+    },
 ];
