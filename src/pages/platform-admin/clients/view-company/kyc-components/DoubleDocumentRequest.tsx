@@ -14,6 +14,7 @@ import { ConfirmModal } from "../../../../messages/components/ConfirmModal";
 interface DocumentRequestMultipleProps {
   requestId: string;
   multipleDocuments: DocumentRequestDocumentMultiple[];
+  isDisabled?: boolean;
 }
 
 const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({

@@ -20,9 +20,22 @@ interface CompanyKycProps {
   workflows: KycWorkflow[];
   companyId: string;
   kycId?: string;
+  /** When true, header (name, tags, status, delete, view/hide) and progress bar are rendered by parent (KycSection). */
+  hideHeader?: boolean;
+  /** Controlled expand state when hideHeader is true. */
+  expanded?: boolean;
+  /** Toggle expand when hideHeader is true. */
+  onToggleExpand?: () => void;
 }
 
-const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) => {
+const CompanyKyc: React.FC<CompanyKycProps> = ({
+  workflows,
+  companyId,
+  kycId,
+  hideHeader = false,
+  expanded: controlledExpanded,
+  onToggleExpand,
+}) => {
   const queryClient = useQueryClient();
   const companyWorkflows = workflows.filter(w => w.workflowType === 'Company');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -30,7 +43,11 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
   const [expandedWorkflows, setExpandedWorkflows] = useState<Record<string, boolean>>({});
 
   const toggleWorkflow = (id: string) => {
-    setExpandedWorkflows(prev => ({ ...prev, [id]: !prev[id] }));
+    if (hideHeader && onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setExpandedWorkflows(prev => ({ ...prev, [id]: !prev[id] }));
+    }
   };
 
   const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
@@ -173,24 +190,28 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
   return (
     <div className="space-y-6">
       {companyWorkflows.map(workflow => {
-        const isExpanded = expandedWorkflows[workflow._id] ?? true;
+        const isExpanded = hideHeader ? (controlledExpanded ?? true) : (expandedWorkflows[workflow._id] ?? true);
         const mainRequest = workflow.documentRequests[0];
 
-        // Progress calculation
+        // Progress calculation (only used when not hideHeader)
         const totalDocs = workflow.documentRequests.reduce((acc, wr) => {
           return acc
             + (wr.documentRequest.documents?.length || 0)
             + (wr.documentRequest.multipleDocuments?.reduce((a, md) => a + (md.multiple?.length || 0), 0) || 0);
         }, 0);
-        const uploadedDocs = workflow.documentRequests.reduce((acc, wr) => {
+        const progressPct = totalDocs > 0 ? Math.round((workflow.documentRequests.reduce((acc, wr) => {
           return acc
             + (wr.documentRequest.documents?.filter(d => d.url).length || 0)
             + (wr.documentRequest.multipleDocuments?.reduce((a, md) => a + (md.multiple?.filter(item => item.url).length || 0), 0) || 0);
-        }, 0);
-        const progressPct = totalDocs > 0 ? Math.round((uploadedDocs / totalDocs) * 100) : 0;
+        }, 0) / totalDocs) * 100) : 0;
+
+        if (hideHeader && !isExpanded) {
+          return null;
+        }
         
         return (
           <ShadowCard key={workflow._id} className="bg-white border border-indigo-100 rounded-xl shadow-sm hover:shadow-md transition-all group overflow-hidden">
+            {!hideHeader && (
             <div className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
@@ -286,6 +307,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
                 </div>
               )}
             </div>
+            )}
 
             {isExpanded && (
               <div className="bg-gray-50/50 border-t border-gray-100 p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
@@ -324,7 +346,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
                             setActiveRequestId(request.documentRequest._id);
                             setIsAddModalOpen(true);
                           }}
-                          disabled={isAnyActionLoading}
+                          disabled={isAnyActionLoading || (request.documentRequest.status?.toUpperCase() === 'COMPLETED')}
                           className="h-9 px-4 rounded-xl border-dashed border-gray-200 text-primary hover:bg-white hover:border-primary/50 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all"
                         >
                           <Plus size={16} className="mr-1.5" />
@@ -339,10 +361,12 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({ workflows, companyId, kycId }) 
                           <DocumentRequestSingle 
                             requestId={request.documentRequest._id}
                             documents={request.documentRequest.documents || []}
+                            isDisabled={request.documentRequest.status?.toUpperCase() === 'COMPLETED'}
                           />
                           <DocumentRequestDouble 
                             requestId={request.documentRequest._id}
                             multipleDocuments={request.documentRequest.multipleDocuments || []}
+                            isDisabled={request.documentRequest.status?.toUpperCase() === 'COMPLETED'}
                           />
                         </div>
                       ) : (

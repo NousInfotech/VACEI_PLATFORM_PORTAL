@@ -33,7 +33,6 @@ const Messages: React.FC<MessagesProps> = ({ isSingleChat = false, contextualCha
   const [previewMessage, setPreviewMessage] = useState<Message | null>(null);
   const [scrollTargetId, setScrollTargetId] = useState<string | undefined>(undefined);
   const [replyToMessage, setReplyToMessage] = useState<Message | null>(null);
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [emojiPickerMessageId, setEmojiPickerMessageId] = useState<string | null>(null);
@@ -291,24 +290,6 @@ const Messages: React.FC<MessagesProps> = ({ isSingleChat = false, contextualCha
   }) => {
     if (!activeChatId) return;
 
-    if (editingMessage) {
-      setChats(prevChats => prevChats.map(chat => {
-        if (chat.id === activeChatId) {
-          return {
-            ...chat,
-            messages: chat.messages.map(m => 
-              m.id === editingMessage.id 
-                ? { ...m, text: content.text, isEdited: true }
-                : m
-            )
-          };
-        }
-        return chat;
-      }));
-      setEditingMessage(null);
-      return;
-    }
-
     const newMessage: Message = {
       id: `m-${Date.now()}`,
       senderId: 'me',
@@ -432,14 +413,10 @@ const Messages: React.FC<MessagesProps> = ({ isSingleChat = false, contextualCha
                 scrollToMessageId={scrollTargetId}
                 onScrollComplete={() => setScrollTargetId(undefined)}
                 onReplyMessage={setReplyToMessage}
-                onEditMessage={setEditingMessage}
                 onDeleteMessage={(msgId: string) => handleDeleteMessage(activeChat.id, msgId)}
-                onReactToMessage={(msgId: string, emoji: string) => handleReactToMessage(activeChat.id, msgId, emoji)}
                 onForwardMessage={(msg: Message) => setForwardingMessages([msg])}
                 replyingTo={replyToMessage}
-                editingMessage={editingMessage}
                 onCancelReply={() => setReplyToMessage(null)}
-                onCancelEdit={() => setEditingMessage(null)}
                 isSelectMode={isSelectMode}
                 selectedMessageIds={selectedMessageIds}
                 onSelectMessage={handleToggleSelectMessage}

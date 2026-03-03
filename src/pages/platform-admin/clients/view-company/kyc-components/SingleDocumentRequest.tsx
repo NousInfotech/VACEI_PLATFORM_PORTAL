@@ -14,6 +14,7 @@ import { ConfirmModal } from "../../../../messages/components/ConfirmModal";
 interface DocumentRequestSingleProps {
   requestId: string;
   documents: DocumentRequestDocumentSingle[];
+  isDisabled?: boolean;
 }
 
 const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
