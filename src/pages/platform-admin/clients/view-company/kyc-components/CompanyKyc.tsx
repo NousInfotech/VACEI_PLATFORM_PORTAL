@@ -234,11 +234,6 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                       <span className="bg-indigo-50 text-indigo-700 rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider border border-indigo-100">
                         Entity KYC
                       </span>
-                      <span className={`rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-wider border ${
-                        workflow.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'
-                      }`}>
-                        {workflow.status}
-                      </span>
                     </div>
                   </div>
 
@@ -246,48 +241,25 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                 
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <select
-                      value={workflow.status}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => setConfirmConfig({
+                        isOpen: true,
+                        title: "Delete KYC Cycle",
+                        message: "Are you sure you want to delete this entire KYC verification cycle? All submitted documents and requests will be removed.",
+                        onConfirm: () => {
+                          deleteKycMutation.mutate();
+                          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                        },
+                        variant: 'danger'
+                      })}
                       disabled={isAnyActionLoading}
-                      onChange={e => {
-                        const newStatus = e.target.value;
-                        const requestIds = workflow.documentRequests.map(dr => dr.documentRequest._id);
-                        patchKycStatusMutation.mutate({ status: newStatus, requestIds });
-                      }}
-                      className={`rounded-lg px-3 py-1.5 text-[11px] font-bold border outline-none cursor-pointer transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed ${
-                        workflow.status === 'VERIFIED'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : workflow.status === 'IN_REVIEW'
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : workflow.status === 'REJECTED'
-                          ? 'bg-red-50 text-red-600 border-red-200'
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}
+                      title="Delete Cycle"
                     >
-                      <option value="PENDING">PENDING</option>
-                      <option value="IN_REVIEW">IN REVIEW</option>
-                      <option value="VERIFIED">VERIFIED</option>
-                      <option value="REJECTED">REJECTED</option>
-                    </select>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => setConfirmConfig({
-                          isOpen: true,
-                          title: "Delete KYC Cycle",
-                          message: "Are you sure you want to delete this entire KYC verification cycle? All submitted documents and requests will be removed.",
-                          onConfirm: () => {
-                            deleteKycMutation.mutate();
-                            setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                          },
-                          variant: 'danger'
-                        })}
-                        disabled={isAnyActionLoading}
-                        title="Delete Cycle"
-                      >
-                        <Trash2 size={18} />
-                      </Button>
+                      <Trash2 size={18} />
+                    </Button>
                   </div>
                   
                   <div className="w-px h-8 bg-gray-100 mx-1" />

@@ -10,9 +10,10 @@ import type { KycWorkflow, KycBackendResponse } from './types';
 import { MOCK_KYC_DATA } from './mockData';
 import { USE_MOCK_DATA } from '../../../../../data/mockCompanyData';
 import { ShadowCard } from '../../../../../ui/ShadowCard';
-import { apiGet, apiPost } from '../../../../../config/base';
+import { apiGet, apiPost, apiPatch } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import { Button } from '../../../../../ui/Button';
+import { toast } from 'sonner';
 import KycSkeleton from '../components/skeletons/KycSkeleton';
 
 interface KycSectionProps {
@@ -43,6 +44,21 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
       apiPost(endPoints.COMPANY.KYC(companyId), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+    }
+  });
+
+  const patchKycStatusMutation = useMutation({
+    mutationFn: ({ status }: { status: string }) => 
+      apiPatch(endPoints.COMPANY.KYC(companyId) + `/${realKycData?.id}`, { status }),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      queryClient.invalidateQueries({ queryKey: ['client-companies'] });
+      toast.success('KYC status updated successfully.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update KYC status', {
+        description: error?.response?.data?.message || error?.message || 'Unexpected error'
+      });
     }
   });
 
@@ -228,6 +244,29 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
           <p className="text-sm text-gray-500 mt-1 font-medium">Monitor and audit compliance documentation across the entity or associated individuals</p>
         </div>
         <div className="flex items-center gap-3">
+          {realKycData && !USE_MOCK_DATA && (
+            <div className="flex items-center mr-2">
+              <select
+                value={realKycData.status}
+                disabled={patchKycStatusMutation.isPending}
+                onChange={e => patchKycStatusMutation.mutate({ status: e.target.value })}
+                className={`rounded-xl px-4 py-2 text-[10px] font-black border outline-none cursor-pointer transition-all appearance-none shadow-sm uppercase tracking-widest h-10 w-fit text-left ${
+                  realKycData.status === 'VERIFIED'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100/80'
+                    : realKycData.status === 'IN_REVIEW'
+                    ? 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100/80'
+                    : realKycData.status === 'REJECTED'
+                    ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100/80'
+                    : 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100/80'
+                }`}
+              >
+                <option value="PENDING">PENDING</option>
+                <option value="IN_REVIEW">IN REVIEW</option>
+                <option value="VERIFIED">VERIFIED</option>
+                <option value="REJECTED">REJECTED</option>
+              </select>
+            </div>
+          )}
           <Button
             variant="outline"
             size="sm"
