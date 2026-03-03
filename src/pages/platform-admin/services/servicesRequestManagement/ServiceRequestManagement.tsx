@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, 
   Inbox, 
@@ -22,20 +22,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import type { Client, ClientResponse } from '../../../../types/client';
 import type { ServiceRequest } from '../../../../types/service-request-template';
+import Pagination from '../../../common/Pagination';
 
 const ServiceRequestManagement: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
   const limit = 10;
 
   type ServiceRequestApiResponse = { success?: boolean; data?: ServiceRequest[] } | ServiceRequest[];
 
   const { data: requestsData, isLoading: isLoadingRequests } = useQuery<ServiceRequestApiResponse>({
     queryKey: ['service-requests'],
-    queryFn: () => apiGet<ServiceRequestApiResponse>(endPoints.SERVICE_REQUEST.GET_ALL),
+    queryFn: () => apiGet<ServiceRequestApiResponse>(endPoints.SERVICE_REQUEST.GET_ALL, { limit: 1000 }),
   });
 
   const { data: clientsData, isLoading: isLoadingClients } = useQuery<ClientResponse>({
@@ -78,6 +85,10 @@ const ServiceRequestManagement: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeDropdownId]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedStatus]);
 
   const handleView = (id: string) => {
     navigate(`/dashboard/service-request-management/${id}`);
@@ -259,35 +270,14 @@ const ServiceRequestManagement: React.FC = () => {
             )}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filteredRequests.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
-      
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 pt-2">
-          <p className="text-sm text-gray-500 font-medium">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-xl"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-xl"
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

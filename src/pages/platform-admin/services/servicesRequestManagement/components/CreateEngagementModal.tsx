@@ -49,8 +49,8 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
   // Period-specific inputs
   const [periodType, setPeriodType] = useState<'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'RANGE' | 'YEAR_END'>('MONTHLY');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [selectedQuarter, setSelectedQuarter] = useState('1');
-  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+  const [selectedQuarters, setSelectedQuarters] = useState<string[]>(['1']);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [yearEndDate, setYearEndDate] = useState(''); // For Audit
@@ -89,14 +89,14 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
            if (typeof a === 'string') {
             const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
             const index = months.findIndex(m => a.toLowerCase().includes(m));
-            if (index !== -1) setSelectedMonth(String(index + 1));
+            if (index !== -1) setSelectedMonths([String(index + 1)]);
           }
         }
 
         if (q.includes('quarter')) {
           if (typeof a === 'string') {
             const match = a.match(/q[1-4]/i);
-            if (match) setSelectedQuarter(match[0].toLowerCase().replace('q', ''));
+            if (match) setSelectedQuarters([match[0].toLowerCase().replace('q', '')]);
           }
         }
 
@@ -134,46 +134,69 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
 
     setIsSubmitting(true);
 
-    const period: any = {};
+    const periods: any[] = [];
     const currentYear = parseInt(selectedYear);
 
-    if (periodType === 'YEARLY') {
-      period.year = currentYear;
-      period.frequency = 'yearly';
-    } else if (periodType === 'MONTHLY') {
-      period.year = currentYear;
-      period.month = parseInt(selectedMonth);
-      period.frequency = 'monthly';
+    if (periodType === 'MONTHLY') {
+      for (const month of selectedMonths) {
+        const p: any = { frequency: 'monthly', year: currentYear, month: parseInt(month) };
+        periods.push(p);
+      }
     } else if (periodType === 'QUARTERLY') {
-      period.year = currentYear;
-      period.quarter = parseInt(selectedQuarter);
-      period.frequency = 'quarterly';
+      for (const quarter of selectedQuarters) {
+        const p: any = { frequency: 'quarterly', year: currentYear, quarter: parseInt(quarter) };
+        periods.push(p);
+      }
+    } else if (periodType === 'YEARLY') {
+      periods.push({ frequency: 'yearly', year: currentYear });
     } else if (periodType === 'RANGE') {
-      period.startDate = startDate;
-      period.endDate = endDate;
+      periods.push({ startDate, endDate });
     } else if (periodType === 'YEAR_END') {
-      period.yearEndDate = yearEndDate;
+      periods.push({ yearEndDate });
     }
 
-    const payload = {
-      companyId,
-      organizationId: selectedOrgId,
-      serviceCategory: serviceCategory,
-      ...(customServiceCycleId && { customServiceCycleId }),
-      ...(serviceRequestId?.trim() && { serviceRequestId }),
-      period,
-    };
+    if (periods.length === 0) {
+      alert('Please select at least one period');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      const response = await apiPost<any>(endPoints.ENGAGEMENT.CREATE, payload);
-      if (response && response.success === false) {
-        alert(response.message || 'Failed to create engagement');
-      } else {
+      let successCount = 0;
+      let errorMessages: string[] = [];
+
+      for (const p of periods) {
+        const payload = {
+          companyId,
+          organizationId: selectedOrgId,
+          serviceCategory: serviceCategory,
+          ...(customServiceCycleId && { customServiceCycleId }),
+          ...(serviceRequestId?.trim() && { serviceRequestId }),
+          period: p,
+        };
+
+        try {
+          const response = await apiPost<any>(endPoints.ENGAGEMENT.CREATE, payload);
+          if (response && response.success === false) {
+            errorMessages.push(response.message || `Failed for ${JSON.stringify(p)}`);
+          } else {
+            successCount++;
+          }
+        } catch (err: any) {
+          errorMessages.push(err.response?.data?.message || `Failed for ${JSON.stringify(p)}`);
+        }
+      }
+
+      if (successCount === periods.length) {
         setShowSuccess(true);
+      } else if (successCount > 0) {
+        alert(`Partially successful: ${successCount} created, ${periods.length - successCount} failed.\nErrors: ${errorMessages.join(', ')}`);
+        setShowSuccess(true);
+      } else {
+        alert(`Failed to create engagements: ${errorMessages.join(', ')}`);
       }
     } catch (err: any) {
       console.error('Failed to create engagement:', err);
-      alert(err.response?.data?.message || 'Failed to create engagement');
     } finally {
       setIsSubmitting(false);
     }
@@ -309,33 +332,61 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
 
                 {/* Sub-selectors for VAT Monthly/Quarterly */}
                 {serviceCategory === 'VAT' && periodType === 'MONTHLY' && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Select Month</label>
-                    <select 
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                      className="w-full px-5 py-3 rounded-2xl bg-white border border-gray-100 focus:border-primary outline-none transition-all duration-300 font-bold text-sm text-gray-700 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_1rem_center] bg-no-repeat"
-                    >
-                      {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => (
-                        <option key={m} value={String(i + 1)}>{m}</option>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Select Months</label>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => {
+                            const val = String(i + 1);
+                            setSelectedMonths(prev => 
+                              prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]
+                            );
+                          }}
+                          className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all ${
+                            selectedMonths.includes(String(i + 1))
+                              ? 'bg-primary text-white border-primary shadow-sm'
+                              : 'bg-white text-gray-600 border-gray-100 hover:border-gray-300'
+                          }`}
+                        >
+                          {m}
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 )}
 
                 {serviceCategory === 'VAT' && periodType === 'QUARTERLY' && (
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Select Quarter</label>
-                    <select 
-                      value={selectedQuarter}
-                      onChange={(e) => setSelectedQuarter(e.target.value)}
-                      className="w-full px-5 py-3 rounded-2xl bg-white border border-gray-100 focus:border-primary outline-none transition-all duration-300 font-bold text-sm text-gray-700 shadow-sm appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-size-[16px] bg-position-[right_1rem_center] bg-no-repeat"
-                    >
-                      <option value="1">Q1: January – March</option>
-                      <option value="2">Q2: April – June</option>
-                      <option value="3">Q3: July – September</option>
-                      <option value="4">Q4: October – December</option>
-                    </select>
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Select Quarters</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: '1', label: 'Q1: Jan – Mar' },
+                        { id: '2', label: 'Q2: Apr – Jun' },
+                        { id: '3', label: 'Q3: Jul – Sep' },
+                        { id: '4', label: 'Q4: Oct – Dec' }
+                      ].map((q) => (
+                        <button
+                          key={q.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuarters(prev => 
+                              prev.includes(q.id) ? prev.filter(x => x !== q.id) : [...prev, q.id]
+                            );
+                          }}
+                          className={`px-4 py-3 text-sm font-bold rounded-2xl border transition-all text-left flex items-center justify-between ${
+                            selectedQuarters.includes(q.id)
+                              ? 'bg-primary text-white border-primary shadow-md'
+                              : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200'
+                          }`}
+                        >
+                          {q.label}
+                          {selectedQuarters.includes(q.id) && <CheckCircle2 size={16} />}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -415,10 +466,21 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
           <div className="flex flex-col">
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Target Period</p>
             <p className="text-xs font-bold text-gray-700 mt-0.5">
-              {periodType === 'RANGE' ? `${startDate || '...'} to ${endDate || '...'}` : 
-               periodType === 'MONTHLY' ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][parseInt(selectedMonth)-1]} ${selectedYear}` :
-               periodType === 'QUARTERLY' ? `Q${selectedQuarter} ${selectedYear}` :
-               selectedYear}
+              {(() => {
+                if (periodType === 'RANGE') return `${startDate || '...'} to ${endDate || '...'}`;
+                if (periodType === 'YEAR_END') return yearEndDate || '...';
+                if (periodType === 'MONTHLY') {
+                  if (selectedMonths.length === 0) return 'No months selected';
+                  if (selectedMonths.length > 3) return `${selectedMonths.length} months selected (${selectedYear})`;
+                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  return selectedMonths.sort((a,b) => parseInt(a)-parseInt(b)).map(m => months[parseInt(m)-1]).join(', ') + ` (${selectedYear})`;
+                }
+                if (periodType === 'QUARTERLY') {
+                  if (selectedQuarters.length === 0) return 'No quarters selected';
+                  return selectedQuarters.sort().map(q => `Q${q}`).join(', ') + ` (${selectedYear})`;
+                }
+                return selectedYear;
+              })()}
             </p>
           </div>
           <div className="flex items-center gap-3">

@@ -14,21 +14,12 @@ import type { ServiceRequest } from '../../../types/service-request-template';
 import { USE_MOCK_DATA, getMockClientById, getMockCompaniesByClientId } from '../../../data/mockCompanyData';
 import PageHeader from '../../common/PageHeader';
 import ViewClientSkeleton from './components/skeletons/ViewClientSkeleton';
-import PillTab from '../../common/PillTab';
-import Messages from '../../messages/Messages';
-import { MessageSquare, type LucideIcon } from 'lucide-react';
 import CreateCompanyModal from './view-company/components/CreateCompanyModal';
 
-interface Tab {
-    id: string;
-    label: string;
-    icon?: LucideIcon;
-}
 
 const ViewClient: React.FC = () => {
     const { clientId } = useParams<{ clientId: string }>();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = React.useState('info');
     const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
     const queryClient = useQueryClient();
 
@@ -63,11 +54,6 @@ const ViewClient: React.FC = () => {
         );
     }
 
-    const tabs: Tab[] = [
-        { id: 'info', label: 'Client Details', icon: User },
-        { id: 'messages', label: 'Messages', icon: MessageSquare },
-    ];
-
     return (
         <div className="space-y-6">
             <PageHeader 
@@ -92,78 +78,65 @@ const ViewClient: React.FC = () => {
                 }
             />
 
-            <PillTab 
-                tabs={tabs} 
-                activeTab={activeTab} 
-                onTabChange={setActiveTab} 
-            />
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-2xl bg-white space-y-4">
+                    <div className="flex items-center justify-between px-6 pt-6">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-primary" />
+                            Associated Companies
+                        </h3>
+                        <Button 
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all flex items-center gap-2 px-6 h-10"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Create Company
+                        </Button>
+                    </div>
 
-            {activeTab === 'info' ? (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-            <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-2xl bg-white space-y-4">
-                <div className="flex items-center justify-between px-6 pt-6">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-primary" />
-                        Associated Companies
-                    </h3>
-                    <Button 
-                        onClick={() => setIsCreateModalOpen(true)}
-                        className="rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all flex items-center gap-2 px-6 h-10"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Create Company
-                    </Button>
-                </div>
-
-                <Table>
-                    <TableHeader className="bg-gray-50/50">
-                        <TableRow>
-                            <TableHead className="py-4 px-6 text-nowrap">S.No</TableHead>
-                            <TableHead>Company Details</TableHead>
-                            <TableHead>Reg. Number</TableHead>
-                            <TableHead>Incorporation</TableHead>
-                            <TableHead>KYC</TableHead>
-                            <TableHead>Quickbook Integration</TableHead>
-                            <TableHead className="text-right px-6">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isCompaniesLoading ? (
-                            Array.from({ length: 3 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell className="px-6"><Skeleton className="h-4 w-4" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                                    <TableCell className="text-right px-6"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
-                                </TableRow>
-                            ))
-                        ) : (companies && companies.length > 0) ? (
-                            companies.map((company, index) => (
-                                <CompanyRow key={company.id} company={company} index={index} clientId={clientId!} navigate={navigate} queryClient={queryClient} />
-                            ))
-                        ) : (
+                    <Table>
+                        <TableHeader className="bg-gray-50/50">
                             <TableRow>
-                                <TableCell colSpan={7} className="h-48 text-center text-gray-400">
-                                    <div className="flex flex-col items-center justify-center space-y-2 opacity-30">
-                                        <Building2 className="h-10 w-10" />
-                                        <p className="text-sm font-bold uppercase tracking-widest">No companies found</p>
-                                    </div>
-                                </TableCell>
+                                <TableHead className="py-4 px-6 text-nowrap">S.No</TableHead>
+                                <TableHead>Company Details</TableHead>
+                                <TableHead>Reg. Number</TableHead>
+                                <TableHead>Incorporation</TableHead>
+                                <TableHead>KYC</TableHead>
+                                <TableHead>Quickbook Integration</TableHead>
+                                <TableHead className="text-right px-6">Actions</TableHead>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </ShadowCard>
-        </div>
-            ) : (
-                <div className="animate-in fade-in duration-500">
-                    <Messages isSingleChat={true} contextualChatId="8" />
-                </div>
-            )}
+                        </TableHeader>
+                        <TableBody>
+                            {isCompaniesLoading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell className="px-6"><Skeleton className="h-4 w-4" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                        <TableCell className="text-right px-6"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (companies && companies.length > 0) ? (
+                                companies.map((company, index) => (
+                                    <CompanyRow key={company.id} company={company} index={index} clientId={clientId!} navigate={navigate} queryClient={queryClient} />
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={7} className="h-48 text-center text-gray-400">
+                                        <div className="flex flex-col items-center justify-center space-y-2 opacity-30">
+                                            <Building2 className="h-10 w-10" />
+                                            <p className="text-sm font-bold uppercase tracking-widest">No companies found</p>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </ShadowCard>
+            </div>
 
             <CreateCompanyModal 
                 isOpen={isCreateModalOpen}

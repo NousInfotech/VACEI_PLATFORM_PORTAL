@@ -10,6 +10,7 @@ import { apiGet, apiDelete } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { PlatformEmployee, PlatformEmployeeResponse } from '../../../types/platformEmployee';
 import PageHeader from '../../common/PageHeader';
+import Pagination from '../../common/Pagination';
 
 const formatString = (str: string) => {
   if (!str) return 'N/A';
@@ -44,7 +45,9 @@ const Employees: React.FC = () => {
   const page = parseInt(searchParams.get('page') || '1', 10);
   const setPage = (updater: number | ((p: number) => number)) => {
     const newPage = typeof updater === 'function' ? updater(page) : updater;
-    setSearchParams({ page: String(newPage) });
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
   };
   const limit = 10;
 
@@ -52,7 +55,7 @@ const Employees: React.FC = () => {
   const { data, isLoading } = useQuery<PlatformEmployeeResponse>({
     queryKey: ['platform-employees'],
     queryFn: () =>
-      apiGet<PlatformEmployeeResponse>(endPoints.PLATFORM_EMPLOYEES.GET_ALL),
+      apiGet<PlatformEmployeeResponse>(endPoints.PLATFORM_EMPLOYEES.GET_ALL, { limit: 1000 }),
   });
 
   const allEmployees = useMemo(() => data?.data ?? [], [data?.data]);
@@ -185,34 +188,13 @@ const Employees: React.FC = () => {
             )}
           </TableBody>
         </Table>
-
-        {totalPages > 1 && (
-          <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-500 font-medium">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded-xl"
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="rounded-xl"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filteredEmployees.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
 
 

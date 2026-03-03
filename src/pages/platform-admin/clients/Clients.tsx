@@ -12,6 +12,7 @@ import type { Client, ClientResponse } from '../../../types/client';
 import { USE_MOCK_DATA, mockClients } from '../../../data/mockCompanyData';
 import PageHeader from '../../common/PageHeader';
 import Dropdown from '../../common/Dropdown';
+import Pagination from '../../common/Pagination';
 
 const Clients: React.FC = () => {
     const navigate = useNavigate();
@@ -21,14 +22,16 @@ const Clients: React.FC = () => {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const setPage = (updater: number | ((p: number) => number)) => {
         const newPage = typeof updater === 'function' ? updater(page) : updater;
-        setSearchParams({ page: String(newPage) });
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('page', String(newPage));
+        setSearchParams(nextParams);
     };
     const limit = 10;
 
     // Fetch ALL clients once and handle search + pagination on the client side
     const { data: realData, isLoading: isRealLoading } = useQuery<ClientResponse>({
         queryKey: ['clients'],
-        queryFn: () => apiGet(endPoints.CLIENT.GET_ALL),
+        queryFn: () => apiGet(endPoints.CLIENT.GET_ALL, { limit: 1000 }),
         enabled: !USE_MOCK_DATA,
     });
 
@@ -197,33 +200,13 @@ const Clients: React.FC = () => {
                     </TableBody>
                 </Table>
 
-                {totalPages > 1 && (
-                    <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-                        <p className="text-sm text-gray-500 font-medium">
-                            Page {page} of {totalPages}
-                        </p>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage((p: number) => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                                className="rounded-xl"
-                            >
-                                Previous
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage((p: number) => Math.min(totalPages, p + 1))}
-                                disabled={page === totalPages}
-                                className="rounded-xl"
-                            >
-                                Next
-                            </Button>
-                        </div>
-                    </div>
-                )}
+                <Pagination 
+                    currentPage={page}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                    totalItems={filteredClients.length}
+                    itemsPerPage={limit}
+                />
             </ShadowCard>
         </div>
     );

@@ -42,7 +42,7 @@ const CreateComplianceCalendarPage: React.FC = () => {
     onSuccess: () => {
       toast.success('Compliance calendar created successfully');
       queryClient.invalidateQueries({ queryKey: ['compliance-calendar'] });
-      navigate('/dashboard/compliance-calendar');
+      navigate('/dashboard/compliance');
     },
     onError: (err: { message?: string }) => {
       toast.error(err?.message || 'Failed to create');

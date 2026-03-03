@@ -51,7 +51,7 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { data: templates = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['service-request-templates'],
     queryFn: async () => {
-      const response = await apiGet<{ data: ServiceRequestTemplate[] }>(endPoints.SERVICE_REQUEST_TEMPLATE.GET_ALL);
+      const response = await apiGet<{ data: ServiceRequestTemplate[] }>(endPoints.SERVICE_REQUEST_TEMPLATE.GET_ALL, { limit: 1000 });
       return response.data;
     }
   });
@@ -59,7 +59,7 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const { data: customServices = [], isLoading: isLoadingCustomServices } = useQuery({
     queryKey: ['custom-services'],
     queryFn: async () => {
-      const response = await apiGet<{ data: CustomService[] }>(endPoints.CUSTOM_SERVICE.LIST);
+      const response = await apiGet<{ data: CustomService[] }>(endPoints.CUSTOM_SERVICE.LIST, { limit: 1000 });
       return response.data;
     }
   });

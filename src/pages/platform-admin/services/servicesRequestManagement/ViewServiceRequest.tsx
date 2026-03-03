@@ -265,19 +265,23 @@ const ViewServiceRequestContent: React.FC = () => {
             >
               Create Incorporation Cycle
             </Button>
-          ) : hasEngagement ? (
-            <div className={`px-6 py-2.5 bg-green-50 text-green-600 ${isTop ? 'text-[10px]' : 'text-sm'} font-bold rounded-xl border border-green-100 uppercase flex items-center gap-2 shadow-sm`}>
-              <CheckCircle2 className="h-4 w-4" />
-              Engagement Created
-            </div>
           ) : (
-            <Button 
-              onClick={() => setIsEngagementModalOpen(true)}
-              size={isTop ? 'default' : 'lg'}
-              className={`${commonBtnClass} ${isTop ? 'rounded-xl' : 'rounded-2xl px-10'}`}
-            >
-              Create Engagement
-            </Button>
+            <div className="flex items-center gap-3">
+              {hasEngagement && (
+                <div className={`px-4 py-2 bg-green-50 text-green-600 ${isTop ? 'text-[10px]' : 'text-sm'} font-bold rounded-xl border border-green-100 uppercase flex items-center gap-2 shadow-sm whitespace-nowrap`}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  {request.engagements?.length} Engagements
+                </div>
+              )}
+              <Button 
+                onClick={() => setIsEngagementModalOpen(true)}
+                size={isTop ? 'default' : 'lg'}
+                className={`${commonBtnClass} ${isTop ? 'rounded-xl text-[10px]' : 'rounded-2xl px-10'}`}
+                variant={hasEngagement ? 'outline' : 'default'}
+              >
+                {hasEngagement ? 'Add Another Engagement' : 'Create Engagement'}
+              </Button>
+            </div>
           )}
         </div>
       );
@@ -511,6 +515,70 @@ const ViewServiceRequestContent: React.FC = () => {
                         <Download className="h-4 w-4" />
                         Download
                       </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ShadowCard>
+        )}
+
+        {/* Existing Engagements Section */}
+        {request.engagements && request.engagements.length > 0 && (
+          <ShadowCard className="p-8 border border-gray-100 bg-white rounded-[40px] w-full mt-8">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-1 bg-green-500 rounded-full" />
+                  <h4 className="text-lg font-bold text-gray-900">Active Engagements</h4>
+                </div>
+                <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded-full border border-green-100 uppercase tracking-widest">
+                  {request.engagements.length} Mandates
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {request.engagements.map((eng: any) => (
+                  <div 
+                    key={eng.id} 
+                    className="flex flex-col p-6 rounded-3xl bg-gray-50 border border-gray-100 hover:border-green-500/20 hover:bg-white transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-white rounded-xl text-green-600 shadow-sm group-hover:shadow-md transition-all">
+                          <Building2 className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">{eng.organization?.name || 'Assigned Firm'}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Provider</p>
+                        </div>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                        eng.status === 'ASSIGNED' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
+                      }`}>
+                        {eng.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200/50">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <span className="text-xs font-bold text-gray-600">
+                          {eng.period ? (
+                            eng.period.frequency === 'monthly' ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][eng.period.month - 1]} ${eng.period.year}` :
+                            eng.period.frequency === 'quarterly' ? `Q${eng.period.quarter} ${eng.period.year}` :
+                            eng.period.startDate ? `${new Date(eng.period.startDate).toLocaleDateString()} - ${new Date(eng.period.endDate).toLocaleDateString()}` :
+                            eng.period.yearEndDate ? `Year End: ${new Date(eng.period.yearEndDate).toLocaleDateString()}` :
+                            eng.period.year
+                          ) : 'Standard Term'}
+                        </span>
+                      </div>
+                      {/* <button 
+                        onClick={() => navigate(`/dashboard/engagements/${eng.id}`)}
+                        className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
+                      >
+                        View Details
+                      </button> */}
                     </div>
                   </div>
                 ))}

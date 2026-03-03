@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, Building2, Edit2, Eye } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
@@ -17,6 +17,7 @@ import { endPoints } from '../../../config/endPoint';
 import type { Organization } from '../../../types/organization';
 import AlertMessage from '../../common/AlertMessage';
 import PageHeader from '../../common/PageHeader';
+import Pagination from '../../common/Pagination';
 
 const Organizations: React.FC = () => {
   const navigate = useNavigate();
@@ -25,13 +26,19 @@ const Organizations: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
   const limit = 10;
 
   const fetchOrganizations = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiGet<{ data: Organization[] }>(endPoints.ORGANIZATION.GET_ALL);
+      const response = await apiGet<{ data: Organization[] }>(endPoints.ORGANIZATION.GET_ALL, { limit: 1000 });
       setAllOrganizations(response.data);
     } catch {
       setAlert({ message: 'Failed to fetch organizations', variant: 'danger' });
@@ -227,35 +234,14 @@ const Organizations: React.FC = () => {
             )}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filteredOrganizations.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 pt-2">
-          <p className="text-sm text-gray-500 font-medium">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-xl"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-xl"
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
 
     </div>
   );

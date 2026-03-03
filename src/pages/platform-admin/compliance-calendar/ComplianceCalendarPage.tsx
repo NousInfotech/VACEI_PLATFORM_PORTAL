@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
   Plus,
@@ -25,8 +26,8 @@ import type {
   ComplianceCalendarFrequency,
 } from '../../../types/compliance-calendar';
 import { RoleEnum } from '../../../data/mockUserData';
-import { useNavigate } from 'react-router-dom';
 import { ComplianceCalendarDetailModal } from './ComplianceCalendarDetailModal';
+import Pagination from '../../common/Pagination';
 
 export const SERVICE_CATEGORIES: { value: ServiceCategory; label: string }[] = [
   { value: 'ACCOUNTING', label: 'Accounting' },
@@ -76,10 +77,21 @@ export const ComplianceCalendarPage: React.FC = () => {
     title: '',
   });
   const [detailItem, setDetailItem] = useState<ComplianceCalendar | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
+  const limit = 10;
   const navigate = useNavigate();
 
   // Platform roles see only GLOBAL entries (API also filters; we pass type=GLOBAL for clarity)
-  const listParams = isPlatformRole ? { type: 'GLOBAL' as const } : undefined;
+  const listParams = { 
+    ...(isPlatformRole ? { type: 'GLOBAL' as const } : {}),
+    limit: 1000
+  };
 
   const { data: response, isLoading } = useQuery({
     queryKey: ['compliance-calendar', listParams],
@@ -110,6 +122,9 @@ export const ComplianceCalendarPage: React.FC = () => {
       (c.description ?? '').toLowerCase().includes(search.toLowerCase()) ||
       SERVICE_CATEGORIES.find((s) => s.value === c.serviceCategory)?.label.toLowerCase().includes(search.toLowerCase())
   );
+  
+  const totalPages = Math.max(1, Math.ceil(filteredCalendars.length / limit));
+  const paginatedCalendars = filteredCalendars.slice((page - 1) * limit, page * limit);
 
   const canCreate = isPlatformAdmin;
   const canUpdate = (_item: ComplianceCalendar) => isPlatformAdmin;
@@ -214,8 +229,8 @@ export const ComplianceCalendarPage: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ))
-            ) : filteredCalendars.length > 0 ? (
-              filteredCalendars.map((item) => (
+            ) : paginatedCalendars.length > 0 ? (
+              paginatedCalendars.map((item) => (
                 <TableRow key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                   <TableCell className="py-4 px-6">
                     <div className="flex flex-col max-w-md">
@@ -289,6 +304,13 @@ export const ComplianceCalendarPage: React.FC = () => {
             )}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filteredCalendars.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
 
       {detailItem && (

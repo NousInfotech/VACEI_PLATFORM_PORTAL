@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
@@ -6,7 +6,7 @@ import {
   Filter,
   ArrowLeft
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../../../../ui/Button';
 import Dropdown from '../../../common/Dropdown';
 import { Services, type ServiceRequestTemplate, type TemplateType } from '../../../../types/service-request-template';
@@ -29,6 +29,14 @@ const ServiceRequestTemplatesContent: React.FC = () => {
   } = useTemplates();
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
   const [viewLevel, setViewLevel] = useState<'all' | 'custom'>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
+  const limit = 10;
 
   const allServicesHaveTemplates = useMemo(() => {
     if (isLoading) return false;
@@ -105,6 +113,15 @@ const ServiceRequestTemplatesContent: React.FC = () => {
 
     return result;
   }, [filteredTemplates, viewLevel]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedService, viewLevel]);
+
+  const totalPages = Math.max(1, Math.ceil(displayTemplates.length / limit));
+  const paginatedTemplates = useMemo(() => {
+    return displayTemplates.slice((page - 1) * limit, page * limit);
+  }, [displayTemplates, page]);
 
   const handleCreateClick = () => {
     navigate('/dashboard/service-request-templates/create');
@@ -210,7 +227,12 @@ const ServiceRequestTemplatesContent: React.FC = () => {
           </h3>
           <TemplateList
             loading={isLoading}
-            templates={displayTemplates}
+            templates={paginatedTemplates}
+            page={page}
+            limit={limit}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            totalItems={displayTemplates.length}
             onView={handleViewClick}
             onToggleActive={handleToggle}
           />

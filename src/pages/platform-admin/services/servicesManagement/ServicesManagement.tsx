@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -26,6 +27,7 @@ import PageHeader from '../../../common/PageHeader';
 import { TemplatesProvider, useTemplates } from '../../context/ServicesContext';
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { CustomService } from '../../../../types/service-request-template';
+import Pagination from '../../../common/Pagination';
 
 const ServicesManagementContent: React.FC = () => {
   const { 
@@ -42,11 +44,27 @@ const ServicesManagementContent: React.FC = () => {
   const [editingService, setEditingService] = useState<CustomService | null>(null);
   const [formData, setFormData] = useState({ title: '', description: '' });
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
-
-  const filteredServices = customServices.filter(service =>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
+  const limit = 10;
+  const filteredServices = useMemo(() => customServices.filter(service =>
     service.title.toLowerCase().includes(search.toLowerCase()) ||
     (service.description?.toLowerCase() || '').includes(search.toLowerCase())
-  );
+  ), [customServices, search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredServices.length / limit));
+  const paginatedServices = useMemo(() => {
+    return filteredServices.slice((page - 1) * limit, page * limit);
+  }, [filteredServices, page]);
 
   const handleOpenModal = (service: CustomService | null = null) => {
     if (service) {
@@ -167,11 +185,11 @@ const ServicesManagementContent: React.FC = () => {
                   <TableCell className="text-right px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredServices.length > 0 ? (
-              filteredServices.map((service, index) => (
+            ) : paginatedServices.length > 0 ? (
+              paginatedServices.map((service, index) => (
                 <TableRow key={service.id} className="hover:bg-gray-50/50 transition-colors group">
                   <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                    {(index + 1).toString().padStart(2, '0')}
+                    {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                   </TableCell>
                   <TableCell className="font-semibold text-gray-900 group-hover:text-primary transition-colors py-5">
                     <div className="flex items-center gap-3">
@@ -229,6 +247,13 @@ const ServicesManagementContent: React.FC = () => {
             )}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filteredServices.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
 
       {/* Create/Edit Modal */}

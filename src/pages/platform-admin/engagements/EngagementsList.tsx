@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
  
 import { 
   ShieldCheck, 
@@ -18,6 +19,7 @@ import type { Organization } from '../../../types/organization';
 import { mockEngagements } from '../../../data/engagementMockData';
 import { EngagementStatusModal, type EngagementStatus } from './components/EngagementStatusModal';
 import { ChangeOrganizationModal } from './components/ChangeOrganizationModal';
+import Pagination from '../../common/Pagination';
 
 const USE_MOCK_DATA = false;
 
@@ -31,6 +33,14 @@ const EngagementsList: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const userRole = localStorage.getItem('userRole') || 'PLATFORM_ADMIN';
   const [organizationMap, setOrganizationMap] = useState<Record<string, string>>({});
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
+  const limit = 10;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,8 +53,8 @@ const EngagementsList: React.FC = () => {
         }
 
         const [engRes, orgRes] = await Promise.all([
-          apiGet<{ data: Engagement[] }>(endPoints.ENGAGEMENT.GET_ALL),
-          apiGet<{ data: Organization[] }>(endPoints.ORGANIZATION.GET_ALL),
+          apiGet<{ data: Engagement[] }>(endPoints.ENGAGEMENT.GET_ALL, { limit: 1000 }),
+          apiGet<{ data: Organization[] }>(endPoints.ORGANIZATION.GET_ALL, { limit: 1000 }),
         ]);
 
         setEngagements(engRes.data);
@@ -75,6 +85,13 @@ const EngagementsList: React.FC = () => {
       organizationName.includes(searchLower)
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEngagements.length / limit));
+  const paginatedEngagements = filteredEngagements.slice((page - 1) * limit, page * limit);
 
   const handleUpdateStatus = async (status: EngagementStatus, reason?: string) => {
     if (!statusModal) return;
@@ -141,11 +158,11 @@ const EngagementsList: React.FC = () => {
                   <TableCell className="text-right px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredEngagements.length > 0 ? (
-              filteredEngagements.map((eng, index) => (
+            ) : paginatedEngagements.length > 0 ? (
+              paginatedEngagements.map((eng, index) => (
                 <TableRow key={eng.id} className="hover:bg-gray-50/50 transition-colors group">
                   <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                    {(index + 1).toString().padStart(2, '0')}
+                    {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                   </TableCell>
                   <TableCell className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
                     <div className="flex items-center gap-2">
@@ -244,6 +261,13 @@ const EngagementsList: React.FC = () => {
             )}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filteredEngagements.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
 
       {statusModal && (

@@ -10,7 +10,8 @@ import {
   Briefcase,
   Building,
   Check,
-  Info
+  Info,
+  Calendar
 } from 'lucide-react';
 import { Button } from '../../../../ui/Button';
 import { ShadowCard } from '../../../../ui/ShadowCard';
@@ -46,6 +47,15 @@ const CreateEngagementPage: React.FC = () => {
   const [searchOrg, setSearchOrg] = useState('');
   const [isChangingCompany, setIsChangingCompany] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Period states
+  const [periodType, setPeriodType] = useState<'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'RANGE' | 'YEAR_END'>('MONTHLY');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedQuarters, setSelectedQuarters] = useState<string[]>(['1']);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [yearEndDate, setYearEndDate] = useState('');
 
 
   useEffect(() => {
@@ -157,30 +167,65 @@ const CreateEngagementPage: React.FC = () => {
 
   const handleCreate = async () => {
     setLoading(true);
+    
+    const periods: any[] = [];
+    const currentYear = parseInt(selectedYear);
+
+    const isRecurring = ['ACCOUNTING', 'VAT', 'PAYROLL', 'MBR', 'TAX', 'AUDITING'].includes(selectedService);
+
+    if (isRecurring) {
+      if (periodType === 'MONTHLY') {
+        selectedMonths.forEach(m => periods.push({ frequency: 'monthly', year: currentYear, month: parseInt(m) }));
+      } else if (periodType === 'QUARTERLY') {
+        selectedQuarters.forEach(q => periods.push({ frequency: 'quarterly', year: currentYear, quarter: parseInt(q) }));
+      } else if (periodType === 'YEARLY') {
+        periods.push({ frequency: 'yearly', year: currentYear });
+      } else if (periodType === 'RANGE') {
+        periods.push({ startDate, endDate });
+      } else if (periodType === 'YEAR_END') {
+        periods.push({ yearEndDate });
+      }
+    } else {
+      periods.push({}); // Simple one-off
+    }
+
+    if (isRecurring && periods.length === 0) {
+      alert('Please select at least one period');
+      setLoading(false);
+      return;
+    }
+
     try {
-      if (!USE_MOCK_DATA) {
-        await apiPost(endPoints.ENGAGEMENT.CREATE, {
-          companyId: selectedCompanyId,
-          organizationId: selectedOrgId,
-          serviceCategory: selectedService,
-        });
-      } else {
-        const newEng: Engagement = {
-          id: `eng_${Date.now()}`,
-          companyId: selectedCompanyId,
-          companyName: companies.find(c => c.id === selectedCompanyId)?.name || companyName,
-          organizationId: selectedOrgId,
-          organizationName: organizations.find(o => o.id === selectedOrgId)?.name || 'Mock Org',
-          serviceCategory: selectedService as keyof typeof Services,
-          status: 'ASSIGNED',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        mockEngagements.push(newEng);
+      let successCount = 0;
+      for (const p of periods) {
+        if (!USE_MOCK_DATA) {
+          await apiPost(endPoints.ENGAGEMENT.CREATE, {
+            companyId: selectedCompanyId,
+            organizationId: selectedOrgId,
+            serviceCategory: selectedService,
+            period: p,
+          });
+          successCount++;
+        } else {
+          // Mock logic
+          const newEng: Engagement = {
+            id: `eng_${Date.now()}_${successCount}`,
+            companyId: selectedCompanyId,
+            companyName: companies.find(c => c.id === selectedCompanyId)?.name || companyName,
+            organizationId: selectedOrgId,
+            organizationName: organizations.find(o => o.id === selectedOrgId)?.name || 'Mock Org',
+            serviceCategory: selectedService as keyof typeof Services,
+            status: 'ASSIGNED',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          mockEngagements.push(newEng);
+          successCount++;
+        }
       }
       setShowSuccessModal(true);
     } catch {
-      alert('Failed to create engagement');
+      alert('Failed to create some or all engagements');
     } finally {
       setLoading(false);
     }
@@ -403,7 +448,14 @@ const CreateEngagementPage: React.FC = () => {
                     {Object.keys(Services).map((svc) => (
                       <button 
                         key={svc}
-                        onClick={() => setSelectedService(svc)}
+                        onClick={() => {
+                          setSelectedService(svc);
+                          // Set default period types
+                          if (svc === 'AUDITING') setPeriodType('YEAR_END');
+                          else if (svc === 'VAT') setPeriodType('QUARTERLY');
+                          else if (svc === 'ACCOUNTING' || svc === 'PAYROLL') setPeriodType('RANGE');
+                          else if (['MBR', 'TAX'].includes(svc)) setPeriodType('YEARLY');
+                        }}
                         className={`group px-5 py-3 rounded-2xl border-2 text-left transition-all duration-500 ${
                           selectedService === svc 
                             ? 'border-primary bg-primary/5 shadow-2xl shadow-primary/10 scale-102 z-10' 
@@ -420,6 +472,101 @@ const CreateEngagementPage: React.FC = () => {
                       </button>
                     ))}
                   </div>
+
+                  {/* Period Selection for Recurring Services */}
+                  {['ACCOUNTING', 'VAT', 'PAYROLL', 'MBR', 'TAX', 'AUDITING'].includes(selectedService) && (
+                    <div className="mt-8 p-8 bg-gray-50/50 rounded-[32px] border border-gray-100 space-y-8 animate-in fade-in slide-in-from-top-4">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="text-primary h-5 w-5" />
+                        <h3 className="font-bold text-gray-900 uppercase tracking-widest text-[10px]">Engagement Period Configuration</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {selectedService === 'VAT' && (
+                          <div className="space-y-2 col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Frequency</label>
+                            <div className="flex gap-2">
+                              {['YEARLY', 'QUARTERLY', 'MONTHLY'].map(f => (
+                                <button
+                                  key={f}
+                                  onClick={() => setPeriodType(f as any)}
+                                  className={`flex-1 py-3 rounded-xl border-2 font-bold text-xs transition-all ${
+                                    periodType === f ? 'bg-primary text-white border-primary shadow-lg' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'
+                                  }`}
+                                >
+                                  {f}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedService === 'AUDITING' && (
+                          <div className="space-y-2 col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Year End Date</label>
+                            <input type="date" value={yearEndDate} onChange={(e) => setYearEndDate(e.target.value)} className="w-full p-4 rounded-2xl bg-white border border-gray-200 font-bold" />
+                          </div>
+                        )}
+
+                        {['ACCOUNTING', 'PAYROLL'].includes(selectedService) && (
+                          <>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Start Date</label>
+                              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full p-4 rounded-2xl bg-white border border-gray-200 font-bold" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">End Date</label>
+                              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full p-4 rounded-2xl bg-white border border-gray-200 font-bold" />
+                            </div>
+                          </>
+                        )}
+
+                        {['VAT', 'MBR', 'TAX'].includes(selectedService) && (
+                          <div className="space-y-2 col-span-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Select Year</label>
+                            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="w-full p-4 rounded-2xl bg-white border border-gray-200 font-bold">
+                              {[2023, 2024, 2025, 2026, 2027].map(y => <option key={y} value={String(y)}>{y}</option>)}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedService === 'VAT' && periodType === 'MONTHLY' && (
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                          {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
+                            <button
+                              key={m}
+                              onClick={() => {
+                                const val = String(i + 1);
+                                setSelectedMonths(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
+                              }}
+                              className={`py-2 rounded-xl border font-bold text-xs ${selectedMonths.includes(String(i+1)) ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                            >
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {selectedService === 'VAT' && periodType === 'QUARTERLY' && (
+                        <div className="grid grid-cols-2 gap-4">
+                          {[1, 2, 3, 4].map(q => (
+                            <button
+                              key={q}
+                              onClick={() => {
+                                const val = String(q);
+                                setSelectedQuarters(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
+                              }}
+                              className={`p-4 rounded-2xl border font-bold text-sm flex items-center justify-between ${selectedQuarters.includes(String(q)) ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-gray-400 border-gray-100'}`}
+                            >
+                              Q{q}: {['Jan-Mar', 'Apr-Jun', 'Jul-Sep', 'Oct-Dec'][q-1]}
+                              {selectedQuarters.includes(String(q)) && <CheckCircle2 size={16} />}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -459,10 +606,39 @@ const CreateEngagementPage: React.FC = () => {
                             <div className="p-3 bg-white rounded-2xl text-primary shadow-sm border border-primary/5">
                               <Briefcase size={24} />
                             </div>
-                            <div>
-                               <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest leading-none">Primary Service Area</span>
-                               <h4 className="text-xl font-bold text-gray-900 leading-tight pt-1">{selectedService.replace(/_/g, ' ')}</h4>
-                            </div>
+                             <div>
+                                <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest leading-none">Planned Engagements</span>
+                                <h4 className="text-xl font-bold text-gray-900 leading-tight pt-1">
+                                  {selectedService.replace(/_/g, ' ')}
+                                </h4>
+                                <div className="mt-4 space-y-2">
+                                  {(() => {
+                                    const periods: string[] = [];
+                                    const currentYear = selectedYear;
+                                    if (periodType === 'MONTHLY') {
+                                      const monthsArr = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                      selectedMonths.sort((a,b) => parseInt(a)-parseInt(b)).forEach(m => periods.push(`${monthsArr[parseInt(m)-1]} ${currentYear}`));
+                                    } else if (periodType === 'QUARTERLY') {
+                                      selectedQuarters.sort().forEach(q => periods.push(`Q${q} ${currentYear}`));
+                                    } else if (periodType === 'YEARLY') {
+                                      periods.push(`Annual ${currentYear}`);
+                                    } else if (periodType === 'RANGE') {
+                                      periods.push(`${startDate} - ${endDate}`);
+                                    } else if (periodType === 'YEAR_END') {
+                                      periods.push(`Year End: ${yearEndDate}`);
+                                    } else {
+                                      periods.push('One-time mandate');
+                                    }
+
+                                    return periods.map((p, i) => (
+                                      <div key={i} className="flex items-center gap-2 text-sm font-bold text-gray-600 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+                                        <CheckCircle2 size={14} className="text-green-500" />
+                                        {p}
+                                      </div>
+                                    ));
+                                  })()}
+                                </div>
+                             </div>
                           </div>
                           <div className="px-5 py-2 bg-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20">
                              Official Mandate

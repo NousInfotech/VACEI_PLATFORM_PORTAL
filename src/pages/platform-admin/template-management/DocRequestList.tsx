@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, Edit2, Trash2, Search, Plus, FileText, Globe, Building } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '../../../ui/Button';
@@ -12,6 +12,7 @@ import { apiGet, apiDelete } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Template, TemplateListResponse, TemplateModuleType, Services } from '../../../types/template';
 import { ALL_SERVICES, SERVICES_LABELS } from '../../../types/template';
+import Pagination from '../../common/Pagination';
 
 interface Props {
   moduleType: TemplateModuleType;
@@ -31,7 +32,7 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
   const queryParams: Record<string, string> = {
     type: 'DOCUMENT_REQUEST',
     moduleType,
-    limit: '100',
+    limit: '1000',
   };
   if (serviceFilter) queryParams.serviceCategory = serviceFilter;
 
@@ -54,7 +55,13 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
   });
 
   const templates = response?.data || [];
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('page', String(newPage));
+    setSearchParams(nextParams);
+  };
   const limit = 10;
 
   const filtered = useMemo(
@@ -222,35 +229,14 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
             )}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          totalItems={filtered.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2 pt-2">
-          <p className="text-sm text-gray-500 font-medium">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-xl"
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="rounded-xl"
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

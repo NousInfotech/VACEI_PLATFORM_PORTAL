@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   MessageSquare,
   CheckCircle,
@@ -17,6 +17,7 @@ import { endPoints } from '../../../config/endPoint';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../ui/Table';
 import AlertMessage from '../../common/AlertMessage';
+import Pagination from '../../common/Pagination';
 
 interface SupportRequestRow {
   id: string;
@@ -57,15 +58,33 @@ const TicketManagement: React.FC = () => {
   const [requestsTab, setRequestsTab] = useState<TabType>('company');
   const [ticketsTab, setTicketsTab] = useState<TabType>('company');
   const [detailModalRequest, setDetailModalRequest] = useState<SupportRequestRow | null>(null);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestsPage = parseInt(searchParams.get('rpage') || '1', 10);
+  const ticketsPage = parseInt(searchParams.get('tpage') || '1', 10);
+  
+  const setRequestsPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('rpage', String(newPage));
+    setSearchParams(nextParams);
+  };
+  
+  const setTicketsPage = (newPage: number) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tpage', String(newPage));
+    setSearchParams(nextParams);
+  };
+  
+  const limit = 10;
 
   const { data: requestsRes, isLoading: loadingRequests } = useQuery({
     queryKey: ['support-requests'],
-    queryFn: () => apiGet<{ data: SupportRequestRow[]; meta?: { total: number } }>(endPoints.SUPPORT.SUPPORT_REQUESTS, { limit: 100 }),
+    queryFn: () => apiGet<{ data: SupportRequestRow[]; meta?: { total: number } }>(endPoints.SUPPORT.SUPPORT_REQUESTS, { limit: 1000 }),
   });
 
   const { data: ticketsRes, isLoading: loadingTickets } = useQuery({
     queryKey: ['support-tickets'],
-    queryFn: () => apiGet<{ data: TicketRow[]; meta?: { total: number } }>(endPoints.SUPPORT.TICKETS, { limit: 100 }),
+    queryFn: () => apiGet<{ data: TicketRow[]; meta?: { total: number } }>(endPoints.SUPPORT.TICKETS, { limit: 1000 }),
   });
 
   const acceptMutation = useMutation({
@@ -109,6 +128,12 @@ const TicketManagement: React.FC = () => {
 
   const displayRequests = requestsTab === 'company' ? pendingCompany : pendingOrganization;
   const displayTickets = ticketsTab === 'company' ? ticketsCompany : ticketsOrganization;
+
+  const paginatedRequests = displayRequests.slice((requestsPage - 1) * limit, requestsPage * limit);
+  const paginatedTickets = displayTickets.slice((ticketsPage - 1) * limit, ticketsPage * limit);
+  
+  const totalRequestsPages = Math.ceil(displayRequests.length / limit);
+  const totalTicketsPages = Math.ceil(displayTickets.length / limit);
 
   const userName = (r: SupportRequestRow) =>
     r.user ? [r.user.firstName, r.user.lastName].filter(Boolean).join(' ') || r.user.email || '—' : '—';
@@ -179,7 +204,7 @@ const TicketManagement: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayRequests.map((r: SupportRequestRow) => (
+              {paginatedRequests.map((r: SupportRequestRow) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium text-gray-900">{userName(r)}</TableCell>
                   <TableCell className="text-gray-700">{companyOrOrgName(r)}</TableCell>
@@ -224,6 +249,13 @@ const TicketManagement: React.FC = () => {
             </TableBody>
           </Table>
         )}
+        <Pagination 
+          currentPage={requestsPage}
+          totalPages={totalRequestsPages}
+          onPageChange={setRequestsPage}
+          totalItems={displayRequests.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
 
       {/* Support request detail modal - 60% width, subject + description + attachments */}
@@ -308,7 +340,7 @@ const TicketManagement: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {displayTickets.map((t: TicketRow) => (
+              {paginatedTickets.map((t: TicketRow) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium text-gray-900">{ticketUserName(t)}</TableCell>
                   <TableCell className="text-gray-700">{ticketCompanyOrOrgName(t)}</TableCell>
@@ -337,6 +369,13 @@ const TicketManagement: React.FC = () => {
             </TableBody>
           </Table>
         )}
+        <Pagination 
+          currentPage={ticketsPage}
+          totalPages={totalTicketsPages}
+          onPageChange={setTicketsPage}
+          totalItems={displayTickets.length}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
     </div>
   );

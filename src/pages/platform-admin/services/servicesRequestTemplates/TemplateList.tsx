@@ -4,6 +4,7 @@ import { Skeleton } from '../../../../ui/Skeleton';
 import { Button } from '../../../../ui/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../../../ui/Table';
 import { ShadowCard } from '../../../../ui/ShadowCard';
+import Pagination from '../../../common/Pagination';
 import type { ServiceRequestTemplate } from '../../../../types/service-request-template';
 import { useTemplates } from '../../context/ServicesContext';
 
@@ -12,6 +13,11 @@ interface TemplateListProps {
   templates: ServiceRequestTemplate[];
   onView: (template: ServiceRequestTemplate) => void;
   onToggleActive: (template: ServiceRequestTemplate) => void;
+  page: number;
+  limit: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems: number;
 }
 
 export const TemplateList: React.FC<TemplateListProps> = ({
@@ -19,6 +25,11 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   templates,
   onView,
   onToggleActive,
+  page,
+  limit,
+  totalPages,
+  onPageChange,
+  totalItems,
 }) => {
   const { formatServiceLabel } = useTemplates();
 
@@ -49,6 +60,13 @@ export const TemplateList: React.FC<TemplateListProps> = ({
             ))}
           </TableBody>
         </Table>
+        <Pagination 
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={onPageChange}
+          totalItems={totalItems}
+          itemsPerPage={limit}
+        />
       </ShadowCard>
     );
   }
@@ -84,7 +102,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
           {templates.map((template, index) => (
             <TableRow key={template.id} className="hover:bg-gray-50/50 transition-colors group">
               <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                 {(index + 1).toString().padStart(2, '0')}
+                 {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
               </TableCell>
               <TableCell className="py-4">
                 <div className="flex items-center gap-3">
