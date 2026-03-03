@@ -5,6 +5,9 @@ import {
   CheckCircle,
   ListChecks,
   XCircle,
+  X,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import PageHeader from '../../common/PageHeader';
@@ -26,6 +29,7 @@ interface SupportRequestRow {
   user?: { id: string; firstName: string; lastName: string; email?: string | null };
   company?: { id: string; name: string } | null;
   organization?: { id: string; name: string } | null;
+  attachments?: { id: string; file_name: string; url?: string }[];
 }
 
 interface TicketRow {
@@ -52,6 +56,7 @@ const TicketManagement: React.FC = () => {
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
   const [requestsTab, setRequestsTab] = useState<TabType>('company');
   const [ticketsTab, setTicketsTab] = useState<TabType>('company');
+  const [detailModalRequest, setDetailModalRequest] = useState<SupportRequestRow | null>(null);
 
   const { data: requestsRes, isLoading: loadingRequests } = useQuery({
     queryKey: ['support-requests'],
@@ -188,6 +193,14 @@ const TicketManagement: React.FC = () => {
                   <TableCell className="text-right">
                     <Button
                       size="sm"
+                      variant="outline"
+                      className="mr-2"
+                      onClick={() => setDetailModalRequest(r)}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
                       className="bg-primary hover:bg-primary/90 text-white mr-2"
                       disabled={acceptMutation.isPending || rejectMutation.isPending}
                       onClick={() => acceptMutation.mutate(r.id)}
@@ -212,6 +225,47 @@ const TicketManagement: React.FC = () => {
           </Table>
         )}
       </ShadowCard>
+
+      {/* Support request detail modal - 60% width, subject + description + attachments */}
+      {detailModalRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm" onClick={() => setDetailModalRequest(null)}>
+          <div className="w-[60%] max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="text-lg font-bold text-gray-900">Support request details</h3>
+              <button type="button" onClick={() => setDetailModalRequest(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Subject</p>
+                <p className="font-medium text-gray-900">{detailModalRequest.subject}</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Description</p>
+                <p className="text-gray-700 whitespace-pre-wrap">{detailModalRequest.description || '—'}</p>
+              </div>
+              {(detailModalRequest.attachments?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1">
+                    <FileText className="h-3.5 w-3.5" /> Attachments
+                  </p>
+                  <ul className="space-y-1">
+                    {detailModalRequest.attachments!.map((a) => (
+                      <li key={a.id}>
+                        <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1">
+                          {a.file_name}
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-3xl bg-white">
         <div className="flex items-center justify-between mb-4">
