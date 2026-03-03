@@ -14,11 +14,14 @@ import { ConfirmModal } from "../../../../messages/components/ConfirmModal";
 interface DocumentRequestSingleProps {
   requestId: string;
   documents: DocumentRequestDocumentSingle[];
+  /** When true (e.g. document request status COMPLETED), disables upload/clear/accept/reject/delete/edit; view and download stay enabled. */
+  isDisabled?: boolean;
 }
 
 const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
   requestId,
   documents,
+  isDisabled: isDisabledProp = false,
 }) => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,6 +103,7 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
   });
 
   const isAnyActionLoading = uploadMutation.isPending || clearMutation.isPending || deleteMutation.isPending || updateMutation.isPending;
+  const actionDisabled = isAnyActionLoading || isDisabledProp;
 
 
   const updateStatusMutation = useMutation({

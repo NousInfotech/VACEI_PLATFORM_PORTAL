@@ -10,6 +10,15 @@ const axiosInstance = axios.create({
   },
 });
 
+function clearAuthStorage(): void {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('organizationMember');
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('selectedService');
+}
+
 // Request Interceptor: Attach token if available
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -24,57 +33,53 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Handle errors globally
+// Response Interceptor: on 401 try refresh token, then retry or redirect to login
 axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response) {
-      // Handle 401 Unauthorized
-      if (error.response.status === 401 && !originalRequest._retry) {
-        if (typeof window !== 'undefined') {
-          const refreshToken = localStorage.getItem('refreshToken');
-          
-          if (refreshToken) {
-            originalRequest._retry = true;
-            try {
-              const res = await axios.post(`${baseURL}${endPoints.AUTH.REFRESH}`, { refreshToken });
-              
-              if (res.data.success && res.data.data.token) {
-                const newToken = res.data.data.token;
-                const newRefreshToken = res.data.data.refreshToken;
-                
-                localStorage.setItem('token', newToken);
-                if (newRefreshToken) {
-                  localStorage.setItem('refreshToken', newRefreshToken);
-                }
-                
-                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-                originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-                
-                return axiosInstance(originalRequest);
-              }
-            } catch (refreshError) {
-              console.error('Token refresh failed:', refreshError);
-              localStorage.removeItem('token');
-              localStorage.removeItem('refreshToken');
-              window.location.href = '/login?message=' + encodeURIComponent('Session expired. Please log in again.');
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const path = window.location.pathname || '';
+      if (path.startsWith('/login') || path.startsWith('/forgot-password')) {
+        return Promise.reject(error.response?.data ?? error);
+      }
+
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (refreshToken && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const res = await axios.post(`${baseURL}${endPoints.AUTH.REFRESH}`, { refreshToken });
+
+          if (res.data?.success && res.data?.data?.token) {
+            const newToken = res.data.data.token;
+            const newRefreshToken = res.data.data.refreshToken;
+
+            localStorage.setItem('token', newToken);
+            if (newRefreshToken) {
+              localStorage.setItem('refreshToken', newRefreshToken);
             }
-          } else {
-            localStorage.removeItem('token');
-            // Only redirect if we're not already on login page to avoid loops
-            if (!window.location.pathname.includes('/login')) {
-              window.location.href = '/login?message=' + encodeURIComponent('Please log in to continue.');
-            }
+
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+            return axiosInstance(originalRequest);
           }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          clearAuthStorage();
+          window.location.href = '/login?message=' + encodeURIComponent('Session expired. Please log in again.');
+          return Promise.reject(refreshError);
         }
       }
-      return Promise.reject(error.response.data);
+
+      // No refresh token or refresh already attempted: clear auth and redirect
+      clearAuthStorage();
+      window.location.href = '/login?message=' + encodeURIComponent('Session expired. Please log in again.');
     }
-    return Promise.reject({ message: 'Network error or server down' });
+
+    const errPayload = error.response?.data !== undefined ? error.response.data : { message: error.message || 'Network error or server down' };
+    return Promise.reject(errPayload);
   }
 );
 
