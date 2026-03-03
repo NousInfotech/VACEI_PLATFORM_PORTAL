@@ -51,13 +51,16 @@ export const Dropdown = ({
   const [calculatedAlign, setCalculatedAlign] = useState<"left" | "right" | "center">(align);
   const [maxHeight, setMaxHeight] = useState<number>(320);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+      const target = event.target as Node;
+      const isInsideTrigger = dropdownRef.current?.contains(target);
+      const isInsideMenu = menuRef.current?.contains(target);
+      if (isInsideTrigger || isInsideMenu) return;
+      setIsOpen(false);
     };
 
     if (isOpen) {
@@ -179,6 +182,7 @@ export const Dropdown = ({
       {/* Dropdown menu - use portal when open to avoid overflow/z-index issues */}
       {isOpen && typeof document !== "undefined" && createPortal(
         <div
+          ref={menuRef}
           className={cn(
             "fixed z-[9999] origin-top rounded-2xl bg-white p-1.5 shadow-2xl ring-1 ring-black/5 focus:outline-none transition-all duration-300 ease-in-out min-w-[200px]",
             fullWidth ? "w-full" : "w-64",

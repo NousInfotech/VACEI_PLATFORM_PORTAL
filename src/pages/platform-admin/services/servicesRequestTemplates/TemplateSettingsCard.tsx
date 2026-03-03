@@ -123,13 +123,14 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
               <Badge variant="label">Target Service</Badge>
               <div className="w-full">
                 <Dropdown
+                  key={`service-${formData.service ?? ''}-${formData.customServiceCycleId ?? ''}`}
                   fullWidth
                   className="w-full"
                   items={serviceOptions.map(opt => ({
                     ...opt,
                     onClick: () => onUpdate({ 
                       service: opt.id as string | null,
-                      customServiceCycleId: (opt as DropdownItem & { customServiceCycleId?: string }).customServiceCycleId || null
+                      customServiceCycleId: (opt as DropdownItem & { customServiceCycleId?: string }).customServiceCycleId ?? null
                     })
                   }))}
                   trigger={
