@@ -25,24 +25,19 @@ const Clients: React.FC = () => {
     };
     const limit = 10;
 
+    // Fetch ALL clients once and handle search + pagination on the client side
     const { data: realData, isLoading: isRealLoading } = useQuery<ClientResponse>({
-        queryKey: ['clients', page],
-        queryFn: () => apiGet(endPoints.CLIENT.GET_ALL, { page, limit }),
+        queryKey: ['clients'],
+        queryFn: () => apiGet(endPoints.CLIENT.GET_ALL),
         enabled: !USE_MOCK_DATA,
     });
 
-    const data = USE_MOCK_DATA ? {
-        data: mockClients.slice((page - 1) * limit, page * limit),
-        meta: {
-            total: mockClients.length,
-            page,
-            limit,
-        }
-    } : realData;
-
     const isLoading = USE_MOCK_DATA ? false : isRealLoading;
 
-    const allClients = useMemo(() => data?.data ?? [], [data?.data]);
+    const allClients = useMemo(
+        () => (USE_MOCK_DATA ? mockClients : realData?.data ?? []),
+        [realData?.data]
+    );
 
     const filteredClients = useMemo(() => {
         let results = allClients;
@@ -80,11 +75,15 @@ const Clients: React.FC = () => {
                 client.user.email?.toLowerCase().includes(searchLower)
             );
         }
-
         return results;
     }, [allClients, search, selectedDateRange]);
 
-    const totalPages = Math.ceil((data?.meta?.total || 0) / limit);
+    const totalPages = Math.max(1, Math.ceil(filteredClients.length / limit));
+
+    const paginatedClients = useMemo(() => {
+        const start = (page - 1) * limit;
+        return filteredClients.slice(start, start + limit);
+    }, [filteredClients, page]);
 
     return (
         <div className="space-y-6">
@@ -158,11 +157,11 @@ const Clients: React.FC = () => {
                                     <TableCell className="text-right px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : filteredClients.length > 0 ? (
-                            filteredClients.map((client: Client, index: number) => (
+                        ) : paginatedClients.length > 0 ? (
+                            paginatedClients.map((client: Client, index: number) => (
                                 <TableRow key={client.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                                        {(index + 1).toString().padStart(2, '0')}
+                                        {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                                     </TableCell>
                                     <TableCell className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
                                         {client.user.firstName} {client.user.lastName}

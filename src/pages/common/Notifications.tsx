@@ -46,38 +46,60 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onMar
 
     return (
         <ShadowCard 
-            className={`p-4 mb-4 border-l-4 transition-all hover:bg-gray-50 cursor-pointer ${
-                isRead ? 'border-gray-200' : 'border-primary bg-primary/5'
+            className={`p-4 mb-4 border border-gray-100 rounded-2xl transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+                isRead ? 'bg-white' : 'bg-primary/5 border-primary/20'
             }`}
             onClick={handleClick}
         >
             <div className="flex gap-4">
-                <div className={`mt-1 p-2 rounded-xl ${isRead ? 'bg-gray-100' : 'bg-white'}`}>
+                <div
+                    className={`mt-1 rounded-2xl shadow-sm flex items-center justify-center ${
+                        isRead ? 'bg-gray-50' : 'bg-white'
+                    }`}
+                    style={{ height: 72, width: 32 }}
+                >
                     {getIcon()}
                 </div>
-                <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                        <h4 className={`font-bold text-gray-900 ${isRead ? 'opacity-70' : ''}`}>
-                            {notification.title}
-                        </h4>
-                    </div>
-                    <p className={`text-sm text-gray-600 mt-1 ${isRead ? 'opacity-60' : ''}`}>
-                        {notification.content}
-                    </p>
-                    <div className="flex items-center gap-4 mt-3">
-                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                <div className="flex-1 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                            <h4 className={`font-semibold text-sm text-gray-900 ${isRead ? 'opacity-80' : ''}`}>
+                                {notification.title}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-widest bg-gray-100 text-gray-500">
+                                    {notification.type.replace(/_/g, ' ')}
+                                </span>
+                                {!isRead && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-primary text-white">
+                                        New
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest whitespace-nowrap">
                             {new Date(notification.createdAt).toLocaleString()}
                         </span>
+                    </div>
+                    <p className={`text-sm leading-relaxed text-gray-600 ${isRead ? 'opacity-70' : ''}`}>
+                        {notification.content}
+                    </p>
+                    <div className="flex items-center gap-4 pt-1">
                         {notification.ctaUrl && (
                             <button 
-                                className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline"
+                                className="text-[11px] font-semibold text-primary uppercase tracking-widest hover:underline"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     window.open(notification.ctaUrl!, '_blank');
                                 }}
                             >
-                                View Details
+                                View details
                             </button>
+                        )}
+                        {isRead && (
+                            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                                Read
+                            </span>
                         )}
                     </div>
                 </div>
@@ -161,46 +183,59 @@ export default function Notifications() {
         <div className="space-y-6">
             <PageHeader 
                 title="Notifications"
-                description={`You have ${unreadCount} unread notifications.`}
+                icon={Bell}
+                description={
+                    unreadCount > 0 
+                        ? `You have ${unreadCount} unread notifications.` 
+                        : 'You’re all caught up. We’ll keep you posted here.'
+                }
             />
 
-            <div className="flex items-center justify-between">
-                <div className="flex gap-2">
-                    <Button 
-                        variant={showUnreadOnly ? 'default' : 'ghost'} 
-                        size="sm"
-                        onClick={() => {
-                            setShowUnreadOnly(true);
-                            setCurrentPage(1);
-                        }}
-                        className="rounded-xl"
-                    >
-                        <Filter className="h-4 w-4 mr-2" />
-                        Unread
-                    </Button>
-                    <Button 
-                        variant={!showUnreadOnly ? 'default' : 'ghost'} 
-                        size="sm"
-                        onClick={() => {
-                            setShowUnreadOnly(false);
-                            setCurrentPage(1);
-                        }}
-                        className="rounded-xl"
-                    >
-                        All
-                    </Button>
+            <ShadowCard className="flex flex-col md:flex-row items-center justify-between gap-3 p-4 border border-gray-100 rounded-2xl bg-white">
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-50 border border-gray-200">
+                        <Bell className="h-4 w-4 text-primary" />
+                        <span className="text-[11px] font-semibold text-gray-700 uppercase tracking-widest">
+                            {unreadCount} Unread
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant={showUnreadOnly ? 'default' : 'ghost'} 
+                            size="sm"
+                            onClick={() => {
+                                setShowUnreadOnly(true);
+                                setCurrentPage(1);
+                            }}
+                            className="rounded-2xl px-4"
+                        >
+                            <Filter className="h-4 w-4 mr-2" />
+                            Unread
+                        </Button>
+                        <Button 
+                            variant={!showUnreadOnly ? 'default' : 'ghost'} 
+                            size="sm"
+                            onClick={() => {
+                                setShowUnreadOnly(false);
+                                setCurrentPage(1);
+                            }}
+                            className="rounded-2xl px-4"
+                        >
+                            All
+                        </Button>
+                    </div>
                 </div>
                 <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={handleMarkAllAsRead}
                     disabled={unreadCount === 0}
-                    className="text-primary hover:text-primary hover:bg-primary/10 rounded-xl"
+                    className="text-primary hover:text-primary hover:bg-primary/10 rounded-2xl px-4"
                 >
                     <CheckCheck className="h-4 w-4 mr-2" />
                     Mark all as read
                 </Button>
-            </div>
+            </ShadowCard>
 
             <div className="min-h-[400px]">
                 {loading ? (
@@ -218,24 +253,25 @@ export default function Notifications() {
                         />
                     ))
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="bg-gray-100 p-4 rounded-full mb-4">
+                    <ShadowCard className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-gray-200 bg-gray-50/60 rounded-3xl">
+                        <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
                             <Bell className="h-8 w-8 text-gray-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900">No notifications</h3>
-                        <p className="text-gray-500 max-w-xs mx-auto">
-                            When you receive alerts or updates, they'll show up here.
+                        <h3 className="text-lg font-bold text-gray-900">No notifications yet</h3>
+                        <p className="text-gray-500 max-w-xs mx-auto mt-1 text-sm">
+                            When you receive alerts or updates from your team, they’ll appear here.
                         </p>
-                    </div>
+                    </ShadowCard>
                 )}
             </div>
 
             {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-4 pt-4">
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1 || loading}
+                        className="rounded-2xl px-5"
                     >
                         Previous
                     </Button>
@@ -243,9 +279,10 @@ export default function Notifications() {
                         Page {currentPage} of {totalPages}
                     </span>
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages || loading}
+                        className="rounded-2xl px-5"
                     >
                         Next
                     </Button>

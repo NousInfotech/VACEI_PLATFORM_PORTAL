@@ -52,10 +52,14 @@ const EngagementsList: React.FC = () => {
 
   const filteredEngagements = engagements.filter(eng => {
     const searchLower = search.toLowerCase();
+    const companyName = (eng.companyName || "").toLowerCase();
+    const serviceCategory = (eng.serviceCategory || "").toLowerCase();
+    const organizationName = (eng.organizationName || "").toLowerCase();
+
     return (
-      eng.companyName.toLowerCase().includes(searchLower) || 
-      eng.serviceCategory.toLowerCase().includes(searchLower) ||
-      eng.organizationName.toLowerCase().includes(searchLower)
+      companyName.includes(searchLower) || 
+      serviceCategory.includes(searchLower) ||
+      organizationName.includes(searchLower)
     );
   });
 

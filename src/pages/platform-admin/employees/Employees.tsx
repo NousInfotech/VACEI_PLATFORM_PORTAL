@@ -43,10 +43,11 @@ const Employees: React.FC = () => {
   const [page, setPage] = useState(1);
   const limit = 10;
 
+  // Fetch ALL employees once and handle search + pagination on the client side
   const { data, isLoading } = useQuery<PlatformEmployeeResponse>({
-    queryKey: ['platform-employees', page],
+    queryKey: ['platform-employees'],
     queryFn: () =>
-      apiGet<PlatformEmployeeResponse>(endPoints.PLATFORM_EMPLOYEES.GET_ALL, { page, limit }),
+      apiGet<PlatformEmployeeResponse>(endPoints.PLATFORM_EMPLOYEES.GET_ALL),
   });
 
   const allEmployees = useMemo(() => data?.data ?? [], [data?.data]);
@@ -61,7 +62,12 @@ const Employees: React.FC = () => {
     });
   }, [allEmployees, search]);
 
-  const totalPages = Math.ceil((data?.meta?.total || 0) / limit) || 1;
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / limit));
+
+  const paginatedEmployees = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredEmployees.slice(start, start + limit);
+  }, [filteredEmployees, page]);
 
   const handleDelete = async (emp: PlatformEmployee) => {
     if (!window.confirm(`Delete ${emp.firstName} ${emp.lastName}? This will soft-delete the account.`)) return;
@@ -127,11 +133,11 @@ const Employees: React.FC = () => {
                   <TableCell><Skeleton className="h-4 w-16" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredEmployees.length > 0 ? (
-              filteredEmployees.map((emp: PlatformEmployee, index: number) => (
+            ) : paginatedEmployees.length > 0 ? (
+              paginatedEmployees.map((emp: PlatformEmployee, index: number) => (
                 <TableRow key={emp.id} className="hover:bg-gray-50/50 transition-colors">
                   <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                    {(index + 1).toString().padStart(2, '0')}
+                    {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                   </TableCell>
                   <TableCell className="font-semibold text-gray-900">
                     {emp.firstName} {emp.lastName}

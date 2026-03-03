@@ -45,11 +45,15 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
   const { person, documentRequest: request } = personKyc;
 
   const patchInvolvementStatusMutation = useMutation({
-    mutationFn: (status: string) => 
+    mutationFn: ({ status }: { status: string; requestId?: string }) => 
       apiPatch(endPoints.COMPANY.KYC(companyId) + `/${kycId}/involvement-kyc/${workflowId}`, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
       toast.success('Status updated.');
+      // When involvement KYC moves into review, automatically activate its document request
+      if (variables.status === 'IN_REVIEW' && variables.requestId) {
+        await updateDocRequestStatusMutation.mutateAsync({ requestId: variables.requestId, status: 'ACTIVE' });
+      }
     },
     onError: (error: any) => {
       toast.error('Failed to update status', {
@@ -129,7 +133,10 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                 <select
                   value={workflowStatus}
                   disabled={isAnyActionLoading}
-                  onChange={e => patchInvolvementStatusMutation.mutate(e.target.value)}
+                  onChange={e => {
+                    const newStatus = e.target.value;
+                    patchInvolvementStatusMutation.mutate({ status: newStatus, requestId: request._id });
+                  }}
                   className={`rounded-lg px-2 py-0.5 text-[11px] font-bold border outline-none cursor-pointer transition-all appearance-none pr-5 disabled:opacity-50 disabled:cursor-not-allowed ${
                     workflowStatus === 'VERIFIED'
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'

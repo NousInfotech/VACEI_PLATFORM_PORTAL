@@ -24,10 +24,32 @@ const ServiceRequestTemplatesContent: React.FC = () => {
     search,
     setSearch,
     selectedService,
-    setSelectedService
+    setSelectedService,
+    customServices
   } = useTemplates();
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
   const [viewLevel, setViewLevel] = useState<'all' | 'custom'>('all');
+
+  const allServicesHaveTemplates = useMemo(() => {
+    if (isLoading) return false;
+
+    // 1. Check General template
+    const hasGeneral = templates.some(t => t.type === 'GENERAL');
+    
+    // 2. Check Static Services (excluding CUSTOM)
+    const staticServiceIds = Object.values(Services).filter(s => s !== 'CUSTOM');
+    const hasAllStatic = staticServiceIds.every(s => 
+      templates.some(t => t.service === s && t.type === 'SERVICE')
+    );
+    
+    // 3. Check Active Custom Services
+    const activeCustomServices = customServices.filter(cs => cs.isActive);
+    const hasAllCustom = activeCustomServices.every(cs => 
+      templates.some(t => t.service === 'CUSTOM' && t.customServiceCycleId === cs.id && t.type === 'SERVICE')
+    );
+    
+    return hasGeneral && hasAllStatic && hasAllCustom;
+  }, [templates, customServices, isLoading]);
 
   const services = useMemo(() => {
     const uniqueServices = Array.from(new Set(templates.map(t => t.service || 'General')));
@@ -121,6 +143,8 @@ const ServiceRequestTemplatesContent: React.FC = () => {
           <Button 
             onClick={handleCreateClick}
             variant='header'
+            disabled={allServicesHaveTemplates}
+            title={allServicesHaveTemplates ? "All services already have templates created" : ""}
            >
             <Plus className="h-5 w-5" />
             Create Template

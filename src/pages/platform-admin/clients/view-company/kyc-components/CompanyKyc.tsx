@@ -66,13 +66,21 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
   });
 
   const patchKycStatusMutation = useMutation({
-    mutationFn: (status: string) => 
+    mutationFn: ({ status }: { status: string; requestIds?: string[] }) => 
       apiPatch(endPoints.COMPANY.KYC(companyId) + `/${kycId}`, { status }),
-    onSuccess: () => {
+    onSuccess: async (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
       // Also refresh the company list so kycStatus badge updates in ViewClient
       queryClient.invalidateQueries({ queryKey: ['client-companies'] });
       toast.success('KYC status updated successfully.');
+      // When KYC moves into review, automatically activate all related document requests
+      if (variables.status === 'IN_REVIEW' && variables.requestIds?.length) {
+        await Promise.all(
+          variables.requestIds.map((requestId) =>
+            updateDocRequestStatusMutation.mutateAsync({ requestId, status: 'ACTIVE' })
+          )
+        );
+      }
     },
     onError: (error: any) => {
       toast.error('Failed to update KYC status', {
@@ -241,7 +249,11 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                     <select
                       value={workflow.status}
                       disabled={isAnyActionLoading}
-                      onChange={e => patchKycStatusMutation.mutate(e.target.value)}
+                      onChange={e => {
+                        const newStatus = e.target.value;
+                        const requestIds = workflow.documentRequests.map(dr => dr.documentRequest._id);
+                        patchKycStatusMutation.mutate({ status: newStatus, requestIds });
+                      }}
                       className={`rounded-lg px-3 py-1.5 text-[11px] font-bold border outline-none cursor-pointer transition-all appearance-none disabled:opacity-50 disabled:cursor-not-allowed ${
                         workflow.status === 'VERIFIED'
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
