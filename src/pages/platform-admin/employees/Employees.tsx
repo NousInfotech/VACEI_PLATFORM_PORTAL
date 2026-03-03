@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, Users, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../ui/Button';
@@ -40,7 +40,12 @@ const Employees: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const setPage = (updater: number | ((p: number) => number)) => {
+    const newPage = typeof updater === 'function' ? updater(page) : updater;
+    setSearchParams({ page: String(newPage) });
+  };
   const limit = 10;
 
   // Fetch ALL employees once and handle search + pagination on the client side

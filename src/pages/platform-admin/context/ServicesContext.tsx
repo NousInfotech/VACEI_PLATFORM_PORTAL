@@ -158,10 +158,13 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [customServices]);
 
   const serviceOptions = useMemo(() => {
-    const staticOptions = Object.values(Services).map(s => ({
-      id: s,
-      label: s.replace(/_/g, ' '),
-    }));
+    // Filter out 'CUSTOM' as we only want real services or dynamic custom services
+    const staticOptions = Object.values(Services)
+      .filter(s => s !== 'CUSTOM')
+      .map(s => ({
+        id: s,
+        label: s.replace(/_/g, ' '),
+      }));
 
     const dynamicOptions = customServices
       .filter(cs => cs.isActive)

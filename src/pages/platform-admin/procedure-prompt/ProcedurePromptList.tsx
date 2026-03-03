@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -54,11 +54,23 @@ const ProcedurePromptList: React.FC = () => {
   });
 
   const prompts = response?.data || [];
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  const filteredPrompts = prompts.filter(prompt => 
-    prompt.title.toLowerCase().includes(search.toLowerCase()) ||
-    (prompt.description && prompt.description.toLowerCase().includes(search.toLowerCase()))
+  const filteredPrompts = useMemo(
+    () =>
+      prompts.filter(prompt => 
+        prompt.title.toLowerCase().includes(search.toLowerCase()) ||
+        (prompt.description && prompt.description.toLowerCase().includes(search.toLowerCase()))
+      ),
+    [prompts, search]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredPrompts.length / limit));
+  const paginatedPrompts = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredPrompts.slice(start, start + limit);
+  }, [filteredPrompts, page]);
 
   return (
     <div className="space-y-6">
@@ -128,13 +140,13 @@ const ProcedurePromptList: React.FC = () => {
                   <TableCell className="px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredPrompts.length > 0 ? (
-              filteredPrompts.map((prompt: ProcedurePrompt, index: number) => {
+            ) : paginatedPrompts.length > 0 ? (
+              paginatedPrompts.map((prompt: ProcedurePrompt, index: number) => {
                 const ScopeIcon = prompt.scopeType === 'GLOBAL' ? Globe : Building;
                 return (
                   <TableRow key={prompt.id} className="hover:bg-gray-50/50 transition-colors group">
                     <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                      {(index + 1).toString().padStart(2, '0')}
+                      {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                     </TableCell>
                     <TableCell className="py-4">
                       <div className="flex flex-col max-w-md">
@@ -207,6 +219,34 @@ const ProcedurePromptList: React.FC = () => {
           </TableBody>
         </Table>
       </ShadowCard>
+      
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 pt-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-xl"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

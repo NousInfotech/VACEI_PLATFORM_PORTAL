@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Edit2, Trash2, Search, Plus, FileText, Globe, Building } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -54,11 +54,24 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
   });
 
   const templates = response?.data || [];
-  const filtered = templates.filter(t =>
-    !t.organizationId &&
-    (t.name.toLowerCase().includes(search.toLowerCase()) ||
-    (t.description || '').toLowerCase().includes(search.toLowerCase()))
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  const filtered = useMemo(
+    () =>
+      templates.filter(t =>
+        !t.organizationId &&
+        (t.name.toLowerCase().includes(search.toLowerCase()) ||
+        (t.description || '').toLowerCase().includes(search.toLowerCase()))
+      ),
+    [templates, search]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
+  const paginated = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filtered.slice(start, start + limit);
+  }, [filtered, page]);
 
   return (
     <div className="space-y-5">
@@ -133,8 +146,8 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
                   <TableCell className="px-6"><Skeleton className="h-8 w-24 ml-auto rounded-xl" /></TableCell>
                 </TableRow>
               ))
-            ) : filtered.length > 0 ? (
-              filtered.map((template: Template, index: number) => {
+            ) : paginated.length > 0 ? (
+              paginated.map((template: Template, index: number) => {
                 const ScopeIcon = template.organizationId ? Building : Globe;
                 const scopeLabel = template.organizationId ? 'LOCAL' : 'GLOBAL';
                 const scopeStyle = template.organizationId
@@ -143,7 +156,7 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
                 return (
                   <TableRow key={template.id} className="hover:bg-gray-50/50 transition-colors group">
                     <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                      {(index + 1).toString().padStart(2, '0')}
+                      {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                     </TableCell>
                     <TableCell className="py-4">
                       <div className="flex items-start gap-3">
@@ -210,6 +223,34 @@ const DocRequestList: React.FC<Props> = ({ moduleType, showServiceFilter }) => {
           </TableBody>
         </Table>
       </ShadowCard>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 pt-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-xl"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

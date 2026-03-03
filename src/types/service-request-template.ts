@@ -47,6 +47,7 @@ export const Services = {
   INCORPORATION: 'INCORPORATION',
   MBR: 'MBR',
   TAX: 'TAX',
+  LIQUIDATION: 'LIQUIDATION',
   CUSTOM: 'CUSTOM',
 } as const;
 

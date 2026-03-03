@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -88,11 +88,23 @@ const NoticeManagement: React.FC = () => {
   });
 
   const notices = response?.data || [];
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  const filteredNotices = notices.filter(notice => 
-    notice.title.toLowerCase().includes(search.toLowerCase()) ||
-    notice.description.toLowerCase().includes(search.toLowerCase())
+  const filteredNotices = useMemo(
+    () =>
+      notices.filter(notice => 
+        notice.title.toLowerCase().includes(search.toLowerCase()) ||
+        notice.description.toLowerCase().includes(search.toLowerCase())
+      ),
+    [notices, search]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredNotices.length / limit));
+  const paginatedNotices = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredNotices.slice(start, start + limit);
+  }, [filteredNotices, page]);
 
   return (
     <div className="space-y-6">
@@ -164,14 +176,14 @@ const NoticeManagement: React.FC = () => {
                   <TableCell className="px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredNotices.length > 0 ? (
-              filteredNotices.map((notice: Notice, index: number) => {
+            ) : paginatedNotices.length > 0 ? (
+              paginatedNotices.map((notice: Notice, index: number) => {
                 const config = getNoticeTypeConfig(notice.type);
                 const Icon = config.icon;
                 return (
                   <TableRow key={notice.id} className="hover:bg-gray-50/50 transition-colors group">
                     <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                      {(index + 1).toString().padStart(2, '0')}
+                      {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                     </TableCell>
                     <TableCell className="py-4">
                       <div className="flex flex-col max-w-md">
@@ -261,6 +273,34 @@ const NoticeManagement: React.FC = () => {
           </TableBody>
         </Table>
       </ShadowCard>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 pt-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-xl"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

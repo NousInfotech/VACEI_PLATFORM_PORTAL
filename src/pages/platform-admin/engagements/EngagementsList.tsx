@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { apiPatch, apiGet } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Engagement } from '../../../data/engagementMockData';
+import type { Organization } from '../../../types/organization';
 import { mockEngagements } from '../../../data/engagementMockData';
 import { EngagementStatusModal, type EngagementStatus } from './components/EngagementStatusModal';
 import { ChangeOrganizationModal } from './components/ChangeOrganizationModal';
@@ -29,32 +30,44 @@ const EngagementsList: React.FC = () => {
   const [changeOrgModal, setChangeOrgModal] = useState<{ isOpen: boolean; engagementId: string; rejectedOrgIds: string[]; serviceCategory: string } | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const userRole = localStorage.getItem('userRole') || 'PLATFORM_ADMIN';
+  const [organizationMap, setOrganizationMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const fetchEngagements = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await apiGet<{ data: Engagement[] }>(endPoints.ENGAGEMENT.GET_ALL);
-        setEngagements(res.data);
+        if (USE_MOCK_DATA) {
+          setEngagements(mockEngagements);
+          setLoading(false);
+          return;
+        }
+
+        const [engRes, orgRes] = await Promise.all([
+          apiGet<{ data: Engagement[] }>(endPoints.ENGAGEMENT.GET_ALL),
+          apiGet<{ data: Organization[] }>(endPoints.ORGANIZATION.GET_ALL),
+        ]);
+
+        setEngagements(engRes.data);
+        const map: Record<string, string> = {};
+        orgRes.data.forEach((org) => {
+          map[org.id] = org.name;
+        });
+        setOrganizationMap(map);
       } catch (err) {
-        console.error('Failed to fetch engagements', err);
+        console.error('Failed to fetch engagements or organizations', err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (!USE_MOCK_DATA) fetchEngagements();
-    else {
-      setEngagements(mockEngagements);
-      setLoading(false);
-    }
+    fetchData();
   }, []);
 
   const filteredEngagements = engagements.filter(eng => {
     const searchLower = search.toLowerCase();
     const companyName = (eng.companyName || "").toLowerCase();
     const serviceCategory = (eng.serviceCategory || "").toLowerCase();
-    const organizationName = (eng.organizationName || "").toLowerCase();
+    const organizationName = (organizationMap[eng.organizationId] || eng.organizationName || "").toLowerCase();
 
     return (
       companyName.includes(searchLower) || 
@@ -108,6 +121,7 @@ const EngagementsList: React.FC = () => {
               <TableHead className="py-4 px-6 text-nowrap">S.No</TableHead>
               <TableHead>Company Name</TableHead>
               <TableHead>Service Category</TableHead>
+              <TableHead>Organization</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created At</TableHead>
 
@@ -146,6 +160,9 @@ const EngagementsList: React.FC = () => {
                           {eng.serviceCategory}
                        </div>
                     </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-700">
+                    {organizationMap[eng.organizationId] || eng.organizationName || '—'}
                   </TableCell>
                   <TableCell>
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${

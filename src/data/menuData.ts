@@ -8,7 +8,6 @@ import {
     UserGroupIcon as UsersIcon,
     Notification01Icon,
     NoteEditIcon,
-    CustomerSupportFreeIcons,
 } from '@hugeicons/core-free-icons';
 import type { MenuItem } from '../types/menu';
 

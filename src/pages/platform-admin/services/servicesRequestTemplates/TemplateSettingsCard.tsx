@@ -1,10 +1,45 @@
 import React from 'react';
-import { ChevronDown, Settings2 } from 'lucide-react';
+import { 
+  ChevronDown, 
+  Settings2, 
+  PieChart, 
+  ShieldCheck, 
+  Receipt, 
+  BarChart4, 
+  Users, 
+  Scale, 
+  Wallet, 
+  Layers, 
+  Cpu, 
+  Award, 
+  Building2, 
+  CheckSquare, 
+  Archive,
+  Star
+} from 'lucide-react';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import Badge from '../../../common/Badge';
 import { Dropdown } from '../../../common/Dropdown';
 import type { CreateTemplateDto, ServiceRequestTemplate, CustomService } from '../../../../types/service-request-template';
 import type { DropdownItem } from '../../../common/Dropdown';
+
+const serviceIconMap: Record<string, React.ReactNode> = {
+  ACCOUNTING: <PieChart size={14} />,
+  AUDITING: <ShieldCheck size={14} />,
+  VAT: <Receipt size={14} />,
+  CFO: <BarChart4 size={14} />,
+  CSP: <Users size={14} />,
+  LEGAL: <Scale size={14} />,
+  PAYROLL: <Wallet size={14} />,
+  PROJECTS_TRANSACTIONS: <Layers size={14} />,
+  TECHNOLOGY: <Cpu size={14} />,
+  GRANTS_AND_INCENTIVES: <Award size={14} />,
+  INCORPORATION: <Building2 size={14} />,
+  MBR: <CheckSquare size={14} />,
+  TAX: <Receipt size={14} />,
+  LIQUIDATION: <Archive size={14} />,
+  CUSTOM: <Star size={14} />,
+};
 
 interface TemplateSettingsCardProps {
   formData: CreateTemplateDto;
@@ -33,6 +68,16 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
     }
     return formData.service.replace(/_/g, ' ');
   };
+
+  const getActiveIcon = () => {
+    if (!formData.service) return <Settings2 size={16} className="text-gray-400" />;
+    return (
+      <div className="p-2 bg-primary/10 text-primary rounded-lg">
+        {serviceIconMap[formData.service] || <Settings2 size={16} />}
+      </div>
+    );
+  };
+
   const renderMetadata = () => {
     if (!template || hideMetadata) return null;
     return (
@@ -78,9 +123,10 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
           {formData.type === 'SERVICE' && formData.service && (
             <div className="flex justify-between items-center py-3">
               <span className="text-sm font-medium text-gray-500">Service</span>
-              <span className="font-bold text-gray-900 uppercase">
+              <div className="flex items-center gap-2 font-bold text-gray-900 uppercase">
+                {serviceIconMap[formData.service] || null}
                 {getServiceLabel()}
-              </span>
+              </div>
             </div>
           )}
         </div>
@@ -90,26 +136,36 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
   }
 
   return (
-    <ShadowCard className="p-8 border border-gray-200 relative focus-within:z-40 mb-6 transition-all duration-300">
-      <div className="space-y-8">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Settings2 className="h-5 w-5" />
-            Template Settings
-        </h3>
+    <ShadowCard className="p-8 border border-gray-100 relative focus-within:z-40 mb-6 transition-all duration-300 rounded-[40px] shadow-sm bg-white">
+      <div className="space-y-10">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2.5 bg-gray-50 rounded-2xl text-gray-400">
+                <Settings2 className="h-5 w-5" />
+              </div>
+              Template Settings
+          </h3>
+          <Badge variant={formData.isActive ? 'success' : 'gray'} className="rounded-full px-4 py-1.5 font-bold uppercase tracking-wider text-[10px]">
+            {formData.isActive ? 'Active' : 'Inactive'}
+          </Badge>
+        </div>
         
-        <div className="flex flex-col md:flex-row gap-8 items-start">
-          <div className="flex flex-col gap-3 items-start">
-            <Badge variant="label">Template Type</Badge>
-            <div className="flex gap-2 p-1.5 bg-gray-50 border border-gray-200 rounded-[20px] w-fit">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="flex flex-col gap-4 items-start">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Template Type</span>
+              <p className="text-sm text-gray-500 px-1 font-medium">Define if this is a general section or specific service form</p>
+            </div>
+            <div className="flex gap-2 p-1.5 bg-gray-50/50 border border-gray-100 rounded-[28px] w-full max-w-sm">
               {(['GENERAL', 'SERVICE'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => onUpdate({ type: t, service: t === 'GENERAL' ? null : formData.service })}
-                  className={`px-8 py-2.5 rounded-[14px] text-xs font-bold transition-all ${
+                  className={`flex-1 py-3.5 rounded-[22px] text-xs font-bold transition-all duration-300 ${
                     formData.type === t 
-                      ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                      : 'text-gray-500 hover:bg-white hover:shadow-sm'
+                      ? 'bg-white text-primary shadow-xl shadow-primary/5 border border-primary/10' 
+                      : 'text-gray-400 hover:text-gray-600'
                   }`}
                 >
                   {t}
@@ -119,27 +175,39 @@ export const TemplateSettingsCard: React.FC<TemplateSettingsCardProps> = ({
           </div>
 
           {formData.type === 'SERVICE' && (
-            <div className="flex flex-col gap-3 items-start flex-1 min-w-[300px]">
-              <Badge variant="label">Target Service</Badge>
+            <div className="flex flex-col gap-4 items-start flex-1 w-full">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Target Service</span>
+                <p className="text-sm text-gray-500 px-1 font-medium">Select which service this template will represent</p>
+              </div>
               <div className="w-full">
                 <Dropdown
-                  key={`service-${formData.service ?? ''}-${formData.customServiceCycleId ?? ''}`}
                   fullWidth
                   className="w-full"
                   items={serviceOptions.map(opt => ({
                     ...opt,
+                    icon: (
+                      <div className="p-1.5 bg-gray-100 text-gray-500 rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        {serviceIconMap[opt.id as string] || <Star size={12} />}
+                      </div>
+                    ),
+                    className: "group",
+                    label: opt.label,
                     onClick: () => onUpdate({ 
                       service: opt.id as string | null,
-                      customServiceCycleId: (opt as DropdownItem & { customServiceCycleId?: string }).customServiceCycleId ?? null
+                      customServiceCycleId: (opt as DropdownItem & { customServiceCycleId?: string }).customServiceCycleId || null
                     })
                   }))}
                   trigger={
                     <button
                       type="button"
-                      className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl flex items-center justify-between text-sm font-medium text-gray-700 hover:border-primary/20 transition-all focus:ring-4 focus:ring-primary/5 outline-none"
+                      className="w-full px-6 py-5 bg-white border border-gray-100 rounded-[32px] flex items-center justify-between text-sm font-bold text-gray-900 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 focus:ring-4 focus:ring-primary/5 outline-none shadow-sm group"
                     >
-                      <span className="truncate">{getServiceLabel()}</span>
-                      <ChevronDown className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
+                      <div className="flex items-center gap-4">
+                        {getActiveIcon()}
+                        <span className="truncate tracking-tight text-lg">{getServiceLabel()}</span>
+                      </div>
+                      <ChevronDown className="h-5 w-5 text-gray-300 group-hover:text-primary transition-colors duration-500 shrink-0 ml-4" />
                     </button>
                   }
                 />

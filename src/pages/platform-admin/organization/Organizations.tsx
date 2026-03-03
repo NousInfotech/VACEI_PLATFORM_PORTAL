@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Building2, Edit2, Eye } from 'lucide-react';
 import { Button } from '../../../ui/Button';
@@ -25,6 +25,8 @@ const Organizations: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
   const fetchOrganizations = useCallback(async () => {
     setLoading(true);
@@ -53,9 +55,19 @@ const Organizations: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [activeDropdownId]);
 
-  const filteredOrganizations = allOrganizations.filter(org =>
-    org.name.toLowerCase().includes(search.toLowerCase())
+  const filteredOrganizations = useMemo(
+    () =>
+      allOrganizations.filter(org =>
+        org.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    [allOrganizations, search]
   );
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrganizations.length / limit));
+  const paginatedOrganizations = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredOrganizations.slice(start, start + limit);
+  }, [filteredOrganizations, page]);
 
   const formatServiceLabel = (service: string) => {
     return service
@@ -140,11 +152,11 @@ const Organizations: React.FC = () => {
                   <TableCell className="text-right px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredOrganizations.length > 0 ? (
-              filteredOrganizations.map((org: Organization, index: number) => (
+            ) : paginatedOrganizations.length > 0 ? (
+              paginatedOrganizations.map((org: Organization, index: number) => (
                 <TableRow key={org.id} className="hover:bg-gray-50/50 transition-colors group">
                   <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                    {(index + 1).toString().padStart(2, '0')}
+                    {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                   </TableCell>
                   <TableCell className="font-semibold text-gray-900 group-hover:text-primary transition-colors py-5">
                     <div className="flex items-center gap-3">
@@ -216,6 +228,34 @@ const Organizations: React.FC = () => {
           </TableBody>
         </Table>
       </ShadowCard>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 pt-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-xl"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

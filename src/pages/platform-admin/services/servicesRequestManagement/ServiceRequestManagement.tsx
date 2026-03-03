@@ -28,6 +28,8 @@ const ServiceRequestManagement: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
   type ServiceRequestApiResponse = { success?: boolean; data?: ServiceRequest[] } | ServiceRequest[];
 
@@ -93,6 +95,12 @@ const ServiceRequestManagement: React.FC = () => {
       return matchesSearch && matchesStatus;
     });
   }, [requests, search, selectedStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / limit));
+  const paginatedRequests = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredRequests.slice(start, start + limit);
+  }, [filteredRequests, page]);
 
 
   if (isLoading) {
@@ -176,11 +184,11 @@ const ServiceRequestManagement: React.FC = () => {
                   <TableCell className="px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                 </TableRow>
               ))
-            ) : filteredRequests.length > 0 ? (
-              filteredRequests.map((req: ServiceRequest, index: number) => (
+            ) : paginatedRequests.length > 0 ? (
+              paginatedRequests.map((req: ServiceRequest, index: number) => (
                 <TableRow key={req.id} className="hover:bg-gray-50/50 transition-colors group">
                   <TableCell className="py-4 px-6 font-bold text-gray-400 text-xs">
-                    {(index + 1).toString().padStart(2, '0')}
+                    {(((page - 1) * limit) + index + 1).toString().padStart(2, '0')}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col">
@@ -252,6 +260,34 @@ const ServiceRequestManagement: React.FC = () => {
           </TableBody>
         </Table>
       </ShadowCard>
+      
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 pt-2">
+          <p className="text-sm text-gray-500 font-medium">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-xl"
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
