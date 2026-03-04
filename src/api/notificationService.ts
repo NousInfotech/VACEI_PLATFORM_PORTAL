@@ -3,15 +3,28 @@ import { endPoints } from '../config/endPoint';
 
 /**
  * Converts backend notification redirect/cta URLs to Platform Portal routes.
- * Ensures returned path always starts with "/" so React Router navigate() works.
+ * Accepts absolute URLs (with domain) or app-relative paths and always
+ * returns a path usable by React Router (starting with "/").
  */
 export function getPortalRedirectUrl(url?: string | null): string | null {
     if (!url || typeof url !== 'string') return null;
     const trimmed = url.trim();
     if (!trimmed) return null;
 
+    let pathWithSearch = trimmed;
+
+    // Handle absolute URLs like https://platform.vacei.com/...
+    try {
+        if (/^https?:\/\//i.test(trimmed)) {
+            const parsed = new URL(trimmed);
+            pathWithSearch = `${parsed.pathname}${parsed.search}`;
+        }
+    } catch {
+        pathWithSearch = trimmed;
+    }
+
     // Strip portal prefix if present (e.g. /platform/... or /client/...)
-    const cleaned = trimmed.replace(/^\/(partner|platform|client)\/?/, '');
+    const cleaned = pathWithSearch.replace(/^\/?(partner|platform|client)(?=\/)/, '');
     const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
 
     try {
@@ -27,7 +40,7 @@ export function getPortalRedirectUrl(url?: string | null): string | null {
             return withLeadingSlash;
         }
 
-        // Map backend paths to Platform Portal routes (backend often sends /compliance/:id, etc.)
+        // Map legacy backend paths to Platform Portal routes (e.g. /compliance/:id)
         const complianceMatch = path.match(/^\/compliance\/([^/]+)\/?$/);
         if (complianceMatch) {
             return `/dashboard/compliance/${complianceMatch[1]}/edit`;
@@ -46,7 +59,7 @@ export function getPortalRedirectUrl(url?: string | null): string | null {
             return `/dashboard/engagements`;
         }
 
-        // Generic: prefix with /dashboard for paths like /something/...
+        // Generic: prefix with /dashboard for simple paths like /something/...
         if (path.startsWith('/')) {
             return `/dashboard${path}`;
         }
