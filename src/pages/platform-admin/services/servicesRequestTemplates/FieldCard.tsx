@@ -160,7 +160,7 @@ function NestedFieldEditor({
                     <Badge variant={isMainField ? "primary" : "gray"} className={!isMainField ? "scale-75 origin-left" : ""}>
                         {isMainField ? `Field ${index + 1}` : `Nested Q ${index + 1}`}
                     </Badge>
-                    <div className="flex-1 max-w-[160px]">
+                    <div className="flex-1">
                         <PillTab
                             tabs={requiredTabs}
                             activeTab={field.required ? 'required' : 'optional'}

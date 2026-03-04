@@ -33,6 +33,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     authorizedShares: company.authorizedShares || 0,
     issuedShares: company.issuedShares || 0,
     registrationNumber: company.registrationNumber || '',
+    legalType: company.legalType || '',
   });
 
   const [shareClasses, setShareClasses] = useState({
@@ -46,6 +47,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
   const [industrySelection, setIndustrySelection] = useState<string>(initialSelection);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Auto-calculate Ordinary = Issued - (A + B + C)
   const ordinaryShares = useMemo(() => {
@@ -80,6 +82,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
         authorizedShares: company.authorizedShares || 0,
         issuedShares: company.issuedShares || 0,
         registrationNumber: company.registrationNumber || '',
+        legalType: company.legalType || '',
       });
       setShareClasses({
         A: company.shareClasses?.find(s => s.class === 'A' || s.class === 'CLASS_A')?.issued || 0,
@@ -92,11 +95,48 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     }
   }, [isOpen, company]);
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Company name is required';
+    }
+    
+    if (!formData.registrationNumber.trim()) {
+      errors.registrationNumber = 'Registration number is required';
+    }
+    
+    if (!formData.address.trim()) {
+      errors.address = 'Address is required';
+    }
+    
+    if (!formData.legalType) {
+      errors.legalType = 'Legal type is required';
+    }
+    
+    if (!industrySelection) {
+      errors.industry = 'Industry selection is required';
+    } else if (industrySelection === 'Other' && !formData.industry[0]?.trim()) {
+      errors.industry = 'Please specify the industry';
+    }
+    
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (hasErrors) return;
-    setIsSubmitting(true);
     setSubmitError('');
+    
+    const isFormValid = validateForm();
+    if (!isFormValid || hasErrors) {
+      if (hasErrors && !isFormValid) {
+        setSubmitError('Please fix the errors in the form before submitting.');
+      }
+      return;
+    }
+    
+    setIsSubmitting(true);
     try {
       const shareDetails = [
         { class: 'A', issued: shareClasses.A },
@@ -153,10 +193,17 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
-                required
+                onChange={(e) => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: '' });
+                }}
+                className={`w-full px-4 py-3 bg-gray-50 border ${fieldErrors.name ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-primary/20 focus:border-primary'} rounded-xl transition-all outline-none text-sm font-medium`}
               />
+              {fieldErrors.name && (
+                <p className="text-[10px] text-red-500 font-medium mt-1 animate-in fade-in slide-in-from-top-1">
+                  {fieldErrors.name}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -166,9 +213,43 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               <input
                 type="text"
                 value={formData.registrationNumber}
-                onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                onChange={(e) => {
+                  setFormData({ ...formData, registrationNumber: e.target.value });
+                  if (fieldErrors.registrationNumber) setFieldErrors({ ...fieldErrors, registrationNumber: '' });
+                }}
+                className={`w-full px-4 py-3 bg-gray-50 border ${fieldErrors.registrationNumber ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-primary/20 focus:border-primary'} rounded-xl transition-all outline-none text-sm font-medium`}
               />
+              {fieldErrors.registrationNumber && (
+                <p className="text-[10px] text-red-500 font-medium mt-1 animate-in fade-in slide-in-from-top-1">
+                  {fieldErrors.registrationNumber}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <FileText size={14} /> Legal Type
+              </label>
+              <div className="relative">
+                <select
+                  value={formData.legalType}
+                  onChange={(e) => {
+                    setFormData({ ...formData, legalType: e.target.value });
+                    if (fieldErrors.legalType) setFieldErrors({ ...fieldErrors, legalType: '' });
+                  }}
+                  className={`w-full appearance-none px-4 py-3 pr-10 bg-gray-50 border ${fieldErrors.legalType ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-primary/20 focus:border-primary'} rounded-xl transition-all outline-none text-sm font-medium text-gray-700 cursor-pointer`}
+                >
+                  <option value="">-- Select Legal Type --</option>
+                  <option value="PLC">PLC (Public Limited Company)</option>
+                  <option value="LTD">LTD (Private Limited Company)</option>
+                </select>
+                <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+              {fieldErrors.legalType && (
+                <p className="text-[10px] text-red-500 font-medium mt-1 animate-in fade-in slide-in-from-top-1">
+                  {fieldErrors.legalType}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2 space-y-1.5">
@@ -178,9 +259,17 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               <input
                 type="text"
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+                onChange={(e) => {
+                  setFormData({ ...formData, address: e.target.value });
+                  if (fieldErrors.address) setFieldErrors({ ...fieldErrors, address: '' });
+                }}
+                className={`w-full px-4 py-3 bg-gray-50 border ${fieldErrors.address ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-primary/20 focus:border-primary'} rounded-xl transition-all outline-none text-sm font-medium`}
               />
+              {fieldErrors.address && (
+                <p className="text-[10px] text-red-500 font-medium mt-1 animate-in fade-in slide-in-from-top-1">
+                  {fieldErrors.address}
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -195,8 +284,9 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                     setIndustrySelection(val);
                     if (val !== 'Other') setFormData({ ...formData, industry: [val] });
                     else setFormData({ ...formData, industry: [''] });
+                    if (fieldErrors.industry) setFieldErrors({ ...fieldErrors, industry: '' });
                   }}
-                  className="w-full appearance-none px-4 py-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium text-gray-700 cursor-pointer"
+                  className={`w-full appearance-none px-4 py-3 pr-10 bg-gray-50 border ${fieldErrors.industry ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-primary/20 focus:border-primary'} rounded-xl transition-all outline-none text-sm font-medium text-gray-700 cursor-pointer`}
                 >
                   <option value="">-- Select Industry --</option>
                   {industries.map(ind => (
@@ -209,10 +299,18 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 <input
                   type="text"
                   value={formData.industry[0] || ''}
-                  onChange={(e) => setFormData({ ...formData, industry: [e.target.value] })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, industry: [e.target.value] });
+                    if (fieldErrors.industry) setFieldErrors({ ...fieldErrors, industry: '' });
+                  }}
                   placeholder="Enter your industry..."
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium mt-2"
+                  className={`w-full px-4 py-3 bg-gray-50 border ${fieldErrors.industry ? 'border-red-500 focus:ring-red-200 focus:border-red-500' : 'border-gray-200 focus:ring-primary/20 focus:border-primary'} rounded-xl transition-all outline-none text-sm font-medium mt-2`}
                 />
+              )}
+              {fieldErrors.industry && (
+                <p className="text-[10px] text-red-500 font-medium mt-1 animate-in fade-in slide-in-from-top-1">
+                  {fieldErrors.industry}
+                </p>
               )}
             </div>
 

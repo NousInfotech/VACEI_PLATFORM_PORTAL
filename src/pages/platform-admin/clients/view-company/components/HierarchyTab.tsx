@@ -14,7 +14,8 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../../../../../ui/Button";
 import { ShadowCard } from "../../../../../ui/ShadowCard";
 import type { Company } from "../../../../../types/company";
@@ -60,6 +61,7 @@ const HierarchyTab: React.FC<HierarchyTabProps> = ({ company }) => {
   const flowWrapperRef = useRef<HTMLDivElement | null>(null);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const [scrollZoomEnabled, setScrollZoomEnabled] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Transform portal company data into hierarchy tree structure
   const rootData = useMemo((): HierarchyTreeNode => {
@@ -255,14 +257,22 @@ const HierarchyTab: React.FC<HierarchyTabProps> = ({ company }) => {
   const exportToPDF = useCallback(async () => {
     const wrap = flowWrapperRef.current, rfInstance = reactFlowRef.current;
     if (!wrap || !rfInstance) return;
+    setIsExporting(true);
     const viewport = wrap.querySelector<HTMLElement>(".react-flow__viewport");
-    if (!viewport) return;
+    if (!viewport) {
+      setIsExporting(false);
+      return;
+    }
 
     const originalTransform = viewport.style.transform, originalWidth = wrap.style.width, originalHeight = wrap.style.height, originalOverflow = wrap.style.overflow, originalViewport = rfInstance.getViewport();
 
     try {
+      toast.info("Preparing PDF export...");
       const allNodes = rfInstance.getNodes();
-      if (allNodes.length === 0) return;
+      if (allNodes.length === 0) {
+        toast.error("No nodes found to export.");
+        return;
+      }
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       allNodes.forEach(node => {
         const pos = node.position, isRoot = node.id === String(rootData.id);
@@ -272,15 +282,57 @@ const HierarchyTab: React.FC<HierarchyTabProps> = ({ company }) => {
 
       const pL = 150, pR = 250, pT = 100, pB = 120;
       const dW = maxX - minX + pL + pR, dH = maxY - minY + pT + pB;
+
+      if (isNaN(dW) || isNaN(dH) || dW <= 0 || dH <= 0) {
+        throw new Error(`Invalid dimensions: ${dW}x${dH}. Check if nodes have proper positions.`);
+      }
+
       wrap.style.width = `${dW}px`; wrap.style.height = `${dH}px`; wrap.style.overflow = "visible";
       viewport.style.transform = `translate(${pL - minX}px, ${pT - minY}px) scale(1)`;
 
-      await new Promise(r => setTimeout(r, 500));
-      const canvas = await html2canvas(wrap, { backgroundColor: "#ffffff", scale: 2, useCORS: true, logging: false, width: dW, height: dH, windowWidth: dW, windowHeight: dH, x: 0, y: 0, scrollX: 0, scrollY: 0 });
-      const img = canvas.toDataURL("image/png", 1.0);
+      await new Promise(r => setTimeout(r, 800)); // Increased timeout for better rendering
+      const canvas = await html2canvas(wrap, { 
+        backgroundColor: "#ffffff", 
+        scale: 1.5, // Reduced scale slightly for better performance
+        useCORS: true, 
+        logging: false, 
+        width: dW, 
+        height: dH, 
+        windowWidth: dW, 
+        windowHeight: dH, 
+        x: 0, 
+        y: 0, 
+        scrollX: 0, 
+        scrollY: 0,
+        imageTimeout: 15000, // Handle slower image loads
+      });
+
+      if (!canvas) {
+        throw new Error("Canvas generation failed");
+      }
+
+      const img = canvas.toDataURL("image/png", 0.9);
+      if (!img || img === "data:,") {
+        throw new Error("Image data extraction failed");
+      }
+
       const isLandscape = dW > dH;
-      const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" });
+      
+      // Robust jsPDF initialization
+      let pdf: any;
+      try {
+        const jsPDFLib = (await import("jspdf")).jsPDF || (await import("jspdf")).default;
+        if (!jsPDFLib) throw new Error("jsPDF library not found");
+        pdf = new jsPDFLib({ orientation: isLandscape ? "landscape" : "portrait", unit: "pt", format: "a4" });
+      } catch (e: any) {
+        throw new Error(`jsPDF init failed: ${e.message}`);
+      }
+
       const pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight(), m = 20, imgW = pageW - (m * 2), imgH = (canvas.height * imgW) / canvas.width;
+
+      if (imgH <= 0 || isNaN(imgH)) {
+        throw new Error("Invalid image dimensions for PDF");
+      }
 
       let top = 0;
       while (top < imgH) {
@@ -289,7 +341,12 @@ const HierarchyTab: React.FC<HierarchyTabProps> = ({ company }) => {
         top += pageH - (m * 2);
       }
       pdf.save(`${rootData.name}-hierarchy.pdf`);
+      toast.success("PDF downloaded successfully!");
+    } catch (error: any) {
+      console.error("PDF Export failed:", error);
+      toast.error(`Export failed: ${error?.message || "Internal error"}`);
     } finally {
+      setIsExporting(false);
       wrap.style.width = originalWidth; wrap.style.height = originalHeight; wrap.style.overflow = originalOverflow;
       viewport.style.transform = originalTransform; rfInstance.setViewport(originalViewport, { duration: 0 });
     }
@@ -313,8 +370,13 @@ const HierarchyTab: React.FC<HierarchyTabProps> = ({ company }) => {
           <Button variant="outline" onClick={() => reactFlowRef.current?.fitView()} className="rounded-xl border-gray-200">
             Reset View
           </Button>
-          <Button onClick={exportToPDF} className="rounded-xl bg-gray-900 text-white hover:bg-black font-bold uppercase tracking-widest text-[10px]">
-             Download PDF
+          <Button 
+            onClick={exportToPDF} 
+            disabled={isExporting}
+            className="rounded-xl bg-gray-900 text-white hover:bg-black font-bold uppercase tracking-widest text-[10px] min-w-[120px] h-10"
+          >
+             {isExporting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+             {isExporting ? "Exporting..." : "Download PDF"}
           </Button>
         </div>
       </div>

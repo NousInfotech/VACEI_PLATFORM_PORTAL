@@ -6,7 +6,6 @@ import {
     Briefcase,
     LayoutGrid,
     ClipboardList,
-    MessageSquare,
     type LucideIcon
 } from 'lucide-react';
 import { 
@@ -94,7 +93,7 @@ const ViewOrganization: React.FC = () => {
     const tabs: Tab[] = [
         { id: 'services', label: 'Available Services', icon: LayoutGrid },
         { id: 'engagements', label: 'Engagements', icon: Briefcase },
-        { id: 'messages', label: 'Messages', icon: MessageSquare },
+        // { id: 'messages', label: 'Messages', icon: MessageSquare },
     ];
 
     return (

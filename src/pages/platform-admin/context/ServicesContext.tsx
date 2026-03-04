@@ -32,7 +32,7 @@ interface TemplatesContextType {
   patchCustomServiceStatusMutation: UseMutationResult<unknown, Error, { id: string; isActive: boolean }, unknown>;
   queryClient: ReturnType<typeof useQueryClient>;
   // Form Configuration
-  serviceOptions: { id: string; label: string }[];
+  serviceOptions: { id: string; label: string; customServiceCycleId?: string | null }[];
   inputTypeIcons: Record<InputType, LucideIcon>;
   inputTypeItems: (onClick: (type: InputType) => void) => { id: string; label: string; icon: React.ReactNode; onClick: () => void }[];
   requiredTabs: { id: string; label: string }[];

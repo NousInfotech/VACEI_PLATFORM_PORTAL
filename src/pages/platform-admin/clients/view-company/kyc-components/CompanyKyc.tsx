@@ -361,9 +361,22 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                           <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center mb-4 text-gray-300">
                             <ShieldCheck size={24} />
                           </div>
-                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
                             No documents requested for this section
                           </p>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              setActiveRequestId(request.documentRequest._id);
+                              setIsAddModalOpen(true);
+                            }}
+                            disabled={isAnyActionLoading || (request.documentRequest.status?.toUpperCase() === 'COMPLETED')}
+                            className="h-10 px-6 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 text-[10px] font-bold uppercase tracking-wider transition-all"
+                          >
+                            <Plus size={16} className="mr-2" />
+                            Add Requirement
+                          </Button>
                         </div>
                       )}
                     </div>

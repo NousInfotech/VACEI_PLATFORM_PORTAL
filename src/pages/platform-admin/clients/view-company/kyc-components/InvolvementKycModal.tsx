@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, UserPlus, Plus, Loader2, Info, Trash2, LayoutGrid, CheckCircle2, User } from "lucide-react";
+import { X, UserPlus, Plus, Loader2, Info, Trash2, LayoutGrid, CheckCircle2, User, FileText, ArrowLeft, CheckSquare, Square, Check } from "lucide-react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from 'sonner';
 import { Button } from '../../../../../ui/Button';
 import { apiGet, apiPost, apiPostFormData } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
+import { cn } from '../../../../../lib/utils';
 import type { CompanyInvolvement } from '../../../../../types/company';
 import type { KycWorkflow } from './types';
 import type { Template, TemplateListResponse, DocumentRequestContent } from '../../../../../types/template';
@@ -54,6 +55,9 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
     templateFile: null as File | null,
     multipleItems: [{ label: "", instruction: "", isMandatory: true, templateFile: null as File | null }] as any[],
   });
+
+  const [templateStep, setTemplateStep] = useState<'LIST' | 'DETAILS'>('LIST');
+  const [selectedTemplateDocs, setSelectedTemplateDocs] = useState<any[]>([]);
 
   const { data: templatesResponse, isLoading: isTemplatesLoading } = useQuery({
     queryKey: ['templates', 'DOCUMENT_REQUEST', 'KYC'],
@@ -114,7 +118,7 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
         
         // 2. Add Requested Document(s)
         if (creationMode === 'TEMPLATE') {
-            await submitTemplateDocs(drId);
+            await submitTemplateDocs(drId, selectedTemplateDocs);
         } else {
             await submitDocRequest(drId);
         }
@@ -138,7 +142,7 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
   const addDocRequestOnlyMutation = useMutation({
     mutationFn: () => {
         if (creationMode === 'TEMPLATE') {
-            return submitTemplateDocs(existingDocumentRequestId!);
+            return submitTemplateDocs(existingDocumentRequestId!, selectedTemplateDocs);
         } else {
             return submitDocRequest(existingDocumentRequestId!);
         }
@@ -158,11 +162,12 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
     }
   });
 
-  const submitTemplateDocs = async (documentRequestId: string) => {
+  const submitTemplateDocs = async (documentRequestId: string, docs?: any[]) => {
     if (!selectedTemplate) return;
     const content = selectedTemplate.content as DocumentRequestContent;
+    const documentsToCreate = docs || content.documents;
 
-    for (const rd of content.documents) {
+    for (const rd of documentsToCreate) {
         const fd = new FormData();
         fd.append("documentName", rd.documentName);
         fd.append("description", rd.description || "");
@@ -406,46 +411,118 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
               </div>
 
               {creationMode === 'TEMPLATE' ? (
-                <div className="p-6 bg-primary/5 rounded-[32px] border border-primary/10 space-y-4">
-                  <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <LayoutGrid size={16} /> Select a Template
-                  </div>
-                  
-                  {isTemplatesLoading ? (
-                    <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" size={24} /></div>
-                  ) : kycTemplates.length > 0 ? (
-                    <select
-                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
-                      value={selectedTemplate?.id || ''}
-                      onChange={(e) => {
-                        const t = kycTemplates.find(t => t.id === e.target.value);
-                        setSelectedTemplate(t || null);
-                      }}
-                    >
-                      <option value="" disabled>-- Select Template --</option>
-                      {kycTemplates.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="text-xs text-gray-400 p-4 bg-white rounded-xl border border-dashed text-center">No KYC templates found.</div>
-                  )}
-
-                  {selectedTemplate && (
-                    <div className="space-y-2 mt-4">
-                      {((selectedTemplate.content as DocumentRequestContent)?.documents || []).map((rd, i) => (
-                        <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
-                          <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary font-bold text-xs">{i + 1}</div>
-                          <div>
-                            <p className="text-[11px] font-bold text-gray-800">{rd.documentName}</p>
-                            <p className="text-[9px] text-gray-400 font-medium truncate max-w-[200px]">{rd.description}</p>
-                          </div>
-                          {rd.isMandatory && <span className="ml-auto text-[8px] font-black bg-red-50 text-red-500 px-1.5 py-0.5 rounded uppercase">Mandatory</span>}
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                  {templateStep === 'LIST' ? (
+                    <div className="p-6 bg-primary/5 rounded-[32px] border border-primary/10 space-y-4">
+                      <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                        <LayoutGrid size={16} /> Select a Template
+                      </div>
+                      
+                      {isTemplatesLoading ? (
+                        <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" size={24} /></div>
+                      ) : kycTemplates.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-3">
+                          {kycTemplates.map(template => (
+                            <div 
+                              key={template.id}
+                              onClick={() => {
+                                setSelectedTemplate(template);
+                                setSelectedTemplateDocs((template.content as DocumentRequestContent)?.documents || []);
+                                setTemplateStep('DETAILS');
+                              }}
+                              className="p-4 bg-white border border-gray-100 rounded-2xl transition-all cursor-pointer group hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                                  <FileText size={18} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{template.name}</p>
+                                    <p className="text-[10px] text-gray-400 font-medium line-clamp-1">{template.description || 'Standard KYC requirements'}</p>
+                                </div>
+                              </div>
+                              <div className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-all uppercase tracking-widest">Configure &rarr;</div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <div className="text-xs text-gray-400 p-4 bg-white rounded-xl border border-dashed text-center">No KYC templates found.</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pl-1">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                             <button onClick={() => setTemplateStep('LIST')} className="p-1 hover:bg-gray-100 rounded-lg transition-all text-gray-400 hover:text-primary"><ArrowLeft size={16} /></button>
+                             Docs from: {selectedTemplate?.name}
+                          </div>
+                          <button 
+                            onClick={() => {
+                                const allDocs = (selectedTemplate?.content as DocumentRequestContent)?.documents || [];
+                                if (selectedTemplateDocs.length === allDocs.length) {
+                                  setSelectedTemplateDocs([]);
+                                } else {
+                                  setSelectedTemplateDocs(allDocs);
+                                }
+                            }}
+                            className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-primary mt-1 hover:opacity-80 transition-opacity ml-8"
+                          >
+                            {selectedTemplateDocs.length === ((selectedTemplate?.content as DocumentRequestContent)?.documents || []).length && selectedTemplateDocs.length > 0 ? (
+                              <><CheckSquare size={12} /> Deselect All</>
+                            ) : (
+                              <><Square size={12} /> Select All</>
+                            )}
+                          </button>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => { setSelectedTemplate(null); setSelectedTemplateDocs([]); setTemplateStep('LIST'); }} className="h-7 text-[9px] font-black uppercase tracking-widest text-primary">Back</Button>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar p-1">
+                        {((selectedTemplate?.content as DocumentRequestContent)?.documents || []).map((doc, idx) => {
+                          const isSelected = selectedTemplateDocs.some(d => d.documentName === doc.documentName);
+                          return (
+                            <div 
+                              key={idx} 
+                              onClick={() => {
+                                setSelectedTemplateDocs(prev => {
+                                    const exists = prev.find(d => d.documentName === doc.documentName);
+                                    if (exists) {
+                                      return prev.filter(d => d.documentName !== doc.documentName);
+                                    }
+                                    return [...prev, doc];
+                                  });
+                              }}
+                              className={cn(
+                                "p-4 border rounded-2xl transition-all cursor-pointer group flex items-center justify-between",
+                                isSelected 
+                                  ? "bg-primary/5 border-primary/30 shadow-md shadow-primary/5" 
+                                  : "bg-gray-50 border-transparent hover:border-primary/20 hover:bg-white"
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm",
+                                  isSelected ? "bg-primary text-white" : "bg-white text-gray-400 group-hover:text-primary"
+                                )}>
+                                  {isSelected ? <Check size={16} /> : <FileText size={16} />}
+                                </div>
+                                <div>
+                                    <p className={cn(
+                                    "text-sm font-bold transition-colors",
+                                    isSelected ? "text-primary" : "text-gray-700 group-hover:text-gray-900"
+                                    )}>{doc.documentName}</p>
+                                    <p className="text-[10px] text-gray-400 font-medium truncate max-w-[150px]">{doc.description}</p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                {doc.isMandatory && <span className="text-[8px] font-black bg-red-50 text-red-500 px-1.5 py-0.5 rounded uppercase">Mandatory</span>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
-                  {/* <p className="text-[10px] text-gray-400 italic font-medium px-2">This template will automatically create all required document slots for the selected member.</p> */}
                 </div>
               ) : (
                 <>
@@ -596,7 +673,7 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
                 if (existingInvolvementKycId) addDocRequestOnlyMutation.mutate();
                 else createInvolvementKycMutation.mutate();
               }}
-              disabled={isPending || (creationMode === 'TEMPLATE' && !selectedTemplate) || (creationMode === 'MANUAL' && !formData.documentName) || (step === 2 && !existingInvolvementKycId && !selectedInvolvementId)}
+              disabled={isPending || (creationMode === 'TEMPLATE' && (templateStep === 'LIST' || selectedTemplateDocs.length === 0)) || (creationMode === 'MANUAL' && !formData.documentName) || (step === 2 && !existingInvolvementKycId && !selectedInvolvementId)}
               className="px-8 py-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all h-11 font-bold uppercase tracking-widest text-[10px] disabled:opacity-50"
             >
               {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}

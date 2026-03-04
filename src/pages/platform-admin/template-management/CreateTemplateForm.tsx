@@ -10,7 +10,7 @@ import { ShadowCard } from '../../../ui/ShadowCard';
 import AlertMessage from '../../common/AlertMessage';
 import { apiGet, apiPost, apiPostFormData } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
-import { ALL_SERVICES, SERVICES_LABELS } from '../../../types/template';
+import { TemplatesProvider, useTemplates } from '../context/ServicesContext';
 import type {
   TemplateType, TemplateModuleType, Services,
   MilestoneContentItem, ChecklistUINode, TemplateApiResponse,
@@ -263,7 +263,7 @@ const DocRow: React.FC<DocRowProps> = ({ doc, index, onUpdate, onRemove }) => {
 type MilestoneStep = MilestoneContentItem & { _id: string };
 type ChecklistL1 = ChecklistUINode;
 
-const CreateTemplateForm: React.FC = () => {
+const CreateTemplateFormContent: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -275,7 +275,10 @@ const CreateTemplateForm: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [serviceCategory, setServiceCategory] = useState<Services | ''>('');
+  const [customServiceCycleId, setCustomServiceCycleId] = useState<string | null>(null);
   const [docTitle, setDocTitle] = useState('');
+
+  const { serviceOptions } = useTemplates();
   const [docDescription, setDocDescription] = useState('');
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
 
@@ -299,7 +302,8 @@ const CreateTemplateForm: React.FC = () => {
     mutationFn: (payload: unknown) => apiPost<TemplateApiResponse>(endPoints.TEMPLATE.CREATE, payload as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
-      navigate('/dashboard/template-management');
+      const mainTab = typeParam === 'DOCUMENT_REQUEST' ? 'DOC_REQUEST' : typeParam === 'MILESTONES' ? 'MILESTONE' : 'CHECKLIST';
+      navigate(`/dashboard/template-management?tab=${mainTab}&sub=${moduleTypeParam}`);
     },
     onError: (err: unknown) => {
       const msg = (err as { message?: string })?.message || 'Failed to create template';
@@ -434,11 +438,14 @@ const CreateTemplateForm: React.FC = () => {
       };
       if (moduleTypeParam === 'ENGAGEMENT' && serviceCategory) {
         payload.serviceCategory = serviceCategory;
+        if (serviceCategory === 'CUSTOM' && customServiceCycleId) {
+          payload.customServiceCycleId = customServiceCycleId;
+        }
       }
 
       createMutation.mutate(payload);
-    } catch (error: any) {
-      setAlert({ message: error.message || 'Error uploading files', variant: 'danger' });
+    } catch (error: unknown) {
+      setAlert({ message: (error as Error).message || 'Error uploading files', variant: 'danger' });
     } finally {
       setIsUploading(false);
     }
@@ -449,9 +456,10 @@ const CreateTemplateForm: React.FC = () => {
     DOCUMENT_REQUEST: { label: 'Document Request', icon: FileText, color: 'text-primary bg-primary/5' },
     MILESTONES: { label: 'Milestone', icon: Layers, color: 'text-amber-600 bg-amber-50' },
     CHECKLIST: { label: 'Checklist', icon: CheckSquare, color: 'text-emerald-600 bg-emerald-50' },
-  }[typeParam];
+  }[typeParam] || { label: 'Template', icon: FileText, color: 'text-primary bg-primary/5' };
+
   const TypeIcon = typeInfo.icon;
-  const moduleLabel = { ENGAGEMENT: 'Engagement', KYC: 'KYC', INCORPORATION: 'Incorporation' }[moduleTypeParam];
+  const moduleLabel = ({ ENGAGEMENT: 'Engagement', KYC: 'KYC', INCORPORATION: 'Incorporation' } as Record<string, string>)[moduleTypeParam] || moduleTypeParam;
 
   return (
     <div className="space-y-6">
@@ -460,7 +468,10 @@ const CreateTemplateForm: React.FC = () => {
         icon={FileText}
         description={`Creating a new ${typeInfo.label} template for ${moduleLabel}.`}
         actions={
-          <Button variant="outline" onClick={() => navigate('/dashboard/template-management')}>
+          <Button variant="header" onClick={() => {
+            const mainTab = typeParam === 'DOCUMENT_REQUEST' ? 'DOC_REQUEST' : typeParam === 'MILESTONES' ? 'MILESTONE' : 'CHECKLIST';
+            navigate(`/dashboard/template-management?tab=${mainTab}&sub=${moduleTypeParam}`);
+          }}>
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
@@ -498,13 +509,25 @@ const CreateTemplateForm: React.FC = () => {
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Service Category</label>
                 <select
-                  value={serviceCategory}
-                  onChange={(e) => setServiceCategory(e.target.value as Services | '')}
+                  value={customServiceCycleId || serviceCategory}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const option = serviceOptions.find(o => o.customServiceCycleId === val || o.id === val);
+                    if (option?.customServiceCycleId) {
+                      setServiceCategory('CUSTOM');
+                      setCustomServiceCycleId(option.customServiceCycleId);
+                    } else {
+                      setServiceCategory(val as Services);
+                      setCustomServiceCycleId(null);
+                    }
+                  }}
                   className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-primary/5 focus:border-primary/30 outline-none transition-all text-sm font-medium text-gray-800"
                 >
                   <option value="">Select service category</option>
-                  {ALL_SERVICES.map(s => (
-                    <option key={s} value={s}>{SERVICES_LABELS[s]}</option>
+                  {serviceOptions.map(opt => (
+                    <option key={opt.customServiceCycleId || opt.id} value={opt.customServiceCycleId || opt.id}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -716,7 +739,10 @@ const CreateTemplateForm: React.FC = () => {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate('/dashboard/template-management')}>
+          <Button type="button" variant="outline" onClick={() => {
+            const mainTab = typeParam === 'DOCUMENT_REQUEST' ? 'DOC_REQUEST' : typeParam === 'MILESTONES' ? 'MILESTONE' : 'CHECKLIST';
+            navigate(`/dashboard/template-management?tab=${mainTab}&sub=${moduleTypeParam}`);
+          }}>
             Cancel
           </Button>
           <Button type="submit" variant="header" disabled={createMutation.isPending || isUploading}>
@@ -727,5 +753,11 @@ const CreateTemplateForm: React.FC = () => {
     </div>
   );
 };
+
+const CreateTemplateForm: React.FC = () => (
+  <TemplatesProvider>
+    <CreateTemplateFormContent />
+  </TemplatesProvider>
+);
 
 export default CreateTemplateForm;

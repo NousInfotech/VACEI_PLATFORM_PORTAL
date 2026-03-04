@@ -10,7 +10,7 @@ import { ShadowCard } from '../../../ui/ShadowCard';
 import AlertMessage from '../../common/AlertMessage';
 import { apiPut, apiGet, apiPostFormData } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
-import { ALL_SERVICES, SERVICES_LABELS } from '../../../types/template';
+import { TemplatesProvider, useTemplates } from '../context/ServicesContext';
 import type {
   TemplateType, Services,
   DocumentItem, ChecklistUINode, TemplateApiResponse,
@@ -257,7 +257,7 @@ const DocRow: React.FC<DocRowProps> = ({ doc, index, onUpdate, onRemove }) => {
 
 // ─── Main EditTemplateForm ──────────────────────────────────────────────
 
-const EditTemplateForm: React.FC = () => {
+const EditTemplateFormContent: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -266,9 +266,12 @@ const EditTemplateForm: React.FC = () => {
   const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [serviceCategory, setServiceCategory] = useState<Services | ''>('');
+  const [customServiceCycleId, setCustomServiceCycleId] = useState<string | null>(null);
   const [docTitle, setDocTitle] = useState('');
   const [docDescription, setDocDescription] = useState('');
   const [docRows, setDocRows] = useState<DocRowData[]>([]);
+
+  const { serviceOptions } = useTemplates();
   const [milestoneSteps, setMilestoneSteps] = useState<MilestoneStep[]>([{ _id: uuidv4(), title: '', description: '' }]);
   const [checklistNodes, setChecklistNodes] = useState<ChecklistUINode[]>([]);
   const [alert, setAlert] = useState<{ message: string; variant: 'success' | 'danger' } | null>(null);
@@ -287,6 +290,7 @@ const EditTemplateForm: React.FC = () => {
     setName(t.name);
     setDescription(t.description || '');
     setServiceCategory((t.serviceCategory as Services) || '');
+    setCustomServiceCycleId(t.customServiceCycleId || null);
     const c = t.content as Record<string, unknown> | null;
 
     if (t.type === 'DOCUMENT_REQUEST' && c) {
@@ -351,7 +355,8 @@ const EditTemplateForm: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       queryClient.invalidateQueries({ queryKey: ['template', id] });
-      navigate('/dashboard/template-management');
+      const mainTab = template?.type === 'DOCUMENT_REQUEST' ? 'DOC_REQUEST' : template?.type === 'MILESTONES' ? 'MILESTONE' : 'CHECKLIST';
+      navigate(`/dashboard/template-management?tab=${mainTab}&sub=${template?.moduleType}`);
     },
     onError: (err: unknown) => {
       setAlert({ message: (err as { message?: string })?.message || 'Failed to update template', variant: 'danger' });
@@ -406,6 +411,7 @@ const EditTemplateForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!template) return;
     if (!name.trim()) {
       setAlert({ message: 'Template name is required', variant: 'danger' });
       return;
@@ -456,10 +462,13 @@ const EditTemplateForm: React.FC = () => {
         name: name.trim(),
         description: description.trim() || null,
         type: typeParam,
+        moduleType: template.moduleType,
+        serviceCategory: (serviceCategory || null) as Services | null,
+        customServiceCycleId: serviceCategory === 'CUSTOM' ? customServiceCycleId : null,
         content: buildContent(uploadedFileIds, multipleFileIds)
       });
-    } catch (error: any) {
-      setAlert({ message: error.message || 'Error uploading files', variant: 'danger' });
+    } catch (error: unknown) {
+      setAlert({ message: (error as Error).message || 'Error uploading files', variant: 'danger' });
     } finally {
       setIsUploading(false);
     }
@@ -471,13 +480,22 @@ const EditTemplateForm: React.FC = () => {
     </div>
   );
 
-  const typeInfo = { DOCUMENT_REQUEST: { label: 'Document Request', icon: FileText }, MILESTONES: { label: 'Milestone', icon: Layers }, CHECKLIST: { label: 'Checklist', icon: CheckSquare } }[typeParam];
-  const TypeIcon = typeInfo?.icon || FileText;
+  const typeInfo = ({ 
+    DOCUMENT_REQUEST: { label: 'Document Request', icon: FileText, color: 'text-primary bg-primary/5' }, 
+    MILESTONES: { label: 'Milestone', icon: Layers, color: 'text-amber-600 bg-amber-50' }, 
+    CHECKLIST: { label: 'Checklist', icon: CheckSquare, color: 'text-emerald-600 bg-emerald-50' } 
+  } as Record<string, any>)[typeParam] || { label: 'Template', icon: FileText, color: 'text-primary bg-primary/5' };
+
+  const TypeIcon = typeInfo.icon || FileText;
+  const moduleLabel = ({ ENGAGEMENT: 'Engagement', KYC: 'KYC', INCORPORATION: 'Incorporation' } as Record<string, string>)[template.moduleType] || template.moduleType;
 
   return (
     <div className="space-y-6">
       <PageHeader title="Edit Template" icon={FileText} description={`Editing: ${template.name}`}
-        actions={<Button variant="header" onClick={() => navigate('/dashboard/template-management')}><ArrowLeft className="h-4 w-4" />Back</Button>}
+        actions={<Button variant="header" onClick={() => {
+          const mainTab = template.type === 'DOCUMENT_REQUEST' ? 'DOC_REQUEST' : template.type === 'MILESTONES' ? 'MILESTONE' : 'CHECKLIST';
+          navigate(`/dashboard/template-management?tab=${mainTab}&sub=${template.moduleType}`);
+        }}><ArrowLeft className="h-4 w-4" />Back</Button>}
       />
 
       {alert && <AlertMessage message={alert.message} variant={alert.variant} onClose={() => setAlert(null)} />}
@@ -486,10 +504,10 @@ const EditTemplateForm: React.FC = () => {
         {/* Meta */}
         <ShadowCard className="rounded-3xl bg-white border border-gray-100 shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 rounded-2xl bg-primary/5 text-primary"><TypeIcon className="h-5 w-5" /></div>
+            <div className={`p-2.5 rounded-2xl ${typeInfo.color}`}><TypeIcon className="h-5 w-5" /></div>
             <div>
               <h2 className="font-bold text-gray-800 text-base">Template Details</h2>
-              <p className="text-xs text-gray-500"><span className="font-semibold text-primary">{typeInfo?.label}</span> · <span className="font-semibold">{template.moduleType}</span></p>
+              <p className="text-xs text-gray-500"><span className="font-semibold text-primary">{typeInfo.label}</span> · <span className="font-semibold">{moduleLabel}</span></p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -500,9 +518,27 @@ const EditTemplateForm: React.FC = () => {
             {template.moduleType === 'ENGAGEMENT' && (
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Service Category</label>
-                <select value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value as Services | '')} className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none transition-all text-sm font-medium text-gray-800">
+                <select 
+                  value={customServiceCycleId || serviceCategory} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const option = serviceOptions.find(o => o.customServiceCycleId === val || o.id === val);
+                    if (option?.customServiceCycleId) {
+                      setServiceCategory('CUSTOM');
+                      setCustomServiceCycleId(option.customServiceCycleId);
+                    } else {
+                      setServiceCategory(val as Services);
+                      setCustomServiceCycleId(null);
+                    }
+                  }} 
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none transition-all text-sm font-medium text-gray-800"
+                >
                   <option value="">Select service category</option>
-                  {ALL_SERVICES.map(s => <option key={s} value={s}>{SERVICES_LABELS[s]}</option>)}
+                  {serviceOptions.map(opt => (
+                    <option key={opt.customServiceCycleId || opt.id} value={opt.customServiceCycleId || opt.id}>
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -611,7 +647,10 @@ const EditTemplateForm: React.FC = () => {
         )}
 
         <div className="flex justify-end gap-3">
-          <Button type="button" variant="outline" onClick={() => navigate('/dashboard/template-management')}>Cancel</Button>
+          <Button type="button" variant="outline" onClick={() => {
+            const mainTab = template.type === 'DOCUMENT_REQUEST' ? 'DOC_REQUEST' : template.type === 'MILESTONES' ? 'MILESTONE' : 'CHECKLIST';
+            navigate(`/dashboard/template-management?tab=${mainTab}&sub=${template.moduleType}`);
+          }}>Cancel</Button>
           <Button type="submit" variant="header" disabled={updateMutation.isPending || isUploading}>
             {updateMutation.isPending || isUploading ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -620,5 +659,11 @@ const EditTemplateForm: React.FC = () => {
     </div>
   );
 };
+
+const EditTemplateForm: React.FC = () => (
+  <TemplatesProvider>
+    <EditTemplateFormContent />
+  </TemplatesProvider>
+);
 
 export default EditTemplateForm;

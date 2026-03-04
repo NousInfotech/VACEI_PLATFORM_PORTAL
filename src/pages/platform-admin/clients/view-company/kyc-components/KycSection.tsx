@@ -29,7 +29,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
   
   const { data: companyDetails } = useQuery({
     queryKey: ['company', companyId],
-    queryFn: () => apiGet<{ data: { name: string } }>(endPoints.COMPANY.GET_BY_ID(companyId)).then(res => res.data),
+    queryFn: () => apiGet<{ data: { name: string; incorporationStatus: boolean } }>(endPoints.COMPANY.GET_BY_ID(companyId)).then(res => res.data),
     enabled: !!companyId && !USE_MOCK_DATA,
   });
 
@@ -47,6 +47,13 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
       queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
     }
   });
+
+  // Automatically initialize KYC cycle if incorporation is complete and no KYC cycle exists
+  React.useEffect(() => {
+    if (!USE_MOCK_DATA && companyDetails?.incorporationStatus && realKycData === null && !isLoading && !createKycMutation.isPending) {
+      createKycMutation.mutate({});
+    }
+  }, [companyDetails?.incorporationStatus, realKycData, isLoading, createKycMutation.isPending]);
 
   const updateDocRequestStatusMutation = useMutation({
     mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
