@@ -1,29 +1,28 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown, Plus } from 'lucide-react';
+import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown, Plus, ChevronRight } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import TemplateSelector from './view-company/kyc-components/TemplateSelector';
 import { ShadowCard } from '../../../ui/ShadowCard';
-import { apiGet, apiPatch, apiPost } from '../../../config/base';
+import { apiPatch, apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
-import type { IncorporationCycle, IncorporationStatus } from '../../../types/company';
+import type { IncorporationStatus } from '../../../types/company';
 import PageHeader from '../../common/PageHeader';
-import { transformBackendDocReq } from '../../../utils/documentTransform';
 import SingleDocumentRequest from './view-company/kyc-components/SingleDocumentRequest';
 import DoubleDocumentRequest from './view-company/kyc-components/DoubleDocumentRequest';
 import { Select } from '../../../ui/Select';
 import { Button } from '../../../ui/Button';
 import AddRequestedDocumentModal from './view-company/kyc-components/AddRequestedDocumentModal';
 import UnassignedFiles from './view-company/kyc-components/UnassignedFiles';
+import { IncorpCycleProvider, useIncorpCycle } from './view-company/kyc-components/IncorpCycleContext';
  
 interface IncorpCycleProps {
     clientId?: string;
     companyId?: string;
 }
 
-const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, companyId: propCompanyId }) => {
+const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId, companyId: propCompanyId }) => {
     const params = useParams<{ clientId: string; companyId: string }>();
     const clientId = propClientId || params.clientId;
     const companyId = propCompanyId || params.companyId;
@@ -32,13 +31,19 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
     const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
+    const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
     const queryClient = useQueryClient();
-    const { data: cycle, isLoading } = useQuery<IncorporationCycle>({
-        queryKey: ['incorporation-cycle', companyId],
-        queryFn: () => apiGet<{ data: IncorporationCycle }>(endPoints.INCORPORATION.GET_BY_COMPANY(companyId!)).then(res => res.data),
-        enabled: !!companyId,
-    });
+    const { cycle, isLoading, transformedDocs } = useIncorpCycle();
+
+    const toggleCategory = (id: string) => {
+        setCollapsedCategories(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     const updateStatusMutation = useMutation({
         mutationFn: (status: IncorporationStatus) => 
@@ -147,8 +152,6 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
         );
     }
 
-    const transformedDocs = cycle.documentRequests?.map(dr => transformBackendDocReq(dr)) || [];
-
     return (
         <>
         <div className="space-y-6">
@@ -157,7 +160,6 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                 icon={ClipboardList}
                 description="Track and manage company incorporation progress"
                 showBack={true}
-                backUrl={`/dashboard/clients/${clientId}/company/${companyId}`}
             />
 
             {/* Status Bar */}
@@ -207,6 +209,7 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                     })}
                 </div>
             </ShadowCard>
+            
 
             {/* Document Requests - Full Width */}
                 <ShadowCard className="p-6 border border-gray-100 shadow-sm rounded-2xl bg-white space-y-6">
@@ -245,10 +248,68 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                             transformedDocs.map((dr, index) => (
                                 <div key={dr._id || index} className="space-y-4">
                                     <div className="pb-2 border-b border-gray-50 flex items-center justify-between">
-                                        <h4 className="font-bold text-gray-900 flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                            {dr.category}
-                                        </h4>
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <button 
+                                                onClick={() => toggleCategory(dr._id || String(index))}
+                                                className="w-8 h-8 rounded-lg min-w-[32px] hover:bg-gray-50 flex items-center justify-center text-gray-400 transition-colors"
+                                            >
+                                                {collapsedCategories.has(dr._id || String(index)) ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                                            </button>
+                                            <div className="flex flex-col flex-1 mr-4">
+                                                <div className="flex items-center justify-between w-full">
+                                                    <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                                        {dr.category}
+                                                    </h4>
+                                                </div>
+                                                {(() => {
+                                                    let total = 0;
+                                                    let completed = 0;
+                                                    
+                                                    const isDocCompleted = (doc: any) => {
+                                                        const s = doc.status?.toLowerCase();
+                                                        return s === 'approved' || s === 'completed' || s === 'verified' || s === 'accepted' || !!doc.url;
+                                                    };
+
+                                                    if (dr.documents) {
+                                                        dr.documents.forEach((d: any) => {
+                                                            total++;
+                                                            if (isDocCompleted(d)) completed++;
+                                                        });
+                                                    }
+                                                    
+                                                    if (dr.multipleDocuments) {
+                                                        dr.multipleDocuments.forEach((md: any) => {
+                                                            if (md.multiple) {
+                                                                md.multiple.forEach((m: any) => {
+                                                                    total++;
+                                                                    if (isDocCompleted(m)) completed++;
+                                                                });
+                                                            }
+                                                        });
+                                                    }
+
+                                                    if (total === 0) return null;
+
+                                                    const progress = Math.round((completed / total) * 100);
+
+                                                    return (
+                                                        <div className="flex items-center gap-3 mt-2 w-full">
+                                                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                                <div 
+                                                                    className="h-full bg-green-500 transition-all duration-500 rounded-full"
+                                                                    style={{ width: `${progress}%` }}
+                                                                />
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 min-w-[80px] justify-end">
+                                                                <span className="text-[10px] font-bold text-gray-400">{completed}/{total} Uploaded</span>
+                                                                <span className="text-[10px] font-bold text-green-600">{progress}%</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
                                         {/* Status dropdown */}
                                         <div className="relative">
                                             <button
@@ -278,21 +339,20 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
                                             )}
                                         </div>
                                     </div>
-                                    {dr.unassignedFiles && dr.unassignedFiles.length > 0 && (
-                                        <div className="mb-4">
-                                            <UnassignedFiles 
-                                                unassignedFiles={dr.unassignedFiles} 
-                                                requestId={dr._id} 
-                                                documentRequest={dr}
-                                            />
-                                        </div>
-                                    )}
 
-                                    {dr.documents && dr.documents.length > 0 && (
-                                        <SingleDocumentRequest requestId={dr._id} documents={dr.documents} />
-                                    )}
-                                    {dr.multipleDocuments && dr.multipleDocuments.length > 0 && (
-                                        <DoubleDocumentRequest requestId={dr._id} multipleDocuments={dr.multipleDocuments} />
+                                    {!collapsedCategories.has(dr._id || String(index)) && (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            {/* Pending matching first (will handle its own grid layout) */}
+                                            <UnassignedFiles requestId={dr._id} unassignedFiles={dr.unassignedFiles || []} />
+
+                                            {/* Document requests stacked below */}
+                                            {dr.documents && dr.documents.length > 0 && (
+                                                <SingleDocumentRequest requestId={dr._id} documents={dr.documents} />
+                                            )}
+                                            {dr.multipleDocuments && dr.multipleDocuments.length > 0 && (
+                                                <DoubleDocumentRequest requestId={dr._id} multipleDocuments={dr.multipleDocuments} />
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             ))
@@ -317,6 +377,7 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
             isNewCategory={isAddingNewCategory}
             cycleId={cycle.id}
             moduleType="INCORPORATION"
+            defaultCategoryName={`incorporation-document-request-${(cycle.documentRequests?.length || 0) + 1}`}
         />
 
         <TemplateSelector 
@@ -327,6 +388,17 @@ const IncorpCycle: React.FC<IncorpCycleProps> = ({ clientId: propClientId, compa
             title="Select Incorporation Template"
         />
         </>
+    );
+};
+
+const IncorpCycle: React.FC<IncorpCycleProps> = (props) => {
+    const params = useParams<{ clientId: string; companyId: string }>();
+    const companyId = props.companyId || params.companyId;
+
+    return (
+        <IncorpCycleProvider companyId={companyId}>
+            <IncorpCycleContent {...props} />
+        </IncorpCycleProvider>
     );
 };
 

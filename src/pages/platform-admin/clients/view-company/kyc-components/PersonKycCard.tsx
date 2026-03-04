@@ -223,14 +223,17 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
       {isExpanded && (
         <div className="bg-gray-50/50 border-t border-gray-100 p-6 animate-in slide-in-from-top-2 duration-300 space-y-4">
            
-           <UnassignedFiles 
-             requestId={request._id}
-             unassignedFiles={request.unassignedFiles || []}
-             documentRequest={request}
-           />
-
            {(request.documents?.length || 0) + (request.multipleDocuments?.length || 0) > 0 ? (
-             <>
+             <div className="bg-white rounded-[24px] border border-indigo-50/50 p-6 shadow-sm mb-4">
+               {(request.unassignedFiles?.length || 0) > 0 && (
+                 <div className="mb-4">
+                    <UnassignedFiles 
+                      requestId={request._id}
+                      unassignedFiles={request.unassignedFiles || []}
+                      documentRequest={request}
+                    />
+                 </div>
+               )}
                <DocumentRequestSingle 
                  requestId={request._id}
                  documents={request.documents || []}
@@ -240,7 +243,7 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                  requestId={request._id}
                  multipleDocuments={request.multipleDocuments || []}
                />
-             </>
+             </div>
            ) : (
              <div className="text-center py-12 bg-white/50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
                 <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest">No documents requested</p>

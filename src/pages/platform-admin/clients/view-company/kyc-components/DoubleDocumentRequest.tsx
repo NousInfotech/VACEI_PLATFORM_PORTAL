@@ -39,7 +39,7 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
   });
 
 
-  if (!multipleDocuments || multipleDocuments.length === 0) return null;
+
 
   const uploadMutation = useMutation({
     mutationFn: ({ docId, file }: { docId: string; file: File }) => {
@@ -132,6 +132,8 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
       uploadMutation.mutate({ docId, file });
     }
   };
+
+  if (!multipleDocuments || multipleDocuments.length === 0) return null;
 
   return (
     <div className="space-y-4 mt-4">

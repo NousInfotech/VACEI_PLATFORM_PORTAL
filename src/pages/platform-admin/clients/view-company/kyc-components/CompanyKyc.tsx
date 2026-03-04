@@ -297,12 +297,6 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
               <div className="bg-gray-50/50 border-t border-gray-100 p-8 space-y-8 animate-in slide-in-from-top-2 duration-300">
                 {workflow.documentRequests.map(request => (
                   <div key={request._id} className="space-y-6">
-                    <UnassignedFiles 
-                      requestId={request.documentRequest._id}
-                      unassignedFiles={request.documentRequest.unassignedFiles || []}
-                      documentRequest={request.documentRequest}
-                    />
-
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-white rounded-lg shadow-sm border border-gray-100 text-indigo-400">
@@ -323,7 +317,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
-                        <Button
+                        {/* <Button
                           size="sm"
                           variant="outline"
                           onClick={() => {
@@ -335,11 +329,20 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                         >
                           <Plus size={16} className="mr-1.5" />
                           Add Requirement
-                        </Button>
+                        </Button> */}
                       </div>
                     </div>
 
                     <div className="bg-white rounded-[24px] border border-indigo-50/50 p-6 shadow-sm">
+                      {(request.documentRequest.unassignedFiles?.length || 0) > 0 && (
+                        <div className="mb-4">
+                          <UnassignedFiles 
+                            requestId={request.documentRequest._id}
+                            unassignedFiles={request.documentRequest.unassignedFiles || []}
+                            documentRequest={request.documentRequest}
+                          />
+                        </div>
+                      )}
                       {(request.documentRequest.documents.length > 0 || request.documentRequest.multipleDocuments.length > 0) ? (
                         <div className="space-y-6">
                           <DocumentRequestSingle 

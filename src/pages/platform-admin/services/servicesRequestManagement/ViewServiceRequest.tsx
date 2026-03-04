@@ -75,6 +75,14 @@ const ViewServiceRequestContent: React.FC = () => {
     enabled: !!id,
   });
 
+  const { data: incorporationData } = useQuery({
+    queryKey: ['incorporation-cycle', request?.companyId],
+    queryFn: () => {
+      return apiGet<{ success: boolean; data: any }>(endPoints.INCORPORATION.GET_BY_COMPANY(request!.companyId)).then(res => res.data);
+    },
+    enabled: !!request?.companyId && request.service === 'INCORPORATION',
+  });
+
   useEffect(() => {
     if (request) {
       console.log('Service Request Data:', request);
@@ -263,7 +271,7 @@ const ViewServiceRequestContent: React.FC = () => {
               size={isTop ? 'default' : 'lg'}
               className={`${commonBtnClass} ${isTop ? 'rounded-xl' : 'rounded-2xl px-10'}`}
             >
-              Create Incorporation Cycle
+              {incorporationData ? 'View Incorporation Cycle' : 'Create Incorporation Cycle'}
             </Button>
           ) : (
             <div className="flex items-center gap-3">

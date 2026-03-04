@@ -20,6 +20,7 @@ interface KycSectionProps {
   companyId: string;
 }
 
+import { KycCycleProvider } from './IncorpCycleContext';
 import { transformBackendDocReq } from '../../../../../utils/documentTransform';
 
 const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
@@ -33,7 +34,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
   });
 
 
-  const { data: realKycData, isLoading } = useQuery<KycBackendResponse | null>({
+  const { data: realKycData, isLoading, refetch } = useQuery<KycBackendResponse | null>({
     queryKey: ['kyc-cycle', companyId],
     queryFn: () => apiGet<{ data: KycBackendResponse | null }>(endPoints.COMPANY.KYC(companyId)).then(res => res.data),
     enabled: !!companyId && !USE_MOCK_DATA,
@@ -47,13 +48,36 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
     }
   });
 
+  const updateDocRequestStatusMutation = useMutation({
+    mutationFn: ({ requestId, status }: { requestId: string; status: string }) =>
+      apiPatch(endPoints.DOCUMENT_REQUESTS.UPDATE_STATUS(requestId), { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      toast.success('Document status updated.');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to update document status', {
+        description: error?.response?.data?.message || error?.message || 'Unexpected error'
+      });
+    }
+  });
+
   const patchKycStatusMutation = useMutation({
-    mutationFn: ({ status }: { status: string }) => 
+    mutationFn: ({ status }: { status: string; requestIds?: string[] }) => 
       apiPatch(endPoints.COMPANY.KYC(companyId) + `/${realKycData?.id}`, { status }),
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
       queryClient.invalidateQueries({ queryKey: ['client-companies'] });
       toast.success('KYC status updated successfully.');
+      
+      // When KYC moves into review, automatically activate all related document requests
+      if (variables.status === 'IN_REVIEW' && variables.requestIds?.length) {
+        await Promise.all(
+          variables.requestIds.map((requestId) =>
+            updateDocRequestStatusMutation.mutateAsync({ requestId, status: 'ACTIVE' })
+          )
+        );
+      }
     },
     onError: (error: any) => {
       toast.error('Failed to update KYC status', {
@@ -237,82 +261,104 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex items-center justify-between bg-white/40 p-6 rounded-2xl border border-white/60 shadow-sm backdrop-blur-md">
-        <div>
-          <h2 className="text-3xl font-semibold">KYC Verification {companyDetails?.name ? `- ${companyDetails.name}` : ''}</h2>
-          <p className="text-sm text-gray-500 mt-1 font-medium">Monitor and audit compliance documentation across the entity or associated individuals</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {realKycData && !USE_MOCK_DATA && (
-            <div className="flex items-center mr-2">
-              <select
-                value={realKycData.status}
-                disabled={patchKycStatusMutation.isPending}
-                onChange={e => patchKycStatusMutation.mutate({ status: e.target.value })}
-                className={`rounded-xl px-4 py-2 text-[10px] font-black border outline-none cursor-pointer transition-all appearance-none shadow-sm uppercase tracking-widest h-10 w-fit text-left ${
-                  realKycData.status === 'VERIFIED'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100/80'
-                    : realKycData.status === 'IN_REVIEW'
-                    ? 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100/80'
-                    : realKycData.status === 'REJECTED'
-                    ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100/80'
-                    : 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100/80'
-                }`}
-              >
-                <option value="PENDING">PENDING</option>
-                <option value="IN_REVIEW">IN REVIEW</option>
-                <option value="VERIFIED">VERIFIED</option>
-                <option value="REJECTED">REJECTED</option>
-              </select>
+    <KycCycleProvider 
+        kycData={kycData} 
+        isLoading={isLoading} 
+        refetch={refetch} 
+        companyId={companyId}
+    >
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex items-center justify-between bg-white/40 p-6 rounded-2xl border border-white/60 shadow-sm backdrop-blur-md">
+                <div>
+                <h2 className="text-3xl font-semibold">KYC Verification {companyDetails?.name ? `- ${companyDetails.name}` : ''}</h2>
+                <p className="text-sm text-gray-500 mt-1 font-medium">Monitor and audit compliance documentation across the entity or associated individuals</p>
+                </div>
+                <div className="flex items-center gap-3">
+                {realKycData && !USE_MOCK_DATA && (
+                    <div className="flex items-center mr-2">
+                    <select
+                        value={realKycData.status}
+                        disabled={patchKycStatusMutation.isPending}
+                        onChange={e => {
+                          const newStatus = e.target.value;
+                          const requestIds: string[] = [];
+                          
+                          // Collect all document request IDs if moving to IN_REVIEW
+                          if (newStatus === 'IN_REVIEW') {
+                            if (realKycData.documentRequest) {
+                              requestIds.push(realKycData.documentRequest.id);
+                            }
+                            realKycData.involvementKycs.forEach(inv => {
+                              if (inv.documentRequest) {
+                                requestIds.push(inv.documentRequest.id);
+                              }
+                            });
+                          }
+                          
+                          patchKycStatusMutation.mutate({ status: newStatus, requestIds });
+                        }}
+                        className={`rounded-xl px-4 py-2 text-[10px] font-black border outline-none cursor-pointer transition-all appearance-none shadow-sm uppercase tracking-widest h-10 w-fit text-left ${
+                        realKycData.status === 'VERIFIED'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100/80'
+                            : realKycData.status === 'IN_REVIEW'
+                            ? 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100/80'
+                            : realKycData.status === 'REJECTED'
+                            ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100/80'
+                            : 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100/80'
+                        }`}
+                    >
+                        <option value="PENDING">PENDING</option>
+                        <option value="IN_REVIEW">IN REVIEW</option>
+                        <option value="VERIFIED">VERIFIED</option>
+                        <option value="REJECTED">REJECTED</option>
+                    </select>
+                    </div>
+                )}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadAllZip}
+                    disabled={isLoading || isDownloading || !kycData.length}
+                    className="rounded-xl border-white/60 bg-white/40 text-gray-700 hover:bg-white/60 h-10 px-4 font-bold uppercase tracking-wider text-[10px]"
+                    title="Download All Submitted as ZIP"
+                >
+                    {isDownloading ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Download size={18} className="mr-2" />}
+                    Download ZIP
+                </Button>
+                <div className="p-4 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-200">
+                    <Shield size={32} />
+                </div>
+                </div>
             </div>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadAllZip}
-            disabled={isLoading || isDownloading || !kycData.length}
-            className="rounded-xl border-white/60 bg-white/40 text-gray-700 hover:bg-white/60 h-10 px-4 font-bold uppercase tracking-wider text-[10px]"
-            title="Download All Submitted as ZIP"
-          >
-            {isDownloading ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Download size={18} className="mr-2" />}
-            Download ZIP
-          </Button>
-          <div className="p-4 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-200">
-            <Shield size={32} />
-          </div>
+
+            <div className="space-y-8">
+                <PillTab 
+                tabs={tabs} 
+                activeTab={activeTab} 
+                onTabChange={setActiveTab} 
+                className="bg-gray-50/50 p-1.5 rounded-3xl border border-gray-100"
+                />
+
+                <div className="min-h-[400px]">
+                {activeTab === 'Company' && (
+                    <CompanyKyc 
+                    workflows={kycData} 
+                    companyId={companyId}
+                    kycId={realKycData?.id}
+                    />
+                )}
+
+                {activeTab === 'Involvements' && (
+                    <InvolvementsKyc 
+                    workflows={kycData} 
+                    companyId={companyId}
+                    kycId={realKycData?.id}
+                    />
+                )}
+                </div>
+            </div>
         </div>
-      </div>
-
-
-
-      <div className="space-y-8">
-        <PillTab 
-          tabs={tabs} 
-          activeTab={activeTab} 
-          onTabChange={setActiveTab} 
-          className="bg-gray-50/50 p-1.5 rounded-3xl border border-gray-100"
-        />
-
-        <div className="min-h-[400px]">
-          {activeTab === 'Company' && (
-            <CompanyKyc 
-              workflows={kycData} 
-              companyId={companyId}
-              kycId={realKycData?.id}
-            />
-          )}
-
-          {activeTab === 'Involvements' && (
-            <InvolvementsKyc 
-              workflows={kycData} 
-              companyId={companyId}
-              kycId={realKycData?.id}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+    </KycCycleProvider>
   );
 };
 

@@ -15,6 +15,7 @@ interface AddRequestedDocumentModalProps {
   isNewCategory?: boolean;
   cycleId?: string;
   moduleType?: TemplateModuleType;
+  defaultCategoryName?: string;
 }
 
 import type { TemplateModuleType } from '../../../../../types/template';
@@ -28,6 +29,7 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
   isNewCategory = false,
   cycleId,
   moduleType = 'KYC',
+  defaultCategoryName,
 }) => {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
@@ -47,6 +49,12 @@ const AddRequestedDocumentModal: React.FC<AddRequestedDocumentModalProps> = ({
   const [selectedTemplateDocs, setSelectedTemplateDocs] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && defaultCategoryName) {
+      setFormData(prev => ({ ...prev, categoryName: defaultCategoryName }));
+    }
+  }, [isOpen, defaultCategoryName]);
 
   useEffect(() => {
     if (isOpen && isFromTemplate) {
