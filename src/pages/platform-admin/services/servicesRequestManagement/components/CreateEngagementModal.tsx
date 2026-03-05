@@ -24,6 +24,8 @@ interface CreateEngagementModalProps {
   customServiceCycleId?: string | null;
   serviceDetails?: any[];
 }
+ 
+const PERIOD_REQUIRED_SERVICES = ['AUDITING', 'ACCOUNTING', 'PAYROLL', 'VAT', 'MBR', 'TAX'];
 
 interface Organization {
   id: string;
@@ -156,9 +158,14 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
     }
 
     if (periods.length === 0) {
-      alert('Please select at least one period');
-      setIsSubmitting(false);
-      return;
+      if (PERIOD_REQUIRED_SERVICES.includes(serviceCategory)) {
+        alert('Please select at least one period');
+        setIsSubmitting(false);
+        return;
+      } else {
+        // For other services, use a single empty period or standard placeholder
+        periods.push({}); 
+      }
     }
 
     try {
@@ -246,12 +253,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
           </div>
 
           {/* Period Configuration */}
-          {(serviceCategory === 'AUDITING' || 
-            serviceCategory === 'ACCOUNTING' || 
-            serviceCategory === 'PAYROLL' || 
-            serviceCategory === 'VAT' || 
-            serviceCategory === 'MBR' || 
-            serviceCategory === 'TAX') && (
+          {PERIOD_REQUIRED_SERVICES.includes(serviceCategory) && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 px-1">
                 <Calendar size={16} className="text-primary" />
@@ -467,6 +469,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Target Period</p>
             <p className="text-xs font-bold text-gray-700 mt-0.5">
               {(() => {
+                if (!PERIOD_REQUIRED_SERVICES.includes(serviceCategory)) return 'Standard Engagement';
                 if (periodType === 'RANGE') return `${startDate || '...'} to ${endDate || '...'}`;
                 if (periodType === 'YEAR_END') return yearEndDate || '...';
                 if (periodType === 'MONTHLY') {
