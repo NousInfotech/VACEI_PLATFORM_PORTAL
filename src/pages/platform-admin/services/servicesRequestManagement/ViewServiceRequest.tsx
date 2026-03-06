@@ -297,8 +297,17 @@ const ViewServiceRequestContent: React.FC = () => {
 
     if (request.status === 'REJECTED') {
       return (
-        <div className={`${commonBtnClass} ${isTop ? 'px-6 py-2 text-xs rounded-xl' : 'px-10 py-3 rounded-2xl'} bg-gray-100 text-gray-400 border border-gray-200`}>
-          Request Rejected
+        <div className="flex flex-col items-end gap-3">
+          <div className={`${commonBtnClass} ${isTop ? 'px-6 py-2 text-xs rounded-xl' : 'px-10 py-3 rounded-2xl'} bg-red-50 text-red-600 border border-red-100 flex items-center gap-2`}>
+            <AlertCircle className="h-4 w-4" />
+            Request Rejected
+          </div>
+          {request.reason && (
+            <div className={`p-4 bg-gray-50 border border-gray-100 rounded-2xl text-gray-500 font-medium ${isTop ? 'text-[10px] max-w-xs' : 'text-sm max-w-md'} text-right`}>
+              <span className="font-bold uppercase tracking-widest text-[9px] block mb-1 text-gray-400">Rejection Reason</span>
+              {request.reason}
+            </div>
+          )}
         </div>
       );
     }
@@ -326,7 +335,7 @@ const ViewServiceRequestContent: React.FC = () => {
         {/* Main Content: Form Responses */}
         <ShadowCard className="p-8 border border-gray-100 bg-white rounded-[40px] w-full">
           <div className="space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-1 bg-primary rounded-full" />

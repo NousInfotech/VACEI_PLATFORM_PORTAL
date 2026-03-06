@@ -126,12 +126,11 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
         let workflowType: 'Shareholder' | 'Representative' | null = null;
         if (roles.includes('SHAREHOLDER')) {
             workflowType = 'Shareholder';
-        } else if (roles.includes('LEGAL_REPRESENTATIVE')) {
+        } else if (roles.length > 0) {
+            // Any other role (DIRECTOR, SECRETARY, etc.) is treated as a Representative
             workflowType = 'Representative';
         }
         
-        // If no specific role is found, we can skip or default. 
-        // Based on the bug report, we only care about these two for involvements tab.
         if (workflowType) {
             const drId = invKyc.documentRequest.id;
             

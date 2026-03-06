@@ -151,4 +151,5 @@ export interface ServiceRequest {
   };
   submittedDocuments?: { id: string; file_name: string; url: string }[];
   engagements: { id: string, name: string | null }[];
+  reason?: string;
 }

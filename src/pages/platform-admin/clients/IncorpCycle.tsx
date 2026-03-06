@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown, Plus, ChevronRight } from 'lucide-react';
+import { ClipboardList, FileText, CheckCircle2, PlayCircle, Loader2, ChevronDown, Plus, ChevronRight, Trash2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import TemplateSelector from './view-company/kyc-components/TemplateSelector';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { ShadowCard } from '../../../ui/ShadowCard';
-import { apiPatch, apiPost } from '../../../config/base';
+import { apiDelete, apiPatch, apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { IncorporationStatus } from '../../../types/company';
 import PageHeader from '../../common/PageHeader';
@@ -32,6 +33,11 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const [isTemplateSelectorOpen, setIsTemplateSelectorOpen] = useState(false);
     const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; requestId: string | null; categoryName: string }>({
+        isOpen: false,
+        requestId: null,
+        categoryName: ''
+    });
 
     const queryClient = useQueryClient();
     const { cycle, isLoading, transformedDocs } = useIncorpCycle();
@@ -87,6 +93,21 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
             apiPatch(endPoints.DOCUMENT_REQUESTS.UPDATE_STATUS(requestId), { status }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['incorporation-cycle', companyId] });
+        }
+    });
+
+    const deleteDocRequestMutation = useMutation({
+        mutationFn: (requestId: string) => 
+            apiDelete(`${endPoints.DOCUMENT_REQUESTS.BASE}/${requestId}`),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['incorporation-cycle', companyId] });
+            toast.success('Document request category deleted.');
+            setDeleteModal({ isOpen: false, requestId: null, categoryName: '' });
+        },
+        onError: (error: any) => {
+            toast.error('Failed to delete document request', {
+                description: error?.response?.data?.message || error?.message || 'Unexpected error'
+            });
         }
     });
 
@@ -310,33 +331,50 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
                                                 })()}
                                             </div>
                                         </div>
-                                        {/* Status dropdown */}
-                                        <div className="relative">
-                                            <button
-                                                onClick={() => setOpenDropdownId(openDropdownId === (dr._id || String(index)) ? null : (dr._id || String(index)))}
-                                                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${statusBadgeClass(dr.status || 'DRAFT')}`}
+                                        <div className="flex items-center gap-3">
+                                            {/* Status dropdown */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setOpenDropdownId(openDropdownId === (dr._id || String(index)) ? null : (dr._id || String(index)))}
+                                                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-all ${statusBadgeClass(dr.status || 'DRAFT')}`}
+                                                >
+                                                    <span>{dr.status || 'DRAFT'}</span>
+                                                    <ChevronDown size={10} />
+                                                </button>
+                                                {openDropdownId === (dr._id || String(index)) && (
+                                                    <div className="absolute right-0 top-8 flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[130px] overflow-hidden">
+                                                        {docRequestStatuses.map(s => (
+                                                            <button
+                                                                key={s}
+                                                                onClick={() => {
+                                                                    updateDocRequestStatusMutation.mutate({ requestId: dr._id, status: s });
+                                                                    setOpenDropdownId(null);
+                                                                }}
+                                                                className={`px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors ${
+                                                                    (dr.status || 'DRAFT') === s ? 'text-primary font-bold bg-primary/5' : 'text-gray-700'
+                                                                }`}
+                                                            >
+                                                                {s}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Delete Button */}
+                                            <button 
+                                                onClick={() => {
+                                                    setDeleteModal({
+                                                        isOpen: true,
+                                                        requestId: dr._id,
+                                                        categoryName: dr.category
+                                                    });
+                                                }}
+                                                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                                                title="Delete Category"
                                             >
-                                                <span>{dr.status || 'DRAFT'}</span>
-                                                <ChevronDown size={10} />
+                                                <Trash2 size={16} />
                                             </button>
-                                            {openDropdownId === (dr._id || String(index)) && (
-                                                <div className="absolute right-0 top-8 flex flex-col bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[130px] overflow-hidden">
-                                                    {docRequestStatuses.map(s => (
-                                                        <button
-                                                            key={s}
-                                                            onClick={() => {
-                                                                updateDocRequestStatusMutation.mutate({ requestId: dr._id, status: s });
-                                                                setOpenDropdownId(null);
-                                                            }}
-                                                            className={`px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider hover:bg-gray-50 transition-colors ${
-                                                                (dr.status || 'DRAFT') === s ? 'text-primary font-bold bg-primary/5' : 'text-gray-700'
-                                                            }`}
-                                                        >
-                                                            {s}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
 
@@ -386,6 +424,17 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
             onSelect={(template) => createFromTemplateMutation.mutate(template.id)}
             moduleType="INCORPORATION"
             title="Select Incorporation Template"
+        />
+
+        <DeleteConfirmModal 
+            isOpen={deleteModal.isOpen}
+            onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+            onConfirm={() => deleteModal.requestId && deleteDocRequestMutation.mutate(deleteModal.requestId)}
+            itemName={deleteModal.categoryName}
+            title="Delete Category"
+            description={<>Are you sure you want to delete the category <span className="font-bold text-gray-900">"{deleteModal.categoryName}"</span>? This will remove all associated document requests.</>}
+            loading={deleteDocRequestMutation.isPending}
+            mode="simple"
         />
         </>
     );

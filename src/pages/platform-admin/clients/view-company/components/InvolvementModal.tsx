@@ -71,6 +71,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
     companyName: '',
     companyRegNumber: '',
     companyAddress: '',
+    companyLegalType: 'LTD' as 'LTD' | 'PLC',
   });
 
   // Helper: get the company's cap for a share class
@@ -121,6 +122,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
           companyName: involvement.holderCompany?.name || '',
           companyRegNumber: involvement.holderCompany?.registrationNumber || '',
           companyAddress: involvement.holderCompany?.address || '',
+          companyLegalType: (involvement.holderCompany as any)?.legalType || 'LTD',
         });
         setPartyType(involvement.partyType || 'PERSON');
         setSelectedPersonId(involvement.person?.id || '');
@@ -163,6 +165,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
       companyName: '',
       companyRegNumber: '',
       companyAddress: '',
+      companyLegalType: 'LTD',
     });
     setSelectedPersonId('');
     setSelectedHolderCompanyId('');
@@ -210,7 +213,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
           registrationNumber: formData.companyRegNumber,
           address: formData.companyAddress,
           companyType: 'NON_PRIMARY',
-          clientId: null,
+          legalType: formData.companyLegalType,
           incorporationStatus: true,
         });
         holderCompanyId = companyResponse.data.id;
@@ -307,7 +310,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setPartyType('COMPANY'); resetForm(); setPartyType('COMPANY'); }}
+                  onClick={() => { resetForm(); setPartyType('COMPANY'); }}
                   className={`flex-1 py-3 px-4 rounded-2xl border transition-all font-bold text-sm flex items-center justify-center gap-2 ${partyType === 'COMPANY' ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
                 >
                   <Building2 size={18} />
@@ -492,6 +495,18 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
                           required={showCompanyForm}
                         />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Legal Type</label>
+                        <select
+                          value={formData.companyLegalType}
+                          onChange={(e) => setFormData({ ...formData, companyLegalType: e.target.value as 'LTD' | 'PLC' })}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium appearance-none cursor-pointer hover:border-primary/50 transition-colors"
+                          required={showCompanyForm}
+                        >
+                          <option value="LTD">LTD</option>
+                          <option value="PLC">PLC</option>
+                        </select>
                       </div>
                     </div>
                   </div>

@@ -24,10 +24,12 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       fetchTemplates();
+      setSelectedTemplate(null);
     }
   }, [isOpen, moduleType]);
 
@@ -87,8 +89,13 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               {filteredTemplates.map(template => (
                 <div 
                   key={template.id}
-                  onClick={() => onSelect(template)}
-                  className="p-5 bg-white border border-gray-100 rounded-3xl hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer group flex flex-col h-full"
+                  onClick={() => setSelectedTemplate(template)}
+                  className={cn(
+                    "p-5 bg-white border rounded-3xl transition-all cursor-pointer group flex flex-col h-full",
+                    selectedTemplate?.id === template.id 
+                      ? "border-primary ring-2 ring-primary/10 shadow-lg shadow-primary/5" 
+                      : "border-gray-100 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                  )}
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0">
@@ -118,8 +125,15 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                         </span>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">
-                      Select
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className={cn(
+                        "h-8 text-[10px] font-bold uppercase tracking-widest transition-all",
+                        selectedTemplate?.id === template.id ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
+                      )}
+                    >
+                      {selectedTemplate?.id === template.id ? 'Selected' : 'Select'}
                     </Button>
                   </div>
                 </div>
@@ -131,6 +145,23 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               <p className="font-bold uppercase tracking-widest text-xs">No templates found</p>
             </div>
           )}
+        </div>
+
+        <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex items-center justify-end gap-3">
+          <Button 
+            variant="ghost" 
+            onClick={onClose}
+            className="rounded-xl px-6 font-bold text-[10px] uppercase tracking-widest"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => selectedTemplate && onSelect(selectedTemplate)}
+            disabled={!selectedTemplate}
+            className="rounded-xl px-8 bg-primary text-white shadow-lg shadow-primary/20 font-bold text-[10px] uppercase tracking-widest"
+          >
+            Confirm & Create
+          </Button>
         </div>
       </div>
       <div className="absolute inset-0 -z-10" onClick={onClose} />

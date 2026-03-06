@@ -91,6 +91,8 @@ const InvolvementKycModal: React.FC<InvolvementKycModalProps> = ({
 
   const checkExistingKyc = (inv: CompanyInvolvement) => {
     const personId = inv.person?.id || inv.holderCompany?.id;
+    if (!personId) return { exists: false };
+
     // Check if this person already has a KYC workflow (any type)
     const existingWorkflow = workflows.find(w => 
       w.documentRequests.some(dr => dr.person?._id === personId)
