@@ -8,6 +8,7 @@ import InvolvementModal from './InvolvementModal';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiDelete } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
+import { DeleteConfirmModal } from '../../../components/DeleteConfirmModal';
 
 interface InvolvementsTabProps {
     company: Company;
@@ -23,6 +24,12 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
     const [isInvolvementModalOpen, setIsInvolvementModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
     const [selectedInvolvement, setSelectedInvolvement] = useState<CompanyInvolvement | null>(null);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; involvementId: string | null; itemName: string }>({
+        isOpen: false,
+        involvementId: null,
+        itemName: ''
+    });
+    const [isDeleting, setIsDeleting] = useState(false);
     const queryClient = useQueryClient();
 
     const handleSuccess = () => {
@@ -41,15 +48,27 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
         setIsInvolvementModalOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to remove this involvement?')) return;
+    const handleDelete = (inv: CompanyInvolvement) => {
+        setDeleteModal({
+            isOpen: true,
+            involvementId: inv.id,
+            itemName: inv.person?.name || inv.holderCompany?.name || 'Involvement'
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteModal.involvementId) return;
         
+        setIsDeleting(true);
         try {
-            await apiDelete(endPoints.INVOLVEMENT.DELETE(id));
+            await apiDelete(endPoints.INVOLVEMENT.DELETE(deleteModal.involvementId));
             handleSuccess();
+            setDeleteModal({ isOpen: false, involvementId: null, itemName: '' });
         } catch (err) {
             console.error('Failed to delete involvement:', err);
             alert('Failed to remove involvement');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -155,7 +174,7 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                                                 <Edit2 size={16} />
                                                             </button>
                                                             <button 
-                                                                onClick={() => handleDelete(inv.id)}
+                                                                onClick={() => handleDelete(inv)}
                                                                 className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                                 title="Remove Involvement"
                                                             >
@@ -238,7 +257,7 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                                             <Edit2 size={16} />
                                                         </button>
                                                         <button 
-                                                            onClick={() => handleDelete(inv.id)}
+                                                            onClick={() => handleDelete(inv)}
                                                             className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                                                             title="Remove Involvement"
                                                         >
@@ -265,6 +284,17 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                 mode={modalMode}
                 existingInvolvements={company.involvements}
                 shareClasses={company.shareClasses || []}
+            />
+
+            <DeleteConfirmModal 
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                onConfirm={confirmDelete}
+                itemName={deleteModal.itemName}
+                title="Remove Involvement"
+                description={<>Are you sure you want to remove <span className="font-bold text-gray-900">"{deleteModal.itemName}"</span> from the involvement list?</>}
+                loading={isDeleting}
+                mode="simple"
             />
         </div>
     );
