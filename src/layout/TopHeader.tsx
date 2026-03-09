@@ -262,7 +262,7 @@ export default function TopHeader({
                             <Button 
                                 variant="ghost" 
                                 className="w-full text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-primary rounded-xl h-9"
-                                onClick={() => navigate('/dashboard/notifications')}
+                                onClick={() => navigate('/notifications')}
                             >
                                 View all notifications
                             </Button>
