@@ -15,7 +15,7 @@ export const transformBackendDocReq = (docReq: any): any => {
           name: d.documentName || d.title,
           description: d.description,
           status: d.status.toLowerCase(),
-          rejectionReason: lastRejected?.reason,
+          rejectionReason: d.rejectionReason || lastRejected?.reason,
           url: d.file?.url,
           uploadedAt: d.file?.url ? (d.file.createdAt || new Date().toISOString()) : undefined,
           uploadedFileName: d.file?.file_name,
@@ -43,7 +43,7 @@ export const transformBackendDocReq = (docReq: any): any => {
                     _id: c.id,
                     label: c.documentName || c.title,
                     status: c.status.toLowerCase(),
-                    rejectionReason: lastRejected?.reason,
+                    rejectionReason: c.rejectionReason || lastRejected?.reason,
                     url: c.file?.url,
                     uploadedFileName: c.file?.file_name,
                     template: c.templateFile ? { url: c.templateFile.url } : undefined

@@ -166,7 +166,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
+                  className="h-10 w-10 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"
                   onClick={() => window.open(file.url, '_blank')}
                 >
                   <Eye size={14} />
@@ -174,7 +174,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                  className="h-10 w-10 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
                   onClick={() => {
                     if (confirm(`Remove "${file.fileName}"?`)) {
                       deleteMutation.mutate({ fileId: file.fileId });
