@@ -9,9 +9,10 @@ interface InvolvementsKycProps {
   workflows: KycWorkflow[];
   companyId: string;
   kycId?: string;
+  isOrgOnboarded?: boolean;
 }
 
-const InvolvementsKyc: React.FC<InvolvementsKycProps> = ({ workflows, companyId, kycId }) => {
+const InvolvementsKyc: React.FC<InvolvementsKycProps> = ({ workflows, companyId, kycId, isOrgOnboarded }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   const filteredWorkflows = workflows.filter(w => w.workflowType === 'Shareholder' || w.workflowType === 'Representative');
@@ -20,17 +21,18 @@ const InvolvementsKyc: React.FC<InvolvementsKycProps> = ({ workflows, companyId,
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-300 shadow-sm">
         <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest ml-2">Active Involvements</h4>
-        <div className="flex items-center gap-2">
-          <Button 
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-dashed border-gray-200 text-primary hover:bg-primary/5 h-10 px-4 font-bold uppercase tracking-wider text-[10px]"
-              onClick={() => setIsModalOpen(true)}
-          >
-              <UserPlus size={16} className="mr-2" />
-              Add Involvements
-          </Button>
-        </div>
+          <div className="flex items-center gap-2">
+            <Button 
+                variant="outline"
+                size="sm"
+                className="rounded-xl border-dashed border-gray-200 text-primary hover:bg-primary/5 h-10 px-4 font-bold uppercase tracking-wider text-[10px]"
+                onClick={() => setIsModalOpen(true)}
+                disabled={isOrgOnboarded}
+            >
+                <UserPlus size={16} className="mr-2" />
+                Add Involvements
+            </Button>
+          </div>
       </div>
 
       {filteredWorkflows.length === 0 ? (
@@ -44,6 +46,7 @@ const InvolvementsKyc: React.FC<InvolvementsKycProps> = ({ workflows, companyId,
           </p>
           <Button 
             onClick={() => setIsModalOpen(true)}
+            disabled={isOrgOnboarded}
             className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all px-8 h-12 font-bold uppercase tracking-widest text-xs"
           >
             <Plus size={18} className="mr-2" />
@@ -62,6 +65,7 @@ const InvolvementsKyc: React.FC<InvolvementsKycProps> = ({ workflows, companyId,
                   kycId={kycId}
                   workflowId={workflow._id}
                   workflowStatus={workflow.status}
+                  isOrgOnboarded={isOrgOnboarded}
                 />
               ))}
             </div>

@@ -11,9 +11,10 @@ interface UnassignedFilesProps {
   requestId: string;
   unassignedFiles: any[];
   documentRequest?: any;
+  isOrgOnboarded?: boolean;
 }
 
-const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassignedFiles: files }) => {
+const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassignedFiles: files, isOrgOnboarded }) => {
   const [selectedMappings, setSelectedMappings] = useState<Record<string, string>>({});
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
@@ -125,7 +126,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
               size="sm"
               className="rounded-lg h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-widest px-4 shadow-sm transition-all"
               onClick={() => assignSelectedMutation.mutate()}
-              disabled={assignSelectedMutation.isPending}
+              disabled={assignSelectedMutation.isPending || isOrgOnboarded}
             >
               {assignSelectedMutation.isPending ? <RefreshCw size={12} className="animate-spin mr-1.5" /> : <Check size={12} className="mr-1.5" />}
               Assign Selected ({selectedFiles.size})
@@ -180,7 +181,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
                       deleteMutation.mutate({ fileId: file.fileId });
                     }
                   }}
-                  disabled={deleteMutation.isPending}
+                  disabled={deleteMutation.isPending || isOrgOnboarded}
                 >
                   <Trash2 size={14} />
                 </Button>
@@ -194,7 +195,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
                     className="w-full bg-indigo-50/30 border border-indigo-100/50 rounded-lg px-3 py-2 text-[10px] font-bold text-indigo-900 outline-none focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all appearance-none cursor-pointer truncate pr-8"
                     value={selectedMappings[file.fileId] || ""}
                     onChange={(e) => setSelectedMappings(prev => ({ ...prev, [file.fileId]: e.target.value }))}
-                    disabled={assignMutation.isPending}
+                    disabled={assignMutation.isPending || isOrgOnboarded}
                   >
                     <option value="">Map to requirement...</option>
                     {allRequirements.map(req => (
@@ -218,7 +219,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
                       });
                     }
                   }}
-                  disabled={!selectedMappings[file.fileId] || assignMutation.isPending}
+                  disabled={!selectedMappings[file.fileId] || assignMutation.isPending || isOrgOnboarded}
                 >
                   {assignMutation.isPending ? <RefreshCw size={12} className="animate-spin" /> : <PlusCircle size={12} className="mr-1.5" />}
                   Map File

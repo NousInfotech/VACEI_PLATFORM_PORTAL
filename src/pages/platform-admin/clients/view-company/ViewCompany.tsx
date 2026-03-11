@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -27,6 +27,8 @@ import { Skeleton } from '../../../../ui/Skeleton';
 import { apiGet } from '../../../../config/base';
 import { endPoints } from '../../../../config/endPoint';
 import type { Company, IncorporationCycle } from '../../../../types/company';
+import type { Client } from '../../../../types/client';
+import { OnboardingType } from '../../../../types/client';
 import type { ServiceRequest } from '../../../../types/service-request-template';
 import { USE_MOCK_DATA, getMockCompanyById, mockIncorporationCycle } from '../../../../data/mockCompanyData';
 import type { Engagement } from '../../../../data/engagementMockData';
@@ -67,6 +69,16 @@ const ViewCompany: React.FC = () => {
 
     const company = USE_MOCK_DATA ? getMockCompanyById(companyId!) : realCompany;
     const isCompanyLoading = USE_MOCK_DATA ? false : isRealCompanyLoading;
+
+    const { data: client } = useQuery<Client>({
+        queryKey: ['client', clientId],
+        queryFn: () => apiGet<{ data: Client }>(`${endPoints.CLIENT.BASE}/${clientId}`).then(res => res.data),
+        enabled: !!clientId && !USE_MOCK_DATA,
+    });
+
+    const isOrgOnboarded = useMemo(() => {
+        return client?.onboardings?.some(o => o.type === OnboardingType.ORG_ONBOARDED_CLIENT && o.isActive);
+    }, [client]);
 
     const { data: realIncCycle, isLoading: isIncCycleLoading } = useQuery<IncorporationCycle>({
         queryKey: ['incorporation-cycle', companyId],
@@ -157,20 +169,21 @@ const ViewCompany: React.FC = () => {
 
             <div className="mt-8">
                 {activeTab === 'detail' && (
-                    <CompanyDetailsTab company={company} />
+                    <CompanyDetailsTab company={company} isOrgOnboarded={isOrgOnboarded} />
                 )}
 
                 {activeTab === 'involvements' && (
                     <InvolvementsTab 
-                        company={company}
+                        company={company!}
                         activeInvolvementSubTab={activeInvolvementSubTab}
                         onSubTabChange={setActiveInvolvementSubTab}
+                        isOrgOnboarded={isOrgOnboarded}
                     />
                 )}
 
                 {activeTab === 'kyc' && (
                     <div className="space-y-8 animate-in fade-in duration-500">
-                        <KycSection companyId={companyId!} />
+                        <KycSection companyId={companyId!} isOrgOnboarded={isOrgOnboarded} />
                     </div>
                 )}
 

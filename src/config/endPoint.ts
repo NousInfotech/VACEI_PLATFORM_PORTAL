@@ -138,6 +138,7 @@ export const endPoints = {
     BASE: '/persons',
     GET_ALL: '/persons',
     CREATE: '/persons',
+    UPDATE: (id: string) => `/persons/${id}`,
   },
   DOCUMENT_REQUESTS: {
     BASE: '/document-requests',

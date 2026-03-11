@@ -17,9 +17,10 @@ import { useQueryClient } from '@tanstack/react-query';
 
 interface CompanyDetailsTabProps {
     company: Company;
+    isOrgOnboarded?: boolean;
 }
 
-const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
+const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company, isOrgOnboarded }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const queryClient = useQueryClient();
 
@@ -44,15 +45,16 @@ const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
                             </div>
                         </div>
                     </div>
-                    <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 transition-all flex items-center gap-2"
-                    >
-                        <Edit3 size={16} />
-                        Edit Details
-                    </Button>
+                        <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setIsEditModalOpen(true)}
+                            disabled={isOrgOnboarded}
+                            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 transition-all flex items-center gap-2"
+                        >
+                            <Edit3 size={16} />
+                            Edit Details
+                        </Button>
                 </div>
             </ShadowCard>
 
@@ -97,7 +99,12 @@ const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
                                             ? `Class ${share.class}` 
                                             : share.class.charAt(0).toUpperCase() + share.class.slice(1).toLowerCase())} :
                                 </p>
-                                <p className="text-[14px] font-medium tracking-wide">{share.issued.toLocaleString()}</p>
+                                <div className="flex flex-col items-end">
+                                    <p className="text-[14px] font-medium tracking-wide">{share.issued.toLocaleString()}</p>
+                                    {share.perShareValue != null && Number(share.perShareValue) > 0 && (
+                                        <p className="text-[15px] text-gray-400 font-medium border border-gray-400 rounded-lg px-3 py-1">€{Number(share.perShareValue).toFixed(2)} / share</p>
+                                    )}
+                                </div>
                             </ShadowCard> 
                         ))}
                         {/* Calculated Remaining Ordinary Shares if not explicitly provided */}
@@ -106,9 +113,14 @@ const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ company }) => {
                                 <p className="text-[14px] font-medium uppercase tracking-widest group-hover:text-primary">
                                     Ordinary
                                 </p>
-                                <p className="text-[14px] font-medium tracking-wide">
-                                    {((company.issuedShares || 0) - company.shareClasses.reduce((acc, s) => acc + s.issued, 0)).toLocaleString()}
-                                </p>
+                                <div className="flex flex-col items-end">
+                                    <p className="text-[14px] font-medium tracking-wide">
+                                        {((company.issuedShares || 0) - company.shareClasses.reduce((acc, s) => acc + s.issued, 0)).toLocaleString()}
+                                    </p>
+                                    {company.shareClasses.find(s => s.class === 'ORDINARY')?.perShareValue != null && Number(company.shareClasses.find(s => s.class === 'ORDINARY')?.perShareValue) > 0 && (
+                                        <p className="text-[15px] text-gray-400 font-medium">€{Number(company.shareClasses.find(s => s.class === 'ORDINARY')?.perShareValue).toFixed(2)} / share</p>
+                                    )}
+                                </div>
                             </ShadowCard>
                         )}
                     </div>

@@ -26,6 +26,7 @@ interface CompanyKycProps {
   expanded?: boolean;
   /** Toggle expand when hideHeader is true. */
   onToggleExpand?: () => void;
+  isOrgOnboarded?: boolean;
 }
 
 const CompanyKyc: React.FC<CompanyKycProps> = ({
@@ -35,6 +36,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
   hideHeader = false,
   expanded: controlledExpanded,
   onToggleExpand,
+  isOrgOnboarded,
 }) => {
   const queryClient = useQueryClient();
   const companyWorkflows = workflows.filter(w => w.workflowType === 'Company');
@@ -177,14 +179,14 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
         <div className="flex gap-4">
           <Button 
             onClick={() => setIsTemplateSelectorOpen(true)} 
-            disabled={isAnyActionLoading}
+            disabled={isAnyActionLoading || isOrgOnboarded}
             className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all px-8 h-12 font-bold uppercase tracking-widest text-xs"
           >
             {createFromTemplateMutation.isPending ? 'Initializing...' : <><Plus size={18} className="mr-2" /> Initial from Template</>}
           </Button>
           <Button 
             onClick={() => createDocumentRequestMutation.mutate()} 
-            disabled={isAnyActionLoading}
+            disabled={isAnyActionLoading || isOrgOnboarded}
             variant="outline"
             className="rounded-xl border-gray-200 text-gray-500 hover:bg-white h-12 px-8 font-bold uppercase tracking-widest text-xs"
           >
@@ -240,27 +242,29 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50"
-                      onClick={() => setConfirmConfig({
-                        isOpen: true,
-                        title: "Delete KYC Cycle",
-                        message: "Are you sure you want to delete this entire KYC verification cycle? All submitted documents and requests will be removed.",
-                        onConfirm: () => {
-                          deleteKycMutation.mutate();
-                          setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                        },
-                        variant: 'danger'
-                      })}
-                      disabled={isAnyActionLoading}
-                      title="Delete Cycle"
-                    >
-                      <Trash2 size={18} />
-                    </Button>
-                  </div>
+                  {!isOrgOnboarded && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-10 w-10 p-0 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => setConfirmConfig({
+                          isOpen: true,
+                          title: "Delete KYC Cycle",
+                          message: "Are you sure you want to delete this entire KYC verification cycle? All submitted documents and requests will be removed.",
+                          onConfirm: () => {
+                            deleteKycMutation.mutate();
+                            setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                          },
+                          variant: 'danger'
+                        })}
+                        disabled={isAnyActionLoading}
+                        title="Delete Cycle"
+                      >
+                        <Trash2 size={18} />
+                      </Button>
+                    </div>
+                  )}
                   
                   <div className="w-px h-8 bg-gray-100 mx-1" />
                   
@@ -311,7 +315,8 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                         <select
                           value={request.documentRequest.status || 'DRAFT'}
                           onChange={(e) => updateDocRequestStatusMutation.mutate({ requestId: request.documentRequest._id, status: e.target.value })}
-                          className={`appearance-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border outline-none cursor-pointer transition-all ${docStatusBadgeClass(request.documentRequest.status || 'DRAFT')}`}
+                          disabled={isOrgOnboarded}
+                          className={`appearance-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border outline-none cursor-pointer transition-all ${docStatusBadgeClass(request.documentRequest.status || 'DRAFT')} ${isOrgOnboarded ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           {docRequestStatuses.map(s => (
                             <option key={s} value={s}>{s}</option>
@@ -340,6 +345,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                             requestId={request.documentRequest._id}
                             unassignedFiles={request.documentRequest.unassignedFiles || []}
                             documentRequest={request.documentRequest}
+                            isOrgOnboarded={isOrgOnboarded}
                           />
                         </div>
                       )}
@@ -349,11 +355,13 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                             requestId={request.documentRequest._id}
                             documents={request.documentRequest.documents || []}
                             isDisabled={request.documentRequest.status?.toUpperCase() === 'COMPLETED'}
+                            isOrgOnboarded={isOrgOnboarded}
                           />
                           <DocumentRequestDouble 
                             requestId={request.documentRequest._id}
                             multipleDocuments={request.documentRequest.multipleDocuments || []}
                             isDisabled={request.documentRequest.status?.toUpperCase() === 'COMPLETED'}
+                            isOrgOnboarded={isOrgOnboarded}
                           />
                         </div>
                       ) : (
@@ -371,7 +379,7 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                               setActiveRequestId(request.documentRequest._id);
                               setIsAddModalOpen(true);
                             }}
-                            disabled={isAnyActionLoading || (request.documentRequest.status?.toUpperCase() === 'COMPLETED')}
+                            disabled={isAnyActionLoading || (request.documentRequest.status?.toUpperCase() === 'COMPLETED') || isOrgOnboarded}
                             className="h-10 px-6 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 text-[10px] font-bold uppercase tracking-wider transition-all"
                           >
                             <Plus size={16} className="mr-2" />
