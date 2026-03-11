@@ -1,3 +1,19 @@
+export type OnboardingType = 'CLIENT_INVITED_ORG' | 'ORG_ONBOARDED_CLIENT';
+
+export const OnboardingType = {
+  CLIENT_INVITED_ORG: 'CLIENT_INVITED_ORG' as OnboardingType,
+  ORG_ONBOARDED_CLIENT: 'ORG_ONBOARDED_CLIENT' as OnboardingType,
+};
+
+export interface Onboarding {
+  id: string;
+  clientId: string;
+  organizationId: string;
+  type: OnboardingType;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   email: string | null;
@@ -19,6 +35,7 @@ export interface Client {
     name: string;
     incorporationStatus: boolean;
   }>;
+  onboardings?: Onboarding[];
   createdAt: string;
   updatedAt: string;
 }

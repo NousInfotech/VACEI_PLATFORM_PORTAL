@@ -23,6 +23,7 @@ interface CreateEngagementModalProps {
   serviceRequestId?: string;
   customServiceCycleId?: string | null;
   serviceDetails?: any[];
+  acceptedOrganizations?: { id: string; name: string }[];
 }
  
 const PERIOD_REQUIRED_SERVICES = ['AUDITING', 'ACCOUNTING', 'PAYROLL', 'VAT', 'MBR', 'TAX'];
@@ -43,6 +44,7 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
   serviceRequestId,
   customServiceCycleId,
   serviceDetails,
+  acceptedOrganizations = [],
 }) => {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,12 +122,18 @@ const CreateEngagementModal: React.FC<CreateEngagementModalProps> = ({
 
   const organizations = orgsData?.data || [];
 
-  // Filter organizations that offer the required service
+  // Filter organizations that offer the required service AND have accepted the request
   const eligibleOrgs = organizations.filter(org => {
-    if (serviceCategory === 'CUSTOM' && customServiceCycleId) {
-      return org.customServiceCycles?.some(cycle => cycle.id === customServiceCycleId && cycle.isActive);
-    }
-    return org.availableServices?.includes(serviceCategory);
+    // Check if org offered the service
+    const offersService = serviceCategory === 'CUSTOM' && customServiceCycleId
+      ? org.customServiceCycles?.some(cycle => cycle.id === customServiceCycleId && cycle.isActive)
+      : org.availableServices?.includes(serviceCategory);
+    
+    if (!offersService) return false;
+ 
+    // Additionally filter by whether they've accepted this specific request
+    // If acceptedOrganizations is provided, only show those who accepted
+    return (acceptedOrganizations || []).some(ao => ao.id === org.id);
   });
 
   const handleCreate = async () => {

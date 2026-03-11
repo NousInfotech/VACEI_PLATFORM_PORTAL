@@ -21,9 +21,10 @@ interface PersonKycCardProps {
   kycId?: string;
   workflowId: string;
   workflowStatus: string;
+  isOrgOnboarded?: boolean;
 }
 
-const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kycId, workflowId, workflowStatus }) => {
+const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kycId, workflowId, workflowStatus, isOrgOnboarded }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddDocModalOpen, setIsAddDocModalOpen] = useState(false);
@@ -123,8 +124,9 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                 {/* Document Request Status */}
                 <select
                   value={request.status || 'DRAFT'}
+                  disabled={isOrgOnboarded}
                   onChange={(e) => updateDocRequestStatusMutation.mutate({ requestId: request._id, status: e.target.value })}
-                  className={`appearance-none px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border outline-none cursor-pointer transition-all ${docStatusBadgeClass(request.status || 'DRAFT')}`}
+                  className={`appearance-none px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border outline-none cursor-pointer transition-all ${docStatusBadgeClass(request.status || 'DRAFT')} ${isOrgOnboarded ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {docRequestStatuses.map(s => (
                     <option key={s} value={s}>{s}</option>
@@ -132,7 +134,7 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                 </select>
                 <select
                   value={workflowStatus}
-                  disabled={isAnyActionLoading}
+                  disabled={isAnyActionLoading || isOrgOnboarded}
                   onChange={e => {
                     const newStatus = e.target.value;
                     patchInvolvementStatusMutation.mutate({ status: newStatus, requestId: request._id });
@@ -156,26 +158,27 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-                <Button 
-                    size="sm" 
-                    variant="ghost"
-                    className="rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => setConfirmConfig({
-                        isOpen: true,
-                        title: "Remove Person",
-                        message: `Are you sure you want to remove "${person.name}" from the KYC cycle? This action cannot be undone.`,
-                        onConfirm: () => {
-                            deleteInvolvementMutation.mutate();
-                            setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                        },
-                        variant: 'danger'
-                    })}
-                    disabled={isAnyActionLoading}
-                >
-                    <Trash2 size={14} />
-                </Button>
-            </div>
+                <div className="flex items-center gap-2">
+                    <Button 
+                        size="sm" 
+                        variant="ghost"
+                        className="rounded-xl h-8 text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => setConfirmConfig({
+                            isOpen: true,
+                            title: "Remove Person",
+                            message: `Are you sure you want to remove "${person.name}" from the KYC cycle? This action cannot be undone.`,
+                            onConfirm: () => {
+                                deleteInvolvementMutation.mutate();
+                                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                            },
+                            variant: 'danger'
+                        })}
+                        disabled={isAnyActionLoading || isOrgOnboarded}
+                        title={isOrgOnboarded ? "Read-only" : "Remove Person"}
+                    >
+                        <Trash2 size={14} />
+                    </Button>
+                </div>
             
             <div className="w-px h-6 bg-gray-100 mx-1" />
 
@@ -231,32 +234,36 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                       requestId={request._id}
                       unassignedFiles={request.unassignedFiles || []}
                       documentRequest={request}
+                      isOrgOnboarded={isOrgOnboarded}
                     />
                  </div>
                )}
                <DocumentRequestSingle 
                  requestId={request._id}
                  documents={request.documents || []}
+                 isOrgOnboarded={isOrgOnboarded}
                />
 
                <DocumentRequestDouble 
                  requestId={request._id}
                  multipleDocuments={request.multipleDocuments || []}
+                 isOrgOnboarded={isOrgOnboarded}
                />
              </div>
            ) : (
-             <div className="text-center py-12 bg-white/50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
-                <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest">No documents requested</p>
-                <Button 
-                   variant="ghost" 
-                   size="sm"
-                   className="rounded-xl border border-dashed border-gray-200 text-gray-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all text-[10px] uppercase font-bold tracking-widest px-6"
-                   onClick={() => setIsAddDocModalOpen(true)}
-               >
-                   <Plus className="mr-2 w-3 h-3" />
-                   Add First Document
-               </Button>
-             </div>
+              <div className="text-center py-12 bg-white/50 rounded-3xl border border-dashed border-gray-200 flex flex-col items-center gap-4">
+                 <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest">No documents requested</p>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="rounded-xl border border-dashed border-gray-200 text-gray-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all text-[10px] uppercase font-bold tracking-widest px-6"
+                        onClick={() => setIsAddDocModalOpen(true)}
+                        disabled={isOrgOnboarded}
+                    >
+                        <Plus className="mr-2 w-3 h-3" />
+                        Add First Document
+                    </Button>
+              </div>
            )}
 
            {request.status !== 'VERIFIED' && (request.documents?.length || 0) + (request.multipleDocuments?.length || 0) > 0 && (
@@ -266,6 +273,7 @@ const PersonKycCard: React.FC<PersonKycCardProps> = ({ personKyc, companyId, kyc
                        size="sm"
                        className="rounded-xl border border-dashed border-gray-200 text-gray-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all text-[10px] uppercase font-bold tracking-widest px-6"
                        onClick={() => setIsAddDocModalOpen(true)}
+                       disabled={isOrgOnboarded}
                    >
                        <Plus className="mr-2 w-3 h-3" />
                        Add Additional Document

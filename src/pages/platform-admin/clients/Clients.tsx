@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Users, Eye, Calendar, Plus } from 'lucide-react';
+import { Search, Users, Eye, Calendar, Plus, Filter } from 'lucide-react';
 import { Button } from '../../../ui/Button';
 import { ShadowCard } from '../../../ui/ShadowCard';
 import { Skeleton } from '../../../ui/Skeleton';
@@ -13,12 +13,15 @@ import { USE_MOCK_DATA, mockClients } from '../../../data/mockCompanyData';
 import PageHeader from '../../common/PageHeader';
 import Dropdown from '../../common/Dropdown';
 import Pagination from '../../common/Pagination';
+import Badge from '../../common/Badge';
+import { OnboardingType } from '../../../types/client';
 
 const Clients: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [search, setSearch] = useState('');
     const [selectedDateRange, setSelectedDateRange] = useState('All time');
+    const [selectedClientType, setSelectedClientType] = useState<string>('All types');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const setPage = (updater: number | ((p: number) => number)) => {
         const newPage = typeof updater === 'function' ? updater(page) : updater;
@@ -44,7 +47,15 @@ const Clients: React.FC = () => {
 
     const filteredClients = useMemo(() => {
         let results = allClients;
-        
+
+        // Apply client type filter
+        if (selectedClientType !== 'All types') {
+            results = results.filter(client => {
+                const isOrgOnboarded = client.onboardings?.some(o => o.type === OnboardingType.ORG_ONBOARDED_CLIENT && o.isActive);
+                if (selectedClientType === OnboardingType.ORG_ONBOARDED_CLIENT) return !!isOrgOnboarded;
+                return !isOrgOnboarded;
+            });
+        }
 
         // Apply date range filter
         if (selectedDateRange !== 'All time') {
@@ -79,7 +90,7 @@ const Clients: React.FC = () => {
             );
         }
         return results;
-    }, [allClients, search, selectedDateRange]);
+    }, [allClients, search, selectedDateRange, selectedClientType]);
 
     const totalPages = Math.max(1, Math.ceil(filteredClients.length / limit));
 
@@ -136,6 +147,25 @@ const Clients: React.FC = () => {
                     }))}
                     align="right"
                 />
+
+                <Dropdown
+                    label={selectedClientType}
+                    trigger={
+                        <Button variant="outline" className="h-full px-6 py-3 rounded-2xl flex items-center gap-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm">
+                            <Filter className="h-4 w-4 text-gray-400" />
+                            <span className="font-semibold">{selectedClientType.replace(/_/g, ' ')}</span>
+                        </Button>
+                    }
+                    items={[
+                        { id: 'All types', label: 'All types', onClick: () => setSelectedClientType('All types') },
+                        { id: OnboardingType.ORG_ONBOARDED_CLIENT, label: 'ORG ONBOARDED CLIENT', onClick: () => setSelectedClientType(OnboardingType.ORG_ONBOARDED_CLIENT) },
+                        { id: OnboardingType.CLIENT_INVITED_ORG, label: 'CLIENT INVITED ORG', onClick: () => setSelectedClientType(OnboardingType.CLIENT_INVITED_ORG) },
+                    ].map(item => ({
+                        ...item,
+                        className: selectedClientType === item.id ? "bg-primary/5 text-primary font-bold" : ""
+                    }))}
+                    align="right"
+                />
             </div>
 
             <ShadowCard className="overflow-hidden border border-gray-100 shadow-sm rounded-2xl bg-white">
@@ -145,6 +175,7 @@ const Clients: React.FC = () => {
                             <TableHead className="py-4 px-6 text-nowrap">S.No</TableHead>
                             <TableHead>Client Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>Client Type</TableHead>
                             <TableHead>Created At</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
                         </TableRow>
@@ -156,6 +187,7 @@ const Clients: React.FC = () => {
                                     <TableCell className="px-6"><Skeleton className="h-4 w-4" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                     <TableCell className="text-right px-6"><Skeleton className="h-8 w-12 ml-auto rounded-lg" /></TableCell>
                                 </TableRow>
@@ -170,6 +202,13 @@ const Clients: React.FC = () => {
                                         {client.user.firstName} {client.user.lastName}
                                     </TableCell>
                                     <TableCell className="text-gray-600">{client.user.email || 'N/A'}</TableCell>
+                                    <TableCell>
+                                        {client.onboardings?.some(o => o.type === OnboardingType.ORG_ONBOARDED_CLIENT && o.isActive) ? (
+                                            <Badge variant="success" className="rounded-full text-[9px] px-2.5 shadow-none border-green-100">ORG ONBOARDED CLIENT</Badge>
+                                        ) : (
+                                            <Badge variant="gray" className="rounded-full text-[9px] px-2.5 shadow-none border-primary/10 bg-primary/10 text-primary">CLIENT INVITED ORG</Badge>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-gray-500 font-medium text-xs">
                                         {new Date(client.createdAt).toLocaleDateString()}
                                     </TableCell>
@@ -189,7 +228,7 @@ const Clients: React.FC = () => {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-64 text-center">
+                                <TableCell colSpan={6} className="h-64 text-center">
                                     <div className="flex flex-col items-center justify-center text-gray-400">
                                         <Users className="h-12 w-12 mb-4 opacity-20" />
                                         <p className="text-lg font-medium">No clients found</p>

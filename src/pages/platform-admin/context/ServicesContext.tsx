@@ -30,6 +30,7 @@ interface TemplatesContextType {
   updateCustomServiceMutation: UseMutationResult<unknown, Error, { id: string; data: UpdateCustomServiceDto }, unknown>;
   deleteCustomServiceMutation: UseMutationResult<unknown, Error, string, unknown>;
   patchCustomServiceStatusMutation: UseMutationResult<unknown, Error, { id: string; isActive: boolean }, unknown>;
+  updateRequestStatusMutation: UseMutationResult<unknown, Error, { id: string; status: string; reason?: string }, unknown>;
   queryClient: ReturnType<typeof useQueryClient>;
   // Form Configuration
   serviceOptions: { id: string; label: string; customServiceCycleId?: string | null }[];
@@ -135,6 +136,22 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       queryClient.invalidateQueries({ queryKey: ['custom-services'] });
     }
   });
+ 
+  const updateRequestStatusMutation = useMutation({
+    mutationFn: async ({ id, status, reason }: { id: string; status: string; reason?: string }) => {
+      const payload: Record<string, unknown> = { status };
+      if (reason) payload.reason = reason;
+      return apiPatch<{ success: boolean; data: any }>(endPoints.SERVICE_REQUEST.UPDATE_STATUS(id), payload).then(res => res.data);
+    },
+    onSuccess: (updatedData, { id }) => {
+      // Optimistically update the cache
+      if (updatedData) {
+        queryClient.setQueryData(['service-request', id], updatedData);
+      }
+      queryClient.invalidateQueries({ queryKey: ['service-request', id] });
+      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+    }
+  });
 
   const formatServiceLabel = useCallback((service: string | null, customServiceCycleId?: string | null) => {
     if (service === 'CUSTOM_GROUP') return 'Custom';
@@ -221,6 +238,7 @@ export const TemplatesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCustomServiceMutation,
     deleteCustomServiceMutation,
     patchCustomServiceStatusMutation,
+    updateRequestStatusMutation,
     queryClient,
     serviceOptions,
     inputTypeIcons,

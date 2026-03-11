@@ -18,12 +18,13 @@ import KycSkeleton from '../components/skeletons/KycSkeleton';
 
 interface KycSectionProps {
   companyId: string;
+  isOrgOnboarded?: boolean;
 }
 
 import { KycCycleProvider } from './IncorpCycleContext';
 import { transformBackendDocReq } from '../../../../../utils/documentTransform';
 
-const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
+const KycSection: React.FC<KycSectionProps> = ({ companyId, isOrgOnboarded }) => {
   const [activeTab, setActiveTab] = useState('Company');
   const queryClient = useQueryClient();
   
@@ -256,7 +257,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
                 <Button 
                     className="rounded-4xl px-8 py-6 h-auto text-lg hover:scale-105 transition-transform"
                     onClick={() => createKycMutation.mutate({})}
-                    disabled={createKycMutation.isPending}
+                    disabled={createKycMutation.isPending || isOrgOnboarded}
                 >
                     <Plus className="mr-2 h-5 w-5" />
                     Initialize KYC Cycle
@@ -284,7 +285,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
                     <div className="flex items-center mr-2">
                     <select
                         value={realKycData.status}
-                        disabled={patchKycStatusMutation.isPending}
+                        disabled={patchKycStatusMutation.isPending || isOrgOnboarded}
                         onChange={e => {
                           const newStatus = e.target.value;
                           const requestIds: string[] = [];
@@ -331,6 +332,13 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
                     {isDownloading ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Download size={18} className="mr-2" />}
                     Download ZIP
                 </Button>
+                <Button 
+                    onClick={() => createKycMutation.mutate({})} 
+                    disabled={createKycMutation.isPending || isOrgOnboarded}
+                    className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all px-8 h-10 font-bold uppercase tracking-wider text-[10px]"
+                >
+                    {createKycMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Initializing...</> : <><Plus size={18} className="mr-2" /> Initialize KYC Cycle</>}
+                </Button>
                 <div className="p-4 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-200">
                     <Shield size={32} />
                 </div>
@@ -351,6 +359,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
                     workflows={kycData} 
                     companyId={companyId}
                     kycId={realKycData?.id}
+                    isOrgOnboarded={isOrgOnboarded}
                     />
                 )}
 
@@ -359,6 +368,7 @@ const KycSection: React.FC<KycSectionProps> = ({ companyId }) => {
                     workflows={kycData} 
                     companyId={companyId}
                     kycId={realKycData?.id}
+                    isOrgOnboarded={isOrgOnboarded}
                     />
                 )}
                 </div>

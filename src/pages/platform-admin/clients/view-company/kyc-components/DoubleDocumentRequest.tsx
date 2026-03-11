@@ -15,11 +15,13 @@ interface DocumentRequestMultipleProps {
   requestId: string;
   multipleDocuments: DocumentRequestDocumentMultiple[];
   isDisabled?: boolean;
+  isOrgOnboarded?: boolean;
 }
 
 const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
   requestId,
   multipleDocuments,
+  isOrgOnboarded,
 }) => {
   const queryClient = useQueryClient();
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
@@ -226,9 +228,9 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                     },
                     variant: 'danger'
                   })}
-                  disabled={isAnyActionLoading}
+                  disabled={isAnyActionLoading || isOrgOnboarded}
                   className="h-10 w-10 p-0 rounded-xl text-red-500 hover:bg-red-50"
-                  title="Delete Group"
+                  title={isOrgOnboarded ? "Read-only" : "Delete Group"}
                 >
                   <Trash2 size={20} />
                 </Button>
@@ -272,9 +274,9 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                             <p className="text-md font-medium text-gray-900">{item.label}</p>
                             <button 
                               onClick={() => { setEditingDocId(itemId); setEditName(item.label); }} 
-                              disabled={isAnyActionLoading}
-                              className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-gray-400 hover:text-primary disabled:opacity-0"
-                              title="Edit Label"
+                              disabled={isAnyActionLoading || isOrgOnboarded}
+                              className={`transition-opacity p-1 text-gray-400 hover:text-primary ${isOrgOnboarded ? 'opacity-30' : 'opacity-0 group-hover/item:opacity-100'}`}
+                              title={isOrgOnboarded ? "Read-only" : "Edit Label"}
                             >
                               <Edit2 size={16} />
                             </button>
@@ -317,9 +319,9 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                               input.onchange = (e) => onFileChange(e as any, itemId);
                               input.click();
                             }}
-                            disabled={isAnyActionLoading || uploadingDocId === itemId}
+                            disabled={isAnyActionLoading || uploadingDocId === itemId || isOrgOnboarded}
                             className="border-blue-300 hover:bg-blue-50 hover:text-blue-800 text-blue-700 h-10 px-4"
-                            title="Upload Document"
+                            title={isOrgOnboarded ? "Read-only" : "Upload Document"}
                           >
                             {uploadingDocId === itemId ? (
                               <Loader2 size={20} className="animate-spin" />
@@ -360,9 +362,9 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                                 size="sm"
                                 variant="outline"
                                 onClick={() => updateStatusMutation.mutate({ docId: itemId, status: 'ACCEPTED' })}
-                                disabled={isAnyActionLoading || updateStatusMutation.isPending}
+                                disabled={isAnyActionLoading || updateStatusMutation.isPending || isOrgOnboarded}
                                 className="border-green-300 text-green-600 hover:bg-green-50 h-10 w-10 p-0"
-                                title="Accept Document"
+                                title={isOrgOnboarded ? "Read-only" : "Accept Document"}
                               >
                                 {updateStatusMutation.isPending ? (
                                   <span className="text-[9px] font-bold">...</span>
@@ -392,32 +394,33 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                                     variant: 'danger'
                                   });
                                 }}
-                                disabled={isAnyActionLoading}
+                                disabled={isAnyActionLoading || isOrgOnboarded}
                                 className="border-rose-300 text-rose-600 hover:bg-rose-50 h-10 w-10 p-0"
-                                title="Reject Document"
+                                title={isOrgOnboarded ? "Read-only" : "Reject Document"}
                               >
                                 <X size={20} />
                               </Button>
                             )}
+                            
                             <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setConfirmConfig({
-                                isOpen: true,
-                                title: "Clear Submission",
-                                message: `Are you sure you want to clear the submission for "${item.label}"? This action cannot be undone.`,
-                                onConfirm: () => {
-                                  clearMutation.mutate(itemId);
-                                  setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                                },
-                                variant: 'primary'
-                              })}
-                              disabled={isAnyActionLoading}
-                              className="border-yellow-300 hover:bg-yellow-50 hover:text-yellow-800 text-yellow-700 h-10 px-3 text-[10px] font-bold uppercase tracking-wider"
-                              title="Clear Submission"
-                            >
-                              Clear
-                            </Button>
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setConfirmConfig({
+                                  isOpen: true,
+                                  title: "Clear Submission",
+                                  message: `Are you sure you want to clear the submission for "${item.label}"? This action cannot be undone.`,
+                                  onConfirm: () => {
+                                    clearMutation.mutate(itemId);
+                                    setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                                  },
+                                  variant: 'primary'
+                                })}
+                                disabled={isAnyActionLoading || isOrgOnboarded}
+                                className="border-yellow-300 hover:bg-yellow-50 hover:text-yellow-800 text-yellow-700 h-10 px-3 text-[10px] font-bold uppercase tracking-wider"
+                                title={isOrgOnboarded ? "Read-only" : "Clear Submission"}
+                              >
+                                Clear
+                              </Button>
                           </>
                         )}
 
@@ -434,9 +437,9 @@ const DocumentRequestDouble: React.FC<DocumentRequestMultipleProps> = ({
                             },
                             variant: 'danger'
                           })}
-                          disabled={isAnyActionLoading}
+                          disabled={isAnyActionLoading || isOrgOnboarded}
                           className="h-10 w-10 p-0 rounded-xl text-red-500 hover:bg-red-50 ml-1"
-                          title="Delete Label"
+                          title={isOrgOnboarded ? "Read-only" : "Delete Label"}
                         >
                           <Trash2 size={20} />
                         </Button>

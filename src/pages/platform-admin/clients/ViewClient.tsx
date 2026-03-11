@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { apiGet, apiPost } from '../../../config/base';
 import { endPoints } from '../../../config/endPoint';
 import type { Client } from '../../../types/client';
+import { OnboardingType } from '../../../types/client';
 import type { Company, IncorporationCycle } from '../../../types/company';
 import type { ServiceRequest } from '../../../types/service-request-template';
 import { USE_MOCK_DATA, getMockClientById, getMockCompaniesByClientId } from '../../../data/mockCompanyData';
@@ -41,6 +42,10 @@ const ViewClient: React.FC = () => {
 
     const companies = USE_MOCK_DATA ? getMockCompaniesByClientId(clientId!) : realCompanies;
     const isCompaniesLoading = USE_MOCK_DATA ? false : isRealCompaniesLoading;
+
+    const isOrgOnboarded = useMemo(() => {
+        return client?.onboardings?.some(o => o.type === OnboardingType.ORG_ONBOARDED_CLIENT && o.isActive);
+    }, [client]);
 
     if (isClientLoading) {
         return <ViewClientSkeleton />;
@@ -85,13 +90,15 @@ const ViewClient: React.FC = () => {
                             <Building2 className="h-4 w-4 text-primary" />
                             Associated Companies
                         </h3>
-                        <Button 
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all flex items-center gap-2 px-6 h-10"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Create Company
-                        </Button>
+                        {!isOrgOnboarded && (
+                            <Button 
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="rounded-xl bg-green-600 text-white shadow-lg shadow-green-600/20 hover:bg-green-700 transition-all flex items-center gap-2 px-6 h-10"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Create Company
+                            </Button>
+                        )}
                     </div>
 
                     <Table>
@@ -121,7 +128,7 @@ const ViewClient: React.FC = () => {
                                 ))
                             ) : (companies && companies.length > 0) ? (
                                 companies.map((company, index) => (
-                                    <CompanyRow key={company.id} company={company} index={index} clientId={clientId!} navigate={navigate} queryClient={queryClient} />
+                                    <CompanyRow key={company.id} company={company} index={index} clientId={clientId!} navigate={navigate} queryClient={queryClient} isOrgOnboarded={isOrgOnboarded} />
                                 ))
                             ) : (
                                 <TableRow>
@@ -154,11 +161,12 @@ interface CompanyRowProps {
     clientId: string;
     navigate: NavigateFunction;
     queryClient: QueryClient;
+    isOrgOnboarded: boolean | undefined;
 }
 
 type ServiceRequestResponse = ServiceRequest[] | { data: ServiceRequest[] };
 
-const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navigate, queryClient }) => {
+const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navigate, queryClient, isOrgOnboarded }) => {
     const [isIntegrating, setIsIntegrating] = React.useState(false);
     const [isRevoking, setIsRevoking] = React.useState(false);
     const { data: requestsData, isLoading: isRealSrvLoading } = useQuery<ServiceRequestResponse>({
@@ -265,7 +273,7 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
                             variant="ghost"
                             size="sm"
                             onClick={handleRevokeQuickBooks}
-                            disabled={isRevoking}
+                            disabled={isRevoking || isOrgOnboarded}
                             className="text-[10px] text-gray-500 hover:text-red-600 h-6 px-1"
                         >
                             {isRevoking ? '…' : 'Disconnect'}
@@ -276,7 +284,7 @@ const CompanyRow: React.FC<CompanyRowProps> = ({ company, index, clientId, navig
                         variant="outline"
                         size="sm"
                         onClick={handleIntegrateQuickBooks}
-                        disabled={isIntegrating}
+                        disabled={isIntegrating || isOrgOnboarded}
                         className="inline-flex items-center gap-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-0.5 h-7"
                     >
                         {isIntegrating ? (

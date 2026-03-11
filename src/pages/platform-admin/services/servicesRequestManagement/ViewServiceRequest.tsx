@@ -16,7 +16,7 @@ import { Button } from '../../../../ui/Button';
 import { ShadowCard } from '../../../../ui/ShadowCard';
 import PageHeader from '../../../common/PageHeader';
 import { useQuery } from '@tanstack/react-query';
-import { apiPatch, apiGet } from '../../../../config/base';
+import { apiGet } from '../../../../config/base';
 import { endPoints } from '../../../../config/endPoint';
 import { Skeleton } from '../../../../ui/Skeleton';
 import type { 
@@ -35,7 +35,7 @@ const USE_MOCK_DATA = false;
 const ViewServiceRequestContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { formatServiceLabel } = useTemplates();
+  const { formatServiceLabel, updateRequestStatusMutation } = useTemplates();
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ 
     isOpen: boolean; 
@@ -73,6 +73,7 @@ const ViewServiceRequestContent: React.FC = () => {
         return apiGet<{ success: boolean; data: ServiceRequest }>(endPoints.SERVICE_REQUEST.GET_BY_ID(id!)).then(res => res.data);
     },
     enabled: !!id,
+    refetchInterval: 10000, // Poll every 10 seconds to catch new acceptances
   });
 
   const { data: incorporationData } = useQuery({
@@ -100,11 +101,7 @@ const ViewServiceRequestContent: React.FC = () => {
     setIsUpdating(true);
     try {
       if (!USE_MOCK_DATA) {
-        const payload: { status: ServiceRequestStatus; reason?: string } = { status: newStatus };
-        if (reason && reason.trim()) {
-          payload.reason = reason;
-        }
-        await apiPatch(endPoints.SERVICE_REQUEST.UPDATE_STATUS(id), payload);
+        await updateRequestStatusMutation.mutateAsync({ id, status: newStatus, reason: reason || undefined });
       }
       
       setSuccessModal({
@@ -112,10 +109,6 @@ const ViewServiceRequestContent: React.FC = () => {
         title: 'Success!',
         message: `The request has been ${newStatus.toLowerCase().replace(/_/g, ' ')} successfully.`
       });
-      
-      if (!USE_MOCK_DATA) {
-        refetch();
-      }
     } catch (error) {
       console.error('Failed to update status:', error);
       alert('Failed to update status');
@@ -604,6 +597,38 @@ const ViewServiceRequestContent: React.FC = () => {
           </ShadowCard>
         )}
 
+        {/* Accepted Organizations Section */}
+        {((request.status === 'IN_REVIEW' || request.status === 'APPROVED')) && request.acceptedOrganizations && request.acceptedOrganizations.length > 0 && (
+          <ShadowCard className="p-8 border border-gray-100 bg-white rounded-[40px] w-full mt-8">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1 bg-amber-500 rounded-full" />
+                <h4 className="text-lg font-bold text-gray-900">Organizations that Accepted</h4>
+                <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-bold rounded-full border border-amber-100 uppercase tracking-widest">
+                  {request.acceptedOrganizations.length} Interested
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {request.acceptedOrganizations.map((org: any) => (
+                  <div 
+                    key={org.id} 
+                    className="flex items-center gap-4 p-5 rounded-3xl bg-gray-50 border border-gray-100 hover:border-amber-500/20 hover:bg-white transition-all group"
+                  >
+                    <div className="p-3 bg-white rounded-xl text-amber-600 shadow-sm group-hover:shadow-md transition-all">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{org.name}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mt-1">Interested Partner</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ShadowCard>
+        )}
+
         <div className="flex items-center justify-end mt-10 mb-10">
           {renderActions('bottom')}
         </div>
@@ -639,6 +664,7 @@ const ViewServiceRequestContent: React.FC = () => {
           companyName={request?.company?.name || request?.clientName || 'Unknown Entity'}
           serviceRequestId={request?.id || ''}
           serviceDetails={request?.serviceDetails}
+          acceptedOrganizations={request?.acceptedOrganizations}
         />
       )}
     </div>

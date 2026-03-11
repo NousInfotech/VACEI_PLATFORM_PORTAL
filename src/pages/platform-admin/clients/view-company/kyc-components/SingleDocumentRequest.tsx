@@ -15,11 +15,13 @@ interface DocumentRequestSingleProps {
   requestId: string;
   documents: DocumentRequestDocumentSingle[];
   isDisabled?: boolean;
+  isOrgOnboarded?: boolean;
 }
 
 const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
   requestId,
   documents,
+  isOrgOnboarded,
 }) => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +146,7 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
             size="sm"
             variant="outline"
             onClick={() => setIsAddModalOpen(true)}
-            disabled={isAnyActionLoading}
+            disabled={isAnyActionLoading || isOrgOnboarded}
             className="rounded-xl border-dashed border-gray-200 text-gray-400 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all text-[10px] uppercase font-bold tracking-widest px-4 h-8"
           >
             <Plus className="mr-1.5 w-3 h-3" />
@@ -196,9 +198,9 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                       <p className="font-medium text-gray-900 leading-none">{doc.name}</p>
                       <button 
                         onClick={() => { setEditingDocId(docId); setEditName(doc.name); }} 
-                        disabled={isAnyActionLoading}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-gray-400 hover:text-primary disabled:opacity-0"
-                        title="Edit Name"
+                        disabled={isAnyActionLoading || isOrgOnboarded}
+                        className={`transition-opacity p-1 text-gray-400 hover:text-primary disabled:opacity-30 ${isOrgOnboarded ? 'opacity-30' : 'opacity-0 group-hover:opacity-100'}`}
+                        title={isOrgOnboarded ? "Read-only" : "Edit Name"}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -245,24 +247,25 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
+                      const input = document.createElement("input");
+                      input.type = "file";
                       input.onchange = (e) => onFileChange(e as any, docId);
                       input.click();
                     }}
-                    disabled={isAnyActionLoading || uploadingDocId === docId}
-                    className="border-blue-300 hover:bg-blue-50 hover:text-blue-800 text-blue-700 h-10 px-4"
-                    title="Upload Document"
+                    disabled={isAnyActionLoading || isOrgOnboarded}
+                    className="border-primary/30 hover:bg-primary/5 text-primary h-10 px-4"
+                    title={isOrgOnboarded ? "Read-only" : "Upload Document"}
                   >
                     {uploadingDocId === docId ? (
-                      <Loader2 size={16} className="animate-spin mr-2" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Upload size={16} className="mr-2" />
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                        <Upload size={12} />
+                      </div>
                     )}
-                    Upload
                   </Button>
                 )}
-
                 {doc.url && (
                   <>
                     <Button
@@ -291,7 +294,7 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => updateStatusMutation.mutate({ docId, status: 'ACCEPTED' })}
-                        disabled={isAnyActionLoading || updateStatusMutation.isPending}
+                        disabled={isAnyActionLoading || updateStatusMutation.isPending || isOrgOnboarded}
                         className="border-green-300 text-green-600 hover:bg-green-50 h-10 w-10 p-0"
                         title="Accept Document"
                       >
@@ -323,7 +326,7 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                             variant: 'danger'
                           });
                         }}
-                        disabled={isAnyActionLoading}
+                        disabled={isAnyActionLoading || isOrgOnboarded}
                         className="border-rose-300 text-rose-600 hover:bg-rose-50 h-10 w-10 p-0"
                         title="Reject Document"
                       >
@@ -343,7 +346,7 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                         },
                         variant: 'primary'
                       })}
-                      disabled={isAnyActionLoading}
+                      disabled={isAnyActionLoading || isOrgOnboarded}
                       className="border-yellow-300 hover:bg-yellow-50 hover:text-yellow-800 text-yellow-700 h-10 px-3 text-[10px] font-bold uppercase tracking-wider"
                       title="Clear Submission"
                     >
@@ -352,25 +355,25 @@ const DocumentRequestSingle: React.FC<DocumentRequestSingleProps> = ({
                   </>
                 )}
 
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setConfirmConfig({
-                    isOpen: true,
-                    title: "Delete Request",
-                    message: `Are you sure you want to delete the document request for "${doc.name}"? This action cannot be undone.`,
-                    onConfirm: () => {
-                      deleteMutation.mutate(docId);
-                      setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-                    },
-                    variant: 'danger'
-                  })}
-                  disabled={isAnyActionLoading}
-                  className="h-10 w-10 p-0 rounded-xl text-red-500 hover:bg-red-50 ml-1"
-                  title="Delete Request"
-                >
-                  <Trash2 size={20} />
-                </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmConfig({
+                      isOpen: true,
+                      title: "Delete Request",
+                      message: `Are you sure you want to delete the document request for "${doc.name}"? This action cannot be undone.`,
+                      onConfirm: () => {
+                        deleteMutation.mutate(docId);
+                        setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                      },
+                      variant: 'danger'
+                    })}
+                    disabled={isAnyActionLoading || isOrgOnboarded}
+                    className="h-10 w-10 p-0 rounded-xl text-red-500 hover:bg-red-50 ml-1"
+                    title="Delete Request"
+                  >
+                    <Trash2 size={20} />
+                  </Button>
               </div>
             </div>
           );

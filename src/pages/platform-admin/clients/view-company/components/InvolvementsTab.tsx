@@ -14,12 +14,14 @@ interface InvolvementsTabProps {
     company: Company;
     activeInvolvementSubTab: 'shareholders' | 'representatives';
     onSubTabChange: (id: 'shareholders' | 'representatives') => void;
+    isOrgOnboarded?: boolean;
 }
 
 const InvolvementsTab: React.FC<InvolvementsTabProps> = ({ 
     company, 
     activeInvolvementSubTab, 
-    onSubTabChange 
+    onSubTabChange,
+    isOrgOnboarded
 }) => {
     const [isInvolvementModalOpen, setIsInvolvementModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -86,6 +88,7 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                 
                 <Button 
                     onClick={handleAdd}
+                    disabled={isOrgOnboarded}
                     className="rounded-xl bg-primary text-white shadow-lg shadow-primary/20 flex items-center gap-2 px-6"
                 >
                     <Plus size={18} />
@@ -134,10 +137,38 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                                             
                                                             <div className="mb-4 space-y-3">
                                                                 <div className="flex flex-wrap gap-2">
-                                                                    {(inv.classA || 0) > 0 && <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium">Class A: {(inv.classA || 0).toLocaleString()}</span>}
-                                                                    {(inv.classB || 0) > 0 && <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium">Class B: {(inv.classB || 0).toLocaleString()}</span>}
-                                                                    {(inv.classC || 0) > 0 && <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium">Class C: {(inv.classC || 0).toLocaleString()}</span>}
-                                                                    {(inv.ordinary || 0) > 0 && <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium">Ordinary: {(inv.ordinary || 0).toLocaleString()}</span>}
+                                                                    {(inv.classA || 0) > 0 && (
+                                                                        <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium flex flex-col items-center">
+                                                                            <span>Class A: {(inv.classA || 0).toLocaleString()}</span>
+                                                                            {inv.classAPaidUpPercentage != null && (
+                                                                                <span className="text-[13px] text-blue-500 font-medium border border-blue-200 rounded-lg px-3 py-1">{Number(inv.classAPaidUpPercentage)}% Paid</span>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                                    {(inv.classB || 0) > 0 && (
+                                                                        <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium flex flex-col items-center">
+                                                                            <span>Class B: {(inv.classB || 0).toLocaleString()}</span>
+                                                                            {inv.classBPaidUpPercentage != null && (
+                                                                                <span className="text-[13px] text-blue-500 font-medium border border-blue-200 rounded-lg px-3 py-1">{Number(inv.classBPaidUpPercentage)}% Paid</span>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                                    {(inv.classC || 0) > 0 && (
+                                                                        <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium flex flex-col items-center">
+                                                                            <span>Class C: {(inv.classC || 0).toLocaleString()}</span>
+                                                                            {inv.classCPaidUpPercentage != null && (
+                                                                                <span className="text-[13px] text-blue-500 font-medium border border-blue-200 rounded-lg px-3 py-1">{Number(inv.classCPaidUpPercentage)}% Paid</span>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
+                                                                    {(inv.ordinary || 0) > 0 && (
+                                                                        <span className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-1 text-sm font-medium flex flex-col items-center">
+                                                                            <span>Ordinary: {(inv.ordinary || 0).toLocaleString()}</span>
+                                                                            {inv.ordinaryPaidUpPercentage != null && (
+                                                                                <span className="text-[13px] text-blue-500 font-medium border border-blue-200 rounded-lg px-3 py-1">{Number(inv.ordinaryPaidUpPercentage)}% Paid</span>
+                                                                            )}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
 
                                                                 <div className="flex flex-wrap gap-2">
@@ -165,18 +196,20 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                                             )}
                                                         </div>
 
-                                                        <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div className={`flex flex-col gap-2 transition-opacity ${isOrgOnboarded ? 'opacity-30' : 'opacity-0 group-hover:opacity-100'}`}>
                                                             <button 
                                                                 onClick={() => handleEdit(inv)}
+                                                                disabled={isOrgOnboarded}
                                                                 className="p-2 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
-                                                                title="Edit Involvement"
+                                                                title={isOrgOnboarded ? "Read-only" : "Edit Involvement"}
                                                             >
                                                                 <Edit2 size={16} />
                                                             </button>
                                                             <button 
                                                                 onClick={() => handleDelete(inv)}
+                                                                disabled={isOrgOnboarded}
                                                                 className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                                title="Remove Involvement"
+                                                                title={isOrgOnboarded ? "Read-only" : "Remove Involvement"}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </button>
@@ -248,18 +281,20 @@ const InvolvementsTab: React.FC<InvolvementsTabProps> = ({
                                                         )}
                                                     </div>
 
-                                                    <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className={`flex flex-col gap-2 transition-opacity ${isOrgOnboarded ? 'opacity-30' : 'opacity-0 group-hover:opacity-100'}`}>
                                                         <button 
                                                             onClick={() => handleEdit(inv)}
+                                                            disabled={isOrgOnboarded}
                                                             className="p-2 bg-gray-50 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
-                                                            title="Edit Involvement"
+                                                            title={isOrgOnboarded ? "Read-only" : "Edit Involvement"}
                                                         >
                                                             <Edit2 size={16} />
                                                         </button>
                                                         <button 
                                                             onClick={() => handleDelete(inv)}
+                                                            disabled={isOrgOnboarded}
                                                             className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                            title="Remove Involvement"
+                                                            title={isOrgOnboarded ? "Read-only" : "Remove Involvement"}
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
