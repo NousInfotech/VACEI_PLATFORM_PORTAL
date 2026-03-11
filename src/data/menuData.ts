@@ -156,4 +156,12 @@ export const menuData: MenuItem[] = [
         section: "settings",
         description: "System configuration",
     },
+    {
+        slug: "notification-settings",
+        icon: Notification01Icon,
+        label: "Notification Settings",
+        href: "/dashboard/notification-settings",
+        section: "settings",
+        description: "Control email & in-app alerts",
+    },
 ];

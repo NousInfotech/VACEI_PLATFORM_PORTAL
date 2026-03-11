@@ -31,6 +31,7 @@ import Messages from './pages/messages/Messages'
 import Employees from './pages/platform-admin/employees/Employees'
 import CreatePlatformEmployee from './pages/platform-admin/employees/CreatePlatformEmployee'
 import Notifications from './pages/common/Notifications'
+import NotificationSettings from './pages/common/NotificationSettings'
 
 import EngagementsList from './pages/platform-admin/engagements/EngagementsList'
 import CreateEngagementPage from './pages/platform-admin/services/servicesRequestManagement/CreateEngagementPage'
@@ -93,6 +94,7 @@ const App = () => {
           <Route path="/dashboard/employees/create" element={<CreatePlatformEmployee />} />
           <Route path="/dashboard/global-library" element={<GlobalLibrary />} />
           <Route path="/dashboard/settings" element={<Settings />} />
+          <Route path="/dashboard/notification-settings" element={<NotificationSettings />} />
           <Route path="/dashboard/messages" element={<Messages />} />
           <Route path="/dashboard/notifications" element={<Notifications />} />
           <Route path="/dashboard/notice-management" element={<NoticeManagement />} />
