@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash, Lock, ChevronDown } from 'lucide-react';
-import { Button } from '../../../../../ui/Button';
-import NumericInput from '../../../../../ui/NumericInput';
+import { X, Building2, MapPin, Globe, FileText, PieChart, BarChart3, Hash, ChevronDown, Clock, Lock } from 'lucide-react';
+import { Button } from '../../../../../ui/Button'; 
+
 import { apiPut } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import type { Company } from '../../../../../types/company';
+import NumericInput from '../../../../../ui/NumericInput';
 
 const industries = [
   'Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail',
@@ -34,6 +35,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     issuedShares: company.issuedShares || 0,
     registrationNumber: company.registrationNumber || '',
     legalType: company.legalType || '',
+    companyStartedAt: company.companyStartedAt ? new Date(company.companyStartedAt).toISOString().split('T')[0] : '',
   });
 
   const [shareClasses, setShareClasses] = useState(() => {
@@ -90,6 +92,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
         issuedShares: company.issuedShares || 0,
         registrationNumber: company.registrationNumber || '',
         legalType: company.legalType || '',
+        companyStartedAt: company.companyStartedAt ? new Date(company.companyStartedAt).toISOString().split('T')[0] : '',
       });
       const existingA = company.shareClasses?.find(s => s.class === 'A' || s.class === 'CLASS_A');
       const existingB = company.shareClasses?.find(s => s.class === 'B' || s.class === 'CLASS_B');
@@ -155,11 +158,12 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
         { class: 'B', issued: shareClasses.B.issued, perShareValue: shareClasses.B.perShareValue > 0 ? shareClasses.B.perShareValue : null },
         { class: 'C', issued: shareClasses.C.issued, perShareValue: shareClasses.C.perShareValue > 0 ? shareClasses.C.perShareValue : null },
         { class: 'ORDINARY', issued: ordinaryShares, perShareValue: shareClasses.ORDINARY.perShareValue > 0 ? shareClasses.ORDINARY.perShareValue : null },
-      ].filter(s => s.issued > 0);
+      ].filter(s => s.issued > 0 || (s.class === 'ORDINARY' && ordinaryShares > 0));
 
       await apiPut(endPoints.COMPANY.UPDATE(company.id), {
         ...formData,
         industry: Array.isArray(formData.industry) ? formData.industry : [formData.industry],
+        companyStartDate: formData.companyStartedAt ? new Date(formData.companyStartedAt).toISOString() : null,
         shareDetails,
       });
       onSuccess();
@@ -264,6 +268,18 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               )}
             </div>
 
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                <Clock size={14} /> Incorporated At
+              </label>
+              <input
+                type="date"
+                value={formData.companyStartedAt}
+                onChange={(e) => setFormData({ ...formData, companyStartedAt: e.target.value })}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm font-medium"
+              />
+            </div>
+
             <div className="md:col-span-2 space-y-1.5">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                 <MapPin size={14} /> Address
@@ -352,8 +368,6 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 <p className="text-xs text-red-500 font-medium mt-1">{shareErrors.issuedShares}</p>
               )}
             </div>
-
-
 
             {/* Share Classes Breakdown */}
             <div className="md:col-span-2 p-6 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
