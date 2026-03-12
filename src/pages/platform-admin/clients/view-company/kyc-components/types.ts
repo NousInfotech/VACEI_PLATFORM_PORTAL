@@ -35,6 +35,7 @@ export interface Involvement {
     id: string;
     name: string;
     address: string | null;
+    email?: string | null;
   };
   holderCompany?: {
     id: string;
@@ -106,6 +107,7 @@ export interface KycPerson {
   name: string;
   nationality?: string;
   address?: string;
+  email?: string | null;
   id?: string;
 }
 

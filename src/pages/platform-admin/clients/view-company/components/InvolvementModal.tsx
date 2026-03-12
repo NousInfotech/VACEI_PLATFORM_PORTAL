@@ -28,6 +28,8 @@ interface Person {
   name: string;
   address: string;
   nationality: string;
+  email?: string;
+  phone?: string;
 }
 
 interface MiniCompany {
@@ -73,6 +75,8 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
     personName: '',
     personAddress: '',
     personNationality: '',
+    personEmail: '',
+    personPhone: '',
     companyName: '',
     companyRegNumber: '',
     companyAddress: '',
@@ -108,6 +112,13 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
     return errors;
   }, [formData.role, formData.classA, formData.classB, formData.classC, formData.ordinary, maxA, maxB, maxC, maxOrdinary]);
 
+  const [emailError, setEmailError] = useState('');
+
+  const validateEmail = (email: string) => {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(String(email).toLowerCase());
+  };
+
   const hasShareErrors = Object.keys(shareErrors).length > 0;
 
   useEffect(() => {
@@ -128,6 +139,8 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
           personName: involvement.person?.name || involvement.holderCompany?.name || '',
           personAddress: involvement.person?.address || involvement.holderCompany?.address || '',
           personNationality: involvement.person?.nationality || '',
+          personEmail: involvement.person?.email || '',
+          personPhone: involvement.person?.phone || '',
           companyName: involvement.holderCompany?.name || '',
           companyRegNumber: involvement.holderCompany?.registrationNumber || '',
           companyAddress: involvement.holderCompany?.address || '',
@@ -175,6 +188,8 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
       personName: '',
       personAddress: '',
       personNationality: '',
+      personEmail: '',
+      personPhone: '',
       companyName: '',
       companyRegNumber: '',
       companyAddress: '',
@@ -212,10 +227,18 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
       let holderCompanyId = partyType === 'COMPANY' ? selectedHolderCompanyId : undefined;
 
       if (mode === 'add' && partyType === 'PERSON' && showPersonForm) {
+        if (!validateEmail(formData.personEmail)) {
+          setEmailError('Please enter a valid email address');
+          setIsSubmitting(false);
+          return;
+        }
+
         const personResponse = await apiPost<{ data: Person }>(endPoints.PERSON.CREATE, {
           name: formData.personName,
           address: formData.personAddress,
           nationality: formData.personNationality,
+          email: formData.personEmail,
+          phone: formData.personPhone || undefined,
         });
         personId = personResponse.data.id;
       }
@@ -256,10 +279,17 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
         });
       } else if (involvement && involvement.id) {
         if (partyType === 'PERSON' && selectedPersonId) {
+          if (!validateEmail(formData.personEmail)) {
+            setEmailError('Please enter a valid email address');
+            setIsSubmitting(false);
+            return;
+          }
           await apiPut(endPoints.PERSON.UPDATE(selectedPersonId), {
             name: formData.personName,
             address: formData.personAddress,
             nationality: formData.personNationality,
+            email: formData.personEmail,
+            phone: formData.personPhone || undefined,
           });
         }
 
@@ -433,8 +463,40 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                           type="text"
                           value={formData.personAddress}
                           onChange={(e) => setFormData({ ...formData, personAddress: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
                           required={showPersonForm}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
+                        <input
+                          type="email"
+                          value={formData.personEmail}
+                          onChange={(e) => {
+                            setFormData({ ...formData, personEmail: e.target.value });
+                            if (emailError) setEmailError('');
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value && !validateEmail(e.target.value)) {
+                              setEmailError('Please enter a valid email address');
+                            } else {
+                              setEmailError('');
+                            }
+                          }}
+                          className={`w-full px-3 py-2 bg-white border ${emailError ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'} rounded-lg outline-none text-sm font-medium focus:ring-2 ${emailError ? 'focus:ring-red-200' : 'focus:ring-primary/20'}`}
+                          required={showPersonForm}
+                          placeholder="e.g. name@example.com"
+                        />
+                        {emailError && <p className="text-[10px] text-red-500 font-bold mt-1">{emailError}</p>}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number (Optional)</label>
+                        <input
+                          type="tel"
+                          value={formData.personPhone}
+                          onChange={(e) => setFormData({ ...formData, personPhone: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
+                          placeholder="e.g. +1 234 567 890"
                         />
                       </div>
                     </div>
@@ -591,8 +653,7 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
                       required
                     />
-                  </div>
-                  <div className="space-y-1">
+                       <div className="space-y-1">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nationality</label>
                     <input
                       type="text"
@@ -602,7 +663,9 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                       required
                     />
                   </div>
-                  <div className="space-y-1">
+                  </div>
+               
+                  <div className="md:col-span-2 space-y-1">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Address</label>
                     <input
                       type="text"
@@ -610,6 +673,36 @@ const InvolvementModal: React.FC<InvolvementModalProps> = ({
                       onChange={(e) => setFormData({ ...formData, personAddress: e.target.value })}
                       className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
                       required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</label>
+                    <input
+                      type="email"
+                      value={formData.personEmail}
+                      onChange={(e) => {
+                        setFormData({ ...formData, personEmail: e.target.value });
+                        if (emailError) setEmailError('');
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value && !validateEmail(e.target.value)) {
+                          setEmailError('Please enter a valid email address');
+                        } else {
+                          setEmailError('');
+                        }
+                      }}
+                      className={`w-full px-3 py-2.5 bg-white border ${emailError ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200'} rounded-lg outline-none text-sm font-medium focus:ring-2 ${emailError ? 'focus:ring-red-200' : 'focus:ring-primary/20'}`}
+                      required
+                    />
+                    {emailError && <p className="text-[10px] text-red-500 font-bold mt-1">{emailError}</p>}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number (Optional)</label>
+                    <input
+                      type="tel"
+                      value={formData.personPhone}
+                      onChange={(e) => setFormData({ ...formData, personPhone: e.target.value })}
+                      className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg outline-none text-sm font-medium focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>

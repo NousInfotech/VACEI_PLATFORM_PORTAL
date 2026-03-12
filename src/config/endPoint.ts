@@ -70,7 +70,7 @@ export const endPoints = {
     INCORPORATION: (companyId: string) => `/companies/${companyId}/incorporation`,
     KYC: (companyId: string) => `/companies/${companyId}/kyc`,
     KYC_DOCUMENT_REQUEST: (kycId: string) => `/kyc/${kycId}/document-request`,
-
+    PERSON: (personId: string) => `/persons/${personId}`,
   },
   SERVICE_REQUEST: {
     BASE: '/service-requests',
