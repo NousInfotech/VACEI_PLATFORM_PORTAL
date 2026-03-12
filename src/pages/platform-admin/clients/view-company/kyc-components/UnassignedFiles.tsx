@@ -121,7 +121,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
         </div>
         
         <div className="flex items-center gap-2">
-          {selectedFiles.size > 0 && (
+          {selectedFiles.size > 0 && Array.from(selectedFiles).some(fileId => selectedMappings[fileId]) && (
             <Button
               size="sm"
               className="rounded-lg h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] uppercase tracking-widest px-4 shadow-sm transition-all"
@@ -129,7 +129,7 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
               disabled={assignSelectedMutation.isPending || isOrgOnboarded}
             >
               {assignSelectedMutation.isPending ? <RefreshCw size={12} className="animate-spin mr-1.5" /> : <Check size={12} className="mr-1.5" />}
-              Assign Selected ({selectedFiles.size})
+              Assign Selected ({Array.from(selectedFiles).filter(fileId => selectedMappings[fileId]).length})
             </Button>
           )}
         </div>
@@ -198,9 +198,17 @@ const UnassignedFiles: React.FC<UnassignedFilesProps> = ({ requestId, unassigned
                     disabled={assignMutation.isPending || isOrgOnboarded}
                   >
                     <option value="">Map to requirement...</option>
-                    {allRequirements.map(req => (
-                      <option key={req.id} value={req.id}>{req.name}</option>
-                    ))}
+                    {allRequirements
+                      .filter(req => {
+                        // Don't show requirements already mapping to OTHER files
+                        const isSelectedByOther = Object.entries(selectedMappings).some(
+                          ([fId, rId]) => fId !== file.fileId && rId === req.id
+                        );
+                        return !isSelectedByOther;
+                      })
+                      .map(req => (
+                        <option key={req.id} value={req.id}>{req.name}</option>
+                      ))}
                   </select>
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400">
                     <ChevronDown size={12} />

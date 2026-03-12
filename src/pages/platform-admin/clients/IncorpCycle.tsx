@@ -70,9 +70,9 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
     });
 
     const createFromTemplateMutation = useMutation({
-        mutationFn: (templateId: string) => 
-            apiPost(endPoints.DOCUMENT_REQUESTS.FROM_TEMPLATE, {
-                templateId,
+        mutationFn: (data: { templateIds: string[] }) => 
+            apiPost(endPoints.DOCUMENT_REQUESTS.FROM_TEMPLATE + '/bulk', {
+                ...data,
                 incorporationCycleId: cycle!.id,
             }),
         onSuccess: () => {
@@ -126,7 +126,7 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
 
     const statusItems = statusSteps.map(status => ({
         id: status,
-        label: status.replace('_', ' '),
+        label: status.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
         onClick: () => updateStatusMutation.mutate(status),
         className: cycle?.status === status ? 'text-primary font-bold' : ''
     }));
@@ -199,7 +199,7 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
                                 disabled={updateStatusMutation.isPending}
                             >
                                 {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronDown className="h-3 w-3" />}
-                                Update Status: {cycle.status}
+                                {(cycle.status || '').replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
                             </Button>
                         }
                     />
@@ -421,9 +421,10 @@ const IncorpCycleContent: React.FC<IncorpCycleProps> = ({ clientId: propClientId
         <TemplateSelector 
             isOpen={isTemplateSelectorOpen}
             onClose={() => setIsTemplateSelectorOpen(false)}
-            onSelect={(template) => createFromTemplateMutation.mutate(template.id)}
+            onSelect={(templates) => createFromTemplateMutation.mutate({ templateIds: templates.map(t => t.id) })}
             moduleType="INCORPORATION"
             title="Select Incorporation Template"
+            multiSelect
         />
 
         <DeleteConfirmModal 

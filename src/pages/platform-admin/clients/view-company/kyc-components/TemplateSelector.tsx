@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, FileText, X, Loader2 } from 'lucide-react';
+import { Search, FileText, X, Loader2, Check } from 'lucide-react';
 import { apiGet } from '../../../../../config/base';
 import { endPoints } from '../../../../../config/endPoint';
 import type { Template, TemplateModuleType, TemplateListResponse } from '../../../../../types/template';
@@ -9,9 +9,10 @@ import { Button } from '../../../../../ui/Button';
 interface TemplateSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (template: Template) => void;
+  onSelect: (templates: Template[]) => void;
   moduleType: TemplateModuleType;
   title?: string;
+  multiSelect?: boolean;
 }
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -20,16 +21,17 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   onSelect,
   moduleType,
   title = 'Select Template',
+  multiSelect = false,
 }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isOpen) {
       fetchTemplates();
-      setSelectedTemplate(null);
+      setSelectedTemplates(new Set());
     }
   }, [isOpen, moduleType]);
 
@@ -47,10 +49,31 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
     }
   };
 
+  const handleSelect = (templateId: string) => {
+    if (multiSelect) {
+      const newSet = new Set(selectedTemplates);
+      if (newSet.has(templateId)) {
+        newSet.delete(templateId);
+      } else {
+        newSet.add(templateId);
+      }
+      setSelectedTemplates(newSet);
+    } else {
+      setSelectedTemplates(new Set([templateId]));
+    }
+  };
+
   const filteredTemplates = templates.filter(t => 
     t.name.toLowerCase().includes(searchText.toLowerCase()) || 
     (t.description && t.description.toLowerCase().includes(searchText.toLowerCase()))
   );
+
+  const confirmSelection = () => {
+    const selectedList = templates.filter(t => selectedTemplates.has(t.id));
+    if (selectedList.length > 0) {
+      onSelect(selectedList);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -61,7 +84,14 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+          <div className="flex flex-col">
+            <h3 className="text-xl font-bold text-gray-900">{title}</h3>
+            {multiSelect && selectedTemplates.size > 0 && (
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">
+                {selectedTemplates.size} selected
+              </p>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400">
             <X size={20} />
           </button>
@@ -89,17 +119,20 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
               {filteredTemplates.map(template => (
                 <div 
                   key={template.id}
-                  onClick={() => setSelectedTemplate(template)}
+                  onClick={() => handleSelect(template.id)}
                   className={cn(
                     "p-5 bg-white border rounded-3xl transition-all cursor-pointer group flex flex-col h-full",
-                    selectedTemplate?.id === template.id 
+                    selectedTemplates.has(template.id)
                       ? "border-primary ring-2 ring-primary/10 shadow-lg shadow-primary/5" 
                       : "border-gray-100 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
                   )}
                 >
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all shrink-0">
-                      <FileText size={24} />
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-all shrink-0",
+                      selectedTemplates.has(template.id) ? "bg-primary text-white" : "bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white"
+                    )}>
+                      {selectedTemplates.has(template.id) && multiSelect ? <Check size={24} strokeWidth={3} /> : <FileText size={24} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors truncate">{template.name}</h4>
@@ -130,10 +163,10 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       size="sm" 
                       className={cn(
                         "h-8 text-[10px] font-bold uppercase tracking-widest transition-all",
-                        selectedTemplate?.id === template.id ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
+                        selectedTemplates.has(template.id) ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-100"
                       )}
                     >
-                      {selectedTemplate?.id === template.id ? 'Selected' : 'Select'}
+                      {selectedTemplates.has(template.id) ? 'Selected' : 'Select'}
                     </Button>
                   </div>
                 </div>
@@ -156,11 +189,11 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             Cancel
           </Button>
           <Button 
-            onClick={() => selectedTemplate && onSelect(selectedTemplate)}
-            disabled={!selectedTemplate}
+            onClick={confirmSelection}
+            disabled={selectedTemplates.size === 0}
             className="rounded-xl px-8 bg-primary text-white shadow-lg shadow-primary/20 font-bold text-[10px] uppercase tracking-widest"
           >
-            Confirm & Create
+            Confirm & Create {selectedTemplates.size > 1 ? `(${selectedTemplates.size})` : ''}
           </Button>
         </div>
       </div>

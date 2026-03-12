@@ -119,9 +119,9 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
   });
 
   const createFromTemplateMutation = useMutation({
-    mutationFn: (templateId: string) => 
-      apiPost(endPoints.DOCUMENT_REQUESTS.FROM_TEMPLATE, {
-        templateId,
+    mutationFn: (data: { templateIds: string[] }) => 
+      apiPost(endPoints.DOCUMENT_REQUESTS.FROM_TEMPLATE + '/bulk', {
+        ...data,
         kycCycleId: kycId,
       }),
     onSuccess: () => {
@@ -151,6 +151,21 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
     },
     onError: (error: any) => {
       toast.error('Failed to update document status', {
+        description: error?.response?.data?.message || error?.message || 'Unexpected error'
+      });
+    }
+  });
+  
+  const deleteDocRequestMutation = useMutation({
+    mutationFn: (requestId: string) => 
+      apiDelete(`${endPoints.DOCUMENT_REQUESTS.BASE}/${requestId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['kyc-cycle', companyId] });
+      toast.success('Document category deleted.');
+      setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+    },
+    onError: (error: any) => {
+      toast.error('Failed to delete document category', {
         description: error?.response?.data?.message || error?.message || 'Unexpected error'
       });
     }
@@ -322,6 +337,26 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
                             <option key={s} value={s}>{s}</option>
                           ))}
                         </select>
+                        {!isOrgOnboarded && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 rounded-lg text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                            onClick={() => setConfirmConfig({
+                              isOpen: true,
+                              title: "Delete Document Category",
+                              message: `Are you sure you want to delete the category "${request.documentRequest.category || 'General Requirements'}"? This will remove all associated requirements.`,
+                              onConfirm: () => {
+                                deleteDocRequestMutation.mutate(request.documentRequest._id);
+                              },
+                              variant: 'danger'
+                            })}
+                            disabled={isAnyActionLoading || deleteDocRequestMutation.isPending}
+                            title="Delete Category"
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                         {/* <Button
                           size="sm"
                           variant="outline"
@@ -422,9 +457,10 @@ const CompanyKyc: React.FC<CompanyKycProps> = ({
       <TemplateSelector
         isOpen={isTemplateSelectorOpen}
         onClose={() => setIsTemplateSelectorOpen(false)}
-        onSelect={(template) => createFromTemplateMutation.mutate(template.id)}
+        onSelect={(templates) => createFromTemplateMutation.mutate({ templateIds: templates.map(t => t.id) })}
         moduleType="KYC"
         title="Select KYC Template"
+        multiSelect
       />
     </div>
   );
