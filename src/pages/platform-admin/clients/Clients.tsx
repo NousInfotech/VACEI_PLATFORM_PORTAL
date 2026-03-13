@@ -158,8 +158,8 @@ const Clients: React.FC = () => {
                     }
                     items={[
                         { id: 'All types', label: 'All types', onClick: () => setSelectedClientType('All types') },
-                        { id: OnboardingType.ORG_ONBOARDED_CLIENT, label: 'ORG ONBOARDED CLIENT', onClick: () => setSelectedClientType(OnboardingType.ORG_ONBOARDED_CLIENT) },
-                        { id: OnboardingType.CLIENT_INVITED_ORG, label: 'CLIENT INVITED ORG', onClick: () => setSelectedClientType(OnboardingType.CLIENT_INVITED_ORG) },
+                        { id: OnboardingType.ORG_ONBOARDED_CLIENT, label: 'ORGANIZATION', onClick: () => setSelectedClientType(OnboardingType.ORG_ONBOARDED_CLIENT) },
+                        { id: OnboardingType.CLIENT_INVITED_ORG, label: 'CLIENT', onClick: () => setSelectedClientType(OnboardingType.CLIENT_INVITED_ORG) },
                     ].map(item => ({
                         ...item,
                         className: selectedClientType === item.id ? "bg-primary/5 text-primary font-bold" : ""
@@ -175,7 +175,7 @@ const Clients: React.FC = () => {
                             <TableHead className="py-4 px-6 text-nowrap">S.No</TableHead>
                             <TableHead>Client Name</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead>Client Type</TableHead>
+                            <TableHead>Onboarded By</TableHead>
                             <TableHead>Created At</TableHead>
                             <TableHead className="text-right px-6">Actions</TableHead>
                         </TableRow>
@@ -204,9 +204,9 @@ const Clients: React.FC = () => {
                                     <TableCell className="text-gray-600">{client.user.email || 'N/A'}</TableCell>
                                     <TableCell>
                                         {client.onboardings?.some(o => o.type === OnboardingType.ORG_ONBOARDED_CLIENT && o.isActive) ? (
-                                            <Badge variant="success" className="rounded-full text-[9px] px-2.5 shadow-none border-green-100">ORG ONBOARDED CLIENT</Badge>
+                                            <Badge variant="success" className="rounded-full text-[9px] px-2.5 shadow-none border-green-100">ORGANIZATION</Badge>
                                         ) : (
-                                            <Badge variant="gray" className="rounded-full text-[9px] px-2.5 shadow-none border-primary/10 bg-primary/10 text-primary">CLIENT INVITED ORG</Badge>
+                                            <Badge variant="gray" className="rounded-full text-[9px] px-2.5 shadow-none border-primary/10 bg-primary/10 text-primary">CLIENT</Badge>
                                         )}
                                     </TableCell>
                                     <TableCell className="text-gray-500 font-medium text-xs">
